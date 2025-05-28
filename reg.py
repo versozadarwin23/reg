@@ -8,6 +8,17 @@ import sys
 import random
 
 os.system("clear")
+
+print("\033[1;91m")
+print("""
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+<<                                    >>
+<<          Auto Reg By Darwin        >>
+<<                                    >>
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+""")
+print("\033[0m")
+
 time.sleep(2)
 
 def load_user_agents(file_path):
@@ -272,8 +283,12 @@ def create_fbunconfirmed(account_type, usern, gender):
         def save_to_csv(filename, data):
             while True:
                 try:
+                    file_exists = os.path.isfile(filename)
                     with open(filename, mode='a', newline='') as file:
                         writer = csv.writer(file)
+                        # If the file is new or empty, write headers first
+                        if not file_exists or os.path.getsize(filename) == 0:
+                            writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
                         writer.writerow(data)
                     break  # success!
                 except Exception as e:
@@ -293,7 +308,7 @@ def create_fbunconfirmed(account_type, usern, gender):
             return
 
         # Otherwise, proceed
-        filename = "/storage/emulated/0/Acc_Created.csv"
+        filename = "Acc_Created.csv"
         full_name = f"{firstname} {lastname}"
         data_to_save = [full_name, phone_number, password, profile_id]
         print(f"\033[1;92m✅ Account created successfully! 😊 {full_name} |  {phone_number} | {password} |\033[0m")
