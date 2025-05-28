@@ -1,6 +1,5 @@
 import csv
 import os
-import uuid
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -21,15 +20,6 @@ def load_user_agents(file_path):
 def get_random_user_agent(file_path):
     user_agents = load_user_agents(file_path)
     return random.choice(user_agents)
-
-MAX_RETRIES = 3
-RETRY_DELAY = 2
-
-SUCCESS = "✅"
-FAILURE = "✅"
-INFO = "✅"
-WARNING = "⚠️"
-LOADING = "⏳"
 
 def load_names_from_file(file_path):
     with open(file_path, 'r') as file:
@@ -86,7 +76,7 @@ def generate_user_details(account_type, gender):
     return firstname, lastname, date, year, month, phone_number, password
 
 def create_fbunconfirmed(account_type, usern, gender):
-    global uid, profie_link, profile_link, token, profile_id, data_to_save, filename, save_to_csv
+    global uid, profie_link, profile_link, token, profile_id, data_to_save, filename
     asdf = ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
     firstname, lastname, date, year, month, phone_number, password = generate_user_details(account_type, gender)
 
@@ -135,7 +125,6 @@ def create_fbunconfirmed(account_type, usern, gender):
             print("Waiting for form to load...")
 
     def retry_request(url, headers, method="get", data=None):
-        global response
         while True:
             try:
                 if method == "get":
@@ -149,14 +138,9 @@ def create_fbunconfirmed(account_type, usern, gender):
             except requests.exceptions.ConnectionError:
                 sys.exit()
 
-    while True:
-        try:
-            response = retry_request(url, headers)
-            soup = BeautifulSoup(response.text, "html.parser")
-            form = soup.find("form")
-            break
-        except:
-            pass
+    response = retry_request(url, headers)
+    soup = BeautifulSoup(response.text, "html.parser")
+    form = soup.find("form")
 
     if form:
         action_url = requests.compat.urljoin(url, form["action"]) if form.has_attr("action") else url
@@ -231,19 +215,6 @@ def create_fbunconfirmed(account_type, usern, gender):
 
         retry_request(action_url, headers, method="post", data=data)
 
-        def save_to_csv(filename, data):
-            while True:
-                try:
-                    with open(filename, mode='a', newline='') as file:
-                        writer = csv.writer(file)
-                        writer.writerow(data)
-                    break
-                except Exception as e:
-                    print(f"Error saving to {filename}: {e}. Retrying...")
-
-        if "c_user" in session.cookies:
-            os.system("clear")
-            print(f"\033[1;92m Account Email  | {emailsss}  | Pass  |  {password}  |\033[0m")
         user_input = input("Type b if the account is blocked, or press Enter if not blocked to continue:")
         if user_input == "b":
             print("\033[1;91m⚠️Creating another account because your account got blocked 😔\033[0m")
@@ -253,35 +224,43 @@ def create_fbunconfirmed(account_type, usern, gender):
 
         filename = "/storage/emulated/0/Acc_Created.csv"
         full_name = f"{firstname} {lastname}"
-        data_to_save = [full_name, phone_number, password, profile_id]
-        print(f"\033[1;92m✅ Account created successfully! 😊 {full_name} |  {phone_number} | {password} |\033[0m")
+        username = phone_number
+        account_link = profile_id
+
+        def add_row_to_csv(file_path, name, username, password, account_link):
+            row = [name, username, password, account_link]
+            header = ["NAME", "USERNAME", "PASSWORD", "ACCOUNT LINK"]
+            write_header = False
+
+            # Check if file exists and if empty
+            if not os.path.isfile(file_path) or os.path.getsize(file_path) == 0:
+                write_header = True
+
+            while True:
+                try:
+                    with open(file_path, mode='a', newline='') as file:
+                        writer = csv.writer(file)
+                        if write_header:
+                            writer.writerow(header)
+                        writer.writerow(row)
+                    break
+                except Exception as e:
+                    time.sleep(1)
+
+        add_row_to_csv(filename, full_name, username, password, account_link)
+        print(f"\033[1;92m✅ Account created successfully! 😊 {full_name} |  {username} | {password} |\033[0m")
         time.sleep(3)
         os.system("clear")
-        while True:
-            try:
-                save_to_csv(filename, data_to_save)
-                print('\033[1;92m✅ Created Account has been saved 😊')
-                time.sleep(3)
-                break
-            except:
-                pass
+        start_fblogin()
 
 def NEMAIN():
     os.system("clear")
     max_create = 1
     account_type = 1
     gender = 1
-    oks = []
-    cps = []
     for i in range(max_create):
         usern = "ali"
-        result = create_fbunconfirmed(account_type, usern, gender)
-        if result:
-            oks.append(result)
-        else:
-            cps.append(result)
-
-# --------------- ADDITIONS: fblogin.py management ---------------
+        create_fbunconfirmed(account_type, usern, gender)
 
 def is_process_running(script_name):
     for proc in psutil.process_iter(attrs=['pid', 'name', 'cmdline']):
@@ -293,13 +272,11 @@ def is_process_running(script_name):
             continue
     return False
 
-
 def start_fblogin():
     if not is_process_running('fblogin.py'):
         subprocess.Popen(['python', 'fblogin.py'])
 
-# --------------- Main execution loop ---------------
 if __name__ == "__main__":
-    start_fblogin()  # Ensure fblogin.py runs only once
+    start_fblogin()
     while True:
         NEMAIN()
