@@ -101,26 +101,35 @@ import csv
 
 def load_accounts():
     pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
-    file_path = "/storage/emulated/0/Acc_Created.csv"
+    file_path = "/storage/emulated/0/Acc_Created.csv"  # absolute path
     try:
+        print(f"Checking if {file_path} exists...")
         if not os.path.exists(file_path):
-            pass
+            print(f"{file_path} does not exist. Retrying in 5 seconds...")
+            time.sleep(5)
 
+        print(f"{file_path} found! Opening...")
         accounts = []
         with open(file_path, newline='', encoding='utf-8-sig') as csvfile:
             reader = csv.reader(csvfile)
             for row in reader:
+                print(f"Reading row: {row}")
+                # row = ['Luisito Arevalo', '9063312916', 'Promises503784', 'https://www.facebook.com/profile.php?id=61576856549171']
                 username = row[3].strip() if len(row) > 3 else ''
                 password = row[2].strip() if len(row) > 2 else ''
                 if not username or not password:
+                    print("Empty username or password, skipping...")
                     continue
                 username = pattern.sub('', username)
                 accounts.append([username, password])
+                print(f"Account added: {username}, {password}")
 
+        print(f"Accounts loaded: {accounts}")
         return accounts
 
     except Exception as e:
-        pass
+        print(f"Error occurred: {e}")
+        time.sleep(5)
 
 
 def main():
