@@ -99,19 +99,23 @@ def keep_alive(email, password):
         time.sleep(60)
 
 def load_accounts():
-    accounts = []
-    pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
-    with open("/storage/emulated/0/Acc_Created.csv", newline='', encoding='latin-1') as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            username = row.get('ACCOUNT LINK', '').strip()
-            password = row.get('PASSWORD', '').strip()
-            if not username or not password:
-                continue
-            # Remove URL prefix if present
-            username = pattern.sub('', username)
-            accounts.append([username, password])
-    return accounts
+    while True:
+        try:
+            accounts = []
+            pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
+            with open("/storage/emulated/0/Acc_Created.csv", newline='', encoding='latin-1') as csvfile:
+                reader = csv.DictReader(csvfile)
+                for row in reader:
+                    username = row.get('ACCOUNT LINK', '').strip()
+                    password = row.get('PASSWORD', '').strip()
+                    if not username or not password:
+                        continue
+                    # Remove URL prefix if present
+                    username = pattern.sub('', username)
+                    accounts.append([username, password])
+            return accounts  # success, so we break out of the loop by returning
+        except Exception as e:
+            print(f"Error loading accounts: {e}. Retrying...")
 
 def main():
     with open('login_results.txt', 'w') as f:
