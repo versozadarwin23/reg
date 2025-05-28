@@ -94,31 +94,45 @@ def keep_alive(email, password):
             pass
         time.sleep(60)
 
+import os
+import re
+import time
+import csv
+
 def load_accounts():
     pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
     file_path = '/storage/emulated/0/Acc_Created.csv'  # absolute path
 
     while True:
         try:
+            print(f"Checking if {file_path} exists...")  # debug line
             if not os.path.exists(file_path):
+                print(f"{file_path} does not exist. Retrying in 5 seconds...")
                 time.sleep(5)
                 continue
 
+            print(f"{file_path} found! Opening...")  # debug line
             accounts = []
-            with open('/storage/emulated/0/Acc_Created.csv', newline='', encoding='latin-1') as csvfile:
+            with open(file_path, newline='', encoding='latin-1') as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
+                    print(f"Reading row: {row}")  # debug line
                     username = row.get('ACCOUNT LINK', '').strip()
                     password = row.get('PASSWORD', '').strip()
                     if not username or not password:
+                        print("Empty username or password, skipping...")  # debug line
                         continue
                     username = pattern.sub('', username)
                     accounts.append([username, password])
+                    print(f"Account added: {username}, {password}")  # debug line
+
+            print(f"Accounts loaded: {accounts}")  # debug line
             return accounts
 
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error occurred: {e}")
             time.sleep(5)
+
 
 def main():
     with open('login_results.txt', 'w') as f:
