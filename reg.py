@@ -11,17 +11,6 @@ import subprocess
 import psutil
 
 os.system("clear")
-
-print("\033[1;91m")
-print("""
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-<<                                    >>
-<<          Auto Reg By Darwin        >>
-<<                                    >>
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-""")
-print("\033[0m")
-
 time.sleep(2)
 
 def load_user_agents(file_path):
