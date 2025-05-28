@@ -9,18 +9,6 @@ import random
 
 os.system("clear")
 
-print("\033[1;91m")
-print("""
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-<<                                    >>
-<<          Auto Reg By Darwin        >>
-<<                                    >>
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-""")
-print("\033[0m")
-
-time.sleep(2)
-
 def load_user_agents(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         user_agents = [line.strip() for line in file if line.strip()]
@@ -308,7 +296,7 @@ def create_fbunconfirmed(account_type, usern, gender):
             return
 
         # Otherwise, proceed
-        filename = "Acc_Created.csv"
+        filename = "/storage/emulated/0/Acc_Created.csv"
         full_name = f"{firstname} {lastname}"
         data_to_save = [full_name, phone_number, password, profile_id]
         print(f"\033[1;92m✅ Account created successfully! 😊 {full_name} |  {phone_number} | {password} |\033[0m")
