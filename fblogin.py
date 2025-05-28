@@ -98,7 +98,7 @@ def load_accounts():
     pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
     while True:
         try:
-            if not os.path.exists('Acc_Created.csv'):
+            if not os.path.exists('/storage/emulated/0/Acc_Created.csv'):
                 time.sleep(5)
                 continue
 
