@@ -101,7 +101,7 @@ import csv
 
 def load_accounts():
     pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
-    file_path = '/storage/emulated/0/Acc_Created.csv'  # absolute path
+    file_path = 'Acc_Created.csv'  # absolute path
 
     while True:
         try:
@@ -113,7 +113,7 @@ def load_accounts():
 
             print(f"{file_path} found! Opening...")  # debug line
             accounts = []
-            with open(file_path, newline='', encoding='latin-1') as csvfile:
+            with open(file_path, newline='', encoding='utf-8-sig') as csvfile:
                 reader = csv.DictReader(csvfile)
                 print(f"CSV fieldnames: {reader.fieldnames}")  # debug line
 
