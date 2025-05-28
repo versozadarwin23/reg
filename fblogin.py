@@ -96,14 +96,16 @@ def keep_alive(email, password):
 
 def load_accounts():
     pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
+    file_path = '/storage/emulated/0/Acc_Created.csv'  # absolute path
+
     while True:
         try:
-            if not os.path.exists('/storage/emulated/0/Acc_Created.csv'):
+            if not os.path.exists(file_path):
                 time.sleep(5)
                 continue
 
             accounts = []
-            with open('Acc_Created.csv', newline='', encoding='latin-1') as csvfile:
+            with open(file_path, newline='', encoding='latin-1') as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
                     username = row.get('ACCOUNT LINK', '').strip()
@@ -115,6 +117,7 @@ def load_accounts():
             return accounts
 
         except Exception as e:
+            print(f"Error: {e}")
             time.sleep(5)
 
 def main():
