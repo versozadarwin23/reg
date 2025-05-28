@@ -1,5 +1,3 @@
-import os
-
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -40,6 +38,7 @@ def keep_alive(email, password):
 
         form = soup.find('form', {'id': 'login_form'})
         if not form:
+            print(f"[❌] [{email}] Login form not found.")
             with lock:
                 error_count += 1
             record_result("ERROR", f"{email}\tLogin form not found.")
@@ -63,11 +62,13 @@ def keep_alive(email, password):
                 success_count += 1
             record_result("SUCCESS", f"{email}\t{uid}")
         else:
+            print(f"[❌] [{email}] Login failed.")
             with lock:
                 error_count += 1
             record_result("ERROR", f"{email}\tLogin failed.")
             return
     except Exception as e:
+        print(f"[⚠️] [{email}] Login error: {e}")
         with lock:
             error_count += 1
         record_result("ERROR", f"{email}\tError: {e}")
@@ -88,52 +89,31 @@ def keep_alive(email, password):
                 minutes = elapsed_minutes % 60
                 active_time = f"{hours}h {minutes}m" if hours > 0 else f"{minutes}m"
                 profile_link = f'https://www.facebook.com/profile.php?id={uid}'
+                print(f"[💓] [{email}] Keep-alive OK: {profile_link} | Active: {active_time}")
             else:
+                print(f"[❌] [{email}] Session expired.")
                 return
         except Exception as e:
-            pass
+            print(f"[⚠️] [{email}] Keep-alive error: {e}")
+
         time.sleep(60)
 
-import os
-import re
-import time
-import csv
-
 def load_accounts():
+    accounts = []
     pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
-    file_path = "/storage/emulated/0/Acc_Created.csv"  # absolute path
-    try:
-        print(f"Checking if {file_path} exists...")
-        if not os.path.exists(file_path):
-            print(f"{file_path} does not exist. Retrying in 5 seconds...")
-            time.sleep(5)
-
-        print(f"{file_path} found! Opening...")
-        accounts = []
-        with open(file_path, newline='', encoding='utf-8-sig') as csvfile:
-            reader = csv.reader(csvfile)
-            for row in reader:
-                print(f"Reading row: {row}")
-                # row = ['Luisito Arevalo', '9063312916', 'Promises503784', 'https://www.facebook.com/profile.php?id=61576856549171']
-                username = row[3].strip() if len(row) > 3 else ''
-                password = row[2].strip() if len(row) > 2 else ''
-                if not username or not password:
-                    print("Empty username or password, skipping...")
-                    continue
-                username = pattern.sub('', username)
-                accounts.append([username, password])
-                print(f"Account added: {username}, {password}")
-
-        print(f"Accounts loaded: {accounts}")
-        return accounts
-
-    except Exception as e:
-        print(f"Error occurred: {e}")
-        time.sleep(5)
-
+    with open('Acc_Created.csv', newline='', encoding='latin-1') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            username = row.get('ACCOUNT LINK', '').strip()
+            password = row.get('PASSWORD', '').strip()
+            if not username or not password:
+                continue
+            # Remove URL prefix if present
+            username = pattern.sub('', username)
+            accounts.append([username, password])
+    return accounts
 
 def main():
-    global current_account_count
     with open('login_results.txt', 'w') as f:
         f.write("=== LOGIN SUCCESS ===\n")
         f.write("=== LOGIN ERRORS ===\n")
@@ -143,10 +123,7 @@ def main():
 
     while True:
         accounts = load_accounts()
-        try:
-            current_account_count = len(accounts)
-        except:
-            pass
+        current_account_count = len(accounts)
 
         if current_account_count != prev_account_count:
             if executor:
@@ -154,11 +131,13 @@ def main():
             max_workers = current_account_count if current_account_count > 0 else 1
             executor = ThreadPoolExecutor(max_workers=max_workers)
             prev_account_count = current_account_count
+            print(f"[🔄] Restarted ThreadPoolExecutor with max_workers={max_workers}")
 
         for email, password in accounts:
             if email not in logged_accounts:
                 logged_accounts.add(email)
                 executor.submit(keep_alive, email, password)
+                print(f"[➕] New account added and keep-alive started: {email}")
 
         time.sleep(60)
 
