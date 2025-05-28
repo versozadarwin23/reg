@@ -115,13 +115,20 @@ def load_accounts():
             accounts = []
             with open(file_path, newline='', encoding='latin-1') as csvfile:
                 reader = csv.DictReader(csvfile)
+                print(f"CSV fieldnames: {reader.fieldnames}")  # debug line
+
                 for row in reader:
                     print(f"Reading row: {row}")  # debug line
-                    username = row.get('ACCOUNT LINK', '').strip()
-                    password = row.get('PASSWORD', '').strip()
+                    username = row.get('ACCOUNT LINK')
+                    password = row.get('PASSWORD')
+                    print(f"username: {username}, password: {password}")  # debug line
+
                     if not username or not password:
                         print("Empty username or password, skipping...")  # debug line
                         continue
+
+                    username = username.strip()
+                    password = password.strip()
                     username = pattern.sub('', username)
                     accounts.append([username, password])
                     print(f"Account added: {username}, {password}")  # debug line
