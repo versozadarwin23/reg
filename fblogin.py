@@ -105,7 +105,7 @@ def load_accounts():
                 continue
 
             accounts = []
-            with open(file_path, newline='', encoding='latin-1') as csvfile:
+            with open('/storage/emulated/0/Acc_Created.csv', newline='', encoding='latin-1') as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
                     username = row.get('ACCOUNT LINK', '').strip()
