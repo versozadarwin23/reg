@@ -7,16 +7,7 @@ import time
 import sys
 import random
 
-print("\033[1;91m")
-print("""
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-<<                                    >>
-<<          Auto Reg By Darwin        >>
-<<                                    >>
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-""")
-print("\033[0m")
-
+os.system("clear")
 time.sleep(2)
 
 def load_user_agents(file_path):
@@ -125,10 +116,11 @@ def create_fbunconfirmed(account_type, usern, gender):
                 response = requests.get(url, headers=headers)
                 soup = BeautifulSoup(response.text, 'html.parser')
                 form = soup.find("form")
+                os.system("clear")
                 return form
             except:
-                print('error')
-                pass
+                print('😢 error No internet connection. Check your Mobile Data or toggle Airplane mode.')
+                time.sleep(3)
 
     url = "https://limited.facebook.com/reg"
     headers = {
@@ -225,8 +217,8 @@ def create_fbunconfirmed(account_type, usern, gender):
                 uid = session.cookies.get("c_user")
                 profile_id = 'https://www.facebook.com/profile.php?id=' + uid
             else:
-                print("Create Acc Faild Click Arrow Up And Enter")
-                sys.exit()  # exit if not logged in
+                print("\033[1;91m⚠️ Create Account Failed. Retrying...\033[0m")
+                return  # exit the function so NEMAIN() can call again
         except Exception as e:
             print("An error occurred:", str(e))
             sys.exit()
@@ -290,21 +282,31 @@ def create_fbunconfirmed(account_type, usern, gender):
         # Start of the block
         if "c_user" in session.cookies:
             os.system("clear")
-            sys.stdout.write('\r\033[K' + password + '\n')
+            print(f"\033[1;92m Account Email  | {emailsss}  | Pass  |  {password}  |\033[0m")
             # Process the result
 
-        user_input = input("Type b if the account is blocked, or type c if not blocked to continue:")
+        user_input = input("Type b if the account is blocked, or press Enter if not blocked to continue:")
         if user_input == "b":
-            print('To start again, press the up arrow key and then Enter')
-            sys.exit()  # exits immediately, no print, no save
+            print("\033[1;91m⚠️Creating another account because your account got blocked 😔\033[0m")
+            time.sleep(3)
+            os.system("clear")
+            return
 
         # Otherwise, proceed
         filename = "/storage/emulated/0/Acc_Created.csv"
         full_name = f"{firstname} {lastname}"
         data_to_save = [full_name, phone_number, password, profile_id]
-        sys.stdout.write(f'\r\033[K{password}\n')
-        save_to_csv(filename, data_to_save)
-
+        print(f"\033[1;92m✅ Account created successfully! 😊 {full_name} |  {phone_number} | {password} |\033[0m")
+        time.sleep(3)
+        os.system("clear")
+        while True:
+            try:
+                save_to_csv(filename, data_to_save)
+                print('\033[1;92m✅ Created Account has been saved 😊')
+                time.sleep(3)
+                break
+            except:
+                pass
 def NEMAIN():
     os.system("clear")
     max_create = 1
@@ -321,6 +323,7 @@ def NEMAIN():
         else:
             cps.append(result)
 
-# Run the main function
+# Instead of directly calling NEMAIN(), wrap it in a loop
 if __name__ == "__main__":
-    NEMAIN()
+    while True:
+        NEMAIN()
