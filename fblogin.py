@@ -1,3 +1,5 @@
+import os
+
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -93,10 +95,14 @@ def keep_alive(email, password):
         time.sleep(60)
 
 def load_accounts():
+    pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
     while True:
         try:
+            if not os.path.exists('Acc_Created.csv'):
+                time.sleep(5)
+                continue
+
             accounts = []
-            pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
             with open('Acc_Created.csv', newline='', encoding='latin-1') as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
@@ -104,12 +110,12 @@ def load_accounts():
                     password = row.get('PASSWORD', '').strip()
                     if not username or not password:
                         continue
-                    # Remove URL prefix if present
                     username = pattern.sub('', username)
                     accounts.append([username, password])
-            break
-        except:
-            pass
+            return accounts
+
+        except Exception as e:
+            time.sleep(5)
 
 def main():
     with open('login_results.txt', 'w') as f:
