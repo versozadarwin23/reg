@@ -133,6 +133,7 @@ def load_accounts():
 
 
 def main():
+    global current_account_count
     with open('login_results.txt', 'w') as f:
         f.write("=== LOGIN SUCCESS ===\n")
         f.write("=== LOGIN ERRORS ===\n")
@@ -142,7 +143,10 @@ def main():
 
     while True:
         accounts = load_accounts()
-        current_account_count = len(accounts)
+        try:
+            current_account_count = len(accounts)
+        except:
+            pass
 
         if current_account_count != prev_account_count:
             if executor:
