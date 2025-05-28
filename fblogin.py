@@ -101,44 +101,26 @@ import csv
 
 def load_accounts():
     pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
-    file_path = '/data/data/com.termux/files/home/storage/shared/Acc_Created.csv'
+    file_path = "/storage/emulated/0/Acc_Created.csv"
+    try:
+        if not os.path.exists(file_path):
+            pass
 
-    while True:
-        try:
-            print(f"Checking if {file_path} exists...")  # debug line
-            if not os.path.exists(file_path):
-                print(f"{file_path} does not exist. Retrying in 5 seconds...")
-                time.sleep(5)
-                continue
+        accounts = []
+        with open(file_path, newline='', encoding='utf-8-sig') as csvfile:
+            reader = csv.reader(csvfile)
+            for row in reader:
+                username = row[3].strip() if len(row) > 3 else ''
+                password = row[2].strip() if len(row) > 2 else ''
+                if not username or not password:
+                    continue
+                username = pattern.sub('', username)
+                accounts.append([username, password])
 
-            print(f"{file_path} found! Opening...")  # debug line
-            accounts = []
-            with open(file_path, newline='', encoding='latin-1') as csvfile:
-                reader = csv.DictReader(csvfile)
-                print(f"CSV fieldnames: {reader.fieldnames}")  # debug line
+        return accounts
 
-                for row in reader:
-                    print(f"Reading row: {row}")  # debug line
-                    username = row.get('ACCOUNT LINK')
-                    password = row.get('PASSWORD')
-                    print(f"username: {username}, password: {password}")  # debug line
-
-                    if not username or not password:
-                        print("Empty username or password, skipping...")  # debug line
-                        continue
-
-                    username = username.strip()
-                    password = password.strip()
-                    username = pattern.sub('', username)
-                    accounts.append([username, password])
-                    print(f"Account added: {username}, {password}")  # debug line
-
-            print(f"Accounts loaded: {accounts}")  # debug line
-            return accounts
-
-        except Exception as e:
-            print(f"Error occurred: {e}")
-            time.sleep(5)
+    except Exception as e:
+        pass
 
 
 def main():
