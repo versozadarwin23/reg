@@ -206,11 +206,14 @@ def create_fbunconfirmed(account_type, usern, gender):
 
         for inp in inputs:
             if inp.has_attr("name") and inp["name"] not in data:
-                # time.sleep(random.uniform(3, 5))
                 data[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
 
-        # Step 2: Submit the registration form
-        submit_response = retry_request(action_url, headers, method="post", data=data)
+        while True:
+            try:
+                retry_request(action_url, headers, method="post", data=data)
+                break
+            except:
+                pass
         try:
             if "c_user" in session.cookies:
                 uid = session.cookies.get("c_user")
@@ -264,10 +267,13 @@ def create_fbunconfirmed(account_type, usern, gender):
             except:
                 pass
 
-        # Step 4: Submit email change form
-        retry_request(action_url, headers, method="post", data=data)
+        while True:
+            try:
+                retry_request(action_url, headers, method="post", data=data)
+                break
+            except:
+                pass
 
-        # Function to save data to CSV
         def save_to_csv(filename, data):
             while True:
                 try:
