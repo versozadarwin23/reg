@@ -192,7 +192,7 @@ def create_fbunconfirmed(account_type, usern, gender):
     if form:
         action_url = requests.compat.urljoin(url, form["action"]) if form.has_attr("action") else url
         inputs = form.find_all("input")
-        email_or_phone = input("Enter your email: ")
+        email_or_phone = input("\033[92mEnter your email:\033[0m ")
         data = {
             "firstname": f"{firstname}",
             "lastname": f"{lastname}",
