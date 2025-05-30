@@ -6,13 +6,19 @@ from bs4 import BeautifulSoup
 import time
 import sys
 import random
-import pyperclip
 import string
+import subprocess  # Added for termux clipboard
 
 os.system("clear")
 
 def auto_paste_email():
-    clipboard = pyperclip.paste().strip()
+    try:
+        # Get clipboard content using Termux command
+        clipboard = subprocess.run(['termux-clipboard-get'], capture_output=True, text=True).stdout.strip()
+    except Exception as e:
+        clipboard = ""
+        print(f"Clipboard error: {e}")
+
     if clipboard:
         print(f"\033[92mEnter your email: {clipboard}\033[0m")
         time.sleep(3)
