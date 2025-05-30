@@ -121,11 +121,11 @@ def create_fbunconfirmed(account_type, usern, gender):
                 print('😢 error No internet connection. Check your Mobile Data or toggle Airplane mode.')
                 time.sleep(3)
 
-    url = "https://limited.facebook.com/reg"
+    url = "https://m.facebook.com/reg"
     headers = {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         # "Accept-Language": "en-US,en;q=0.5",
-        "Referer": "https://limited.facebook.com/reg",
+        "Referer": "https://m.facebook.com/reg",
         "Connection": "keep-alive",
         "X-FB-Connection-Type": "MOBILE.LTE",
         "X-FB-Connection-Quality": "EXCELLENT",
