@@ -265,6 +265,7 @@ def create_fbunconfirmed(account_type, usern, gender):
                 data["submit"] = "Add"
                 break
             except:
+                print('error email')
                 pass
 
         while True:
@@ -272,6 +273,7 @@ def create_fbunconfirmed(account_type, usern, gender):
                 retry_request(action_url, headers, method="post", data=data)
                 break
             except:
+                print('error email')
                 pass
 
         def save_to_csv(filename, data):
@@ -290,6 +292,36 @@ def create_fbunconfirmed(account_type, usern, gender):
 
         # Start of the block
         if "c_user" in session.cookies:
+            # 🟢 New: Check a URL using the active session
+            check_url = "https://m.facebook.com/changeemail/"  # Example: check settings page
+            try:
+                resp = session.get(check_url, headers=headers)
+                if resp.status_code == 200:
+                    # Do something with resp.text if you want to scrape
+                    pass
+                else:
+                    # Handle failed status code if needed
+                    pass
+            except Exception as e:
+                # Handle exceptions if needed
+                pass
+
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    form = soup.find('form', action=lambda x: x and 'checkpoint' in x)
+                    if form:
+                        print("\033[1;91m⚠️ Created account blocked try on off airplane mode % clear data facebook lite\033[0m")
+                        time.sleep(3)
+                        os.system("clear")
+                        return
+                    else:
+                        if attempt == max_retries - 1:
+                            form = None
+                except Exception:
+                    if attempt == max_retries - 1:
+                        form = None
+
             os.system("clear")
             print(f"\033[1;92m Account Email  | {emailsss}  | Pass  |  {password}  |\033[0m")
             # Process the result
