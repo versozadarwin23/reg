@@ -7,25 +7,27 @@ import time
 import sys
 import random
 import string
-import subprocess  # Added for termux clipboard
+import subprocess
 
 os.system("clear")
 
 def auto_paste_email():
     try:
-        # Get clipboard content using Termux command
+        # Try to get clipboard content using Termux clipboard utility
         clipboard = subprocess.run(['termux-clipboard-get'], capture_output=True, text=True).stdout.strip()
+        if clipboard:
+            print(f"\033[92mEnter your email: {clipboard}\033[0m")
+            time.sleep(3)
+            os.system("clear")
+            return clipboard
+    except FileNotFoundError:
+        # termux-clipboard-get not found
+        print("Termux clipboard command not found. Please enter your email manually.")
     except Exception as e:
-        clipboard = ""
         print(f"Clipboard error: {e}")
 
-    if clipboard:
-        print(f"\033[92mEnter your email: {clipboard}\033[0m")
-        time.sleep(3)
-        os.system("clear")
-        return clipboard
-    else:
-        return input("\033[92mEnter your email:\033[0m ")
+    # Fallback: manual input if clipboard is empty or error occurs
+    return input("\033[92mEnter your email:\033[0m ")
 
 def load_user_agents(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
