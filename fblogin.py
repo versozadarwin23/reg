@@ -23,12 +23,31 @@ success_count = 0
 error_count = 0
 logged_accounts = set()
 
-def record_result(section, text):
+def record_success(name, username, password, account_link, status):
     with lock:
-        with open('login_results.txt', 'a') as f:
-            f.write(f"[{section}] {text}\n")
+        with open('login_results.csv', 'a', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'STATUS'])
+            writer.writerow({
+                'NAME': name,
+                'USERNAME': username,
+                'PASSWORD': password,
+                'ACCOUNT LINK': account_link,
+                'STATUS': status
+            })
 
-def keep_alive(email, password):
+def record_error(name, username, password, account_link, status):
+    with lock:
+        with open('login_errors.csv', 'a', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'STATUS'])
+            writer.writerow({
+                'NAME': name,
+                'USERNAME': username,
+                'PASSWORD': password,
+                'ACCOUNT LINK': account_link,
+                'STATUS': status
+            })
+
+def keep_alive(name, username, password, account_link):
     global success_count, error_count
 
     session = requests.Session()
@@ -38,21 +57,21 @@ def keep_alive(email, password):
 
         form = soup.find('form', {'id': 'login_form'})
         if not form:
-            print(f"[❌] [{email}] Login form not found.")
+            print(f"[❌] [{name}] Login form not found.")
             with lock:
                 error_count += 1
-            record_result("ERROR", f"{email}\tLogin form not found.")
+            record_error(name, username, password, account_link, 'Login form not found')
             return
 
         action = form.get('action')
         post_url = 'https://m.facebook.com' + action
 
-        payload = {'email': email, 'pass': password}
+        payload = {'email': username, 'pass': password}
         for input_tag in form.find_all('input'):
-            name = input_tag.get('name')
+            name_input = input_tag.get('name')
             value = input_tag.get('value', '')
-            if name and name not in payload:
-                payload[name] = value
+            if name_input and name_input not in payload:
+                payload[name_input] = value
 
         response = session.post(post_url, data=payload, headers=headers, timeout=10, allow_redirects=True)
 
@@ -60,18 +79,18 @@ def keep_alive(email, password):
             uid = session.cookies.get("c_user")
             with lock:
                 success_count += 1
-            record_result("SUCCESS", f"{email}\t{uid}")
+            record_success(name, username, password, account_link, f'SUCCESS (UID: {uid})')
         else:
-            print(f"[❌] [{email}] Login failed.")
+            print(f"[❌] {name} Login failed.")
             with lock:
                 error_count += 1
-            record_result("ERROR", f"{email}\tLogin failed.")
+            record_error(name, username, password, account_link, 'Login failed')
             return
     except Exception as e:
-        print(f"[⚠️] [{email}] Login error: {e}")
+        print(f"[⚠️] [{name}] Login error: {e}")
         with lock:
             error_count += 1
-        record_result("ERROR", f"{email}\tError: {e}")
+        record_error(name, username, password, account_link, f'Error: {e}')
         return
 
     start_time = time.time()
@@ -89,12 +108,12 @@ def keep_alive(email, password):
                 minutes = elapsed_minutes % 60
                 active_time = f"{hours}h {minutes}m" if hours > 0 else f"{minutes}m"
                 profile_link = f'https://www.facebook.com/profile.php?id={uid}'
-                print(f"[💓] [{email}] Keep-alive OK: {profile_link} | Active: {active_time}")
+                print(f"[💓] {name} Keep-alive OK: {profile_link} | Active: {active_time}")
             else:
-                print(f"[❌] [{email}] Session expired.")
+                print(f"[❌] [{name}] Session expired.")
                 return
         except Exception as e:
-            print(f"[⚠️] [{email}] Keep-alive error: {e}")
+            print(f"[⚠️] [{name}] Keep-alive error: {e}")
 
         time.sleep(60)
 
@@ -106,21 +125,30 @@ def load_accounts():
             with open("/storage/emulated/0/Acc_Created.csv", newline='', encoding='latin-1') as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
-                    username = row.get('ACCOUNT LINK', '').strip()
+                    name = row.get('NAME', '').strip()
+                    account_link = row.get('ACCOUNT LINK', '').strip()
                     password = row.get('PASSWORD', '').strip()
-                    if not username or not password:
+                    if not account_link or not password:
                         continue
-                    # Remove URL prefix if present
-                    username = pattern.sub('', username)
-                    accounts.append([username, password])
-            return accounts  # success, so we break out of the loop by returning
+                    username = pattern.sub('', account_link)
+                    accounts.append([name, username, password, account_link])
+            return accounts
         except Exception as e:
+            time.sleep(3)
+            os.system("clear")
             print(f"Error loading accounts: {e}. Retrying...")
 
 def main():
-    with open('login_results.txt', 'w') as f:
-        f.write("=== LOGIN SUCCESS ===\n")
-        f.write("=== LOGIN ERRORS ===\n")
+    # Initialize CSV files with headers
+    with open('login_results.csv', 'w', newline='', encoding='utf-8') as csvfile:
+        fieldnames = ['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'STATUS']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+
+    with open('login_errors.csv', 'w', newline='', encoding='utf-8') as csvfile:
+        fieldnames = ['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'STATUS']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
 
     executor = None
     prev_account_count = 0
@@ -137,11 +165,11 @@ def main():
             prev_account_count = current_account_count
             print(f"[🔄] Restarted ThreadPoolExecutor with max_workers={max_workers}")
 
-        for email, password in accounts:
-            if email not in logged_accounts:
-                logged_accounts.add(email)
-                executor.submit(keep_alive, email, password)
-                print(f"[➕] New account added and keep-alive started: {email}")
+        for name, username, password, account_link in accounts:
+            if username not in logged_accounts:
+                logged_accounts.add(username)
+                executor.submit(keep_alive, name, username, password, account_link)
+                print(f"[➕] New account added and keep-alive started: {name}, {username}, {password}, {account_link}")
 
         time.sleep(60)
 
