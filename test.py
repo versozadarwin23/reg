@@ -3,8 +3,11 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import random
-import string
-from multiprocessing.dummy import Pool as ThreadPool  # Using threads instead of processes!
+from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
+
+# Thread-safe CSV writing
+lock = Lock()
 
 def load_names_from_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -41,12 +44,13 @@ def generate_user_details(account_type, gender):
     return firstname, lastname, date, year, month, phone_number, password
 
 def save_to_csv(filename, data):
-    file_exists = os.path.isfile(filename)
-    with open(filename, mode='a', newline='') as file:
-        writer = csv.writer(file)
-        if not file_exists or os.path.getsize(filename) == 0:
-            writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
-        writer.writerow(data)
+    with lock:
+        file_exists = os.path.isfile(filename)
+        with open(filename, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            if not file_exists or os.path.getsize(filename) == 0:
+                writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
+            writer.writerow(data)
 
 def create_fbunconfirmed(args):
     account_type, gender, email = args
@@ -100,11 +104,10 @@ def main():
     account_type = 1
     gender = 1
 
-    # Prepare args for 5 threads
     worker_args = [(account_type, gender, email) for _ in range(5)]
 
-    with ThreadPool(5) as pool:  # Using threads to avoid Termux multiprocessing issues!
-        pool.map(create_fbunconfirmed, worker_args)
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        executor.map(create_fbunconfirmed, worker_args)
 
 if __name__ == "__main__":
     main()
