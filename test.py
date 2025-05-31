@@ -79,9 +79,10 @@ def create_fbunconfirmed(args):
             "birthday_year": str(year),
             "reg_email__": email,
             "sex": str(gender),
-            "encpass": password,
+            "pass": password,     # <-- Ito ang tama para sa password field!
             "submit": "Sign Up"
         }
+        # Include any other hidden fields
         for inp in inputs:
             if inp.has_attr("name") and inp["name"] not in data:
                 data[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
