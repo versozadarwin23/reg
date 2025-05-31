@@ -19,40 +19,105 @@ windows_headers = {
 }
 
 lock = Lock()
+file_lock = Lock()
 success_count = 0
 error_count = 0
 logged_accounts = set()
 
-def record_success(name, username, password, account_link, status):
+
+def update_status_in_acc_created(account_link, status):
+    with file_lock:
+        try:
+            # Read all rows first
+            with open("/storage/emulated/0/Acc_Created.csv", 'r', encoding='latin-1', newline='') as csvfile:
+                rows = list(csv.DictReader(csvfile))
+
+            if not rows:
+                print("[!] Acc_Created.csv is empty. Cannot update status.")
+                return
+
+            # If STATUS column doesn't exist, add it to all rows
+            if 'STATUS' not in rows[0]:
+                for row in rows:
+                    row['STATUS'] = ''
+
+            # Update STATUS for matching account_link
+            updated = False
+            for row in rows:
+                if row.get('ACCOUNT LINK') == account_link:
+                    row['STATUS'] = status
+                    updated = True
+                    break
+
+            if not updated:
+                print(f"[!] No matching ACCOUNT LINK found for status update: {account_link}")
+                # Optionally, add a new row here if needed
+
+            # Write back all rows with updated STATUS
+            with open('Acc_Created.csv', 'w', encoding='latin-1', newline='') as csvfile:
+                fieldnames = rows[0].keys()
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(rows)
+
+        except Exception as e:
+            print(f"Error updating status in Acc_Created.csv: {e}")
+
+
+def record_success(name, login_used, password, account_link, status):
     with lock:
         with open('login_results.csv', 'a', newline='', encoding='utf-8') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'STATUS'])
+            writer = csv.DictWriter(csvfile,
+                                    fieldnames=['NAME', 'USED FOR LOGIN', 'PASSWORD', 'ACCOUNT LINK', 'STATUS'])
             writer.writerow({
                 'NAME': name,
-                'USERNAME': username,
+                'USED FOR LOGIN': login_used,
                 'PASSWORD': password,
                 'ACCOUNT LINK': account_link,
                 'STATUS': status
             })
 
-def record_error(name, username, password, account_link, status):
+
+def record_error(name, login_used, password, account_link, status):
     with lock:
         with open('login_errors.csv', 'a', newline='', encoding='utf-8') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'STATUS'])
+            writer = csv.DictWriter(csvfile,
+                                    fieldnames=['NAME', 'USED FOR LOGIN', 'PASSWORD', 'ACCOUNT LINK', 'STATUS'])
             writer.writerow({
                 'NAME': name,
-                'USERNAME': username,
+                'USED FOR LOGIN': login_used,
                 'PASSWORD': password,
                 'ACCOUNT LINK': account_link,
                 'STATUS': status
             })
+
+
+def try_login(session, post_url, payload, name, username, password, account_link, max_retries=3):
+    login_used = username if username else account_link
+    print(f"[🔎] Trying login for: {name} | USING: {login_used}")
+
+    for i in range(max_retries):
+        try:
+            response = session.post(post_url, data=payload, headers=headers, timeout=10, allow_redirects=True)
+            if "c_user" in session.cookies:
+                print(f"[✅] Login successful for: {name} | USING: {login_used}")
+                return True, login_used, "Login successful"
+            else:
+                print(f"[❌] Attempt {i + 1}: Login failed for {name} | USING: {login_used}")
+        except Exception as e:
+            print(f"[⚠️] Attempt {i + 1}/{max_retries} error for {name} | USING: {login_used} | Error: {e}")
+            time.sleep(2)
+
+    print(f"[❌] All attempts failed for {name} | USING: {login_used}")
+    return False, login_used, "Login failed"
+
 
 def keep_alive(name, username, password, account_link):
     global success_count, error_count
 
     session = requests.Session()
     try:
-        login_page = session.get('https://m.facebook.com/login', headers=headers, timeout=10, allow_redirects=True)
+        login_page = session.get('https://m.facebook.com/login', headers=headers, timeout=20, allow_redirects=True)
         soup = BeautifulSoup(login_page.text, 'html.parser')
 
         form = soup.find('form', {'id': 'login_form'})
@@ -61,6 +126,7 @@ def keep_alive(name, username, password, account_link):
             with lock:
                 error_count += 1
             record_error(name, username, password, account_link, 'Login form not found')
+            update_status_in_acc_created(account_link, 'Login form not found')
             return
 
         action = form.get('action')
@@ -73,24 +139,26 @@ def keep_alive(name, username, password, account_link):
             if name_input and name_input not in payload:
                 payload[name_input] = value
 
-        response = session.post(post_url, data=payload, headers=headers, timeout=10, allow_redirects=True)
+        success, login_used, status = try_login(session, post_url, payload, name, username, password, account_link)
 
-        if "c_user" in session.cookies:
+        if success:
             uid = session.cookies.get("c_user")
             with lock:
                 success_count += 1
-            record_success(name, username, password, account_link, f'SUCCESS (UID: {uid})')
+            record_success(name, login_used, password, account_link, 'Login Success')
+            update_status_in_acc_created(account_link, 'Login Success')
         else:
-            print(f"[❌] {name} Login failed.")
             with lock:
                 error_count += 1
-            record_error(name, username, password, account_link, 'Login failed')
+            record_error(name, login_used, password, account_link, status)
+            update_status_in_acc_created(account_link, status)
             return
     except Exception as e:
-        print(f"[⚠️] [{name}] Login error: {e}")
+        print(f"[⚠️] [{name}] Login Error: {e}")
         with lock:
             error_count += 1
         record_error(name, username, password, account_link, f'Error: {e}')
+        update_status_in_acc_created(account_link, f'Error: {e}')
         return
 
     start_time = time.time()
@@ -108,21 +176,22 @@ def keep_alive(name, username, password, account_link):
                 minutes = elapsed_minutes % 60
                 active_time = f"{hours}h {minutes}m" if hours > 0 else f"{minutes}m"
                 profile_link = f'https://www.facebook.com/profile.php?id={uid}'
-                print(f"[💓] {name} Keep-alive OK: {profile_link} | Active: {active_time}")
+                print(f"\033[92m[✔️] {name} Keep-alive OK: {profile_link} | Active: {active_time}\033[0m")
             else:
-                print(f"[❌] [{name}] Session expired.")
+                print(f"\033[91m[❌] [{name}] Session expired.\033[0m")
                 return
         except Exception as e:
             print(f"[⚠️] [{name}] Keep-alive error: {e}")
 
         time.sleep(60)
 
+
 def load_accounts():
     while True:
         try:
             accounts = []
             pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
-            with open("/storage/emulated/0/Acc_Created.csv", newline='', encoding='latin-1') as csvfile:
+            with open("Acc_Created.csv", newline='', encoding='latin-1') as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
                     name = row.get('NAME', '').strip()
@@ -134,19 +203,18 @@ def load_accounts():
                     accounts.append([name, username, password, account_link])
             return accounts
         except Exception as e:
-            time.sleep(3)
-            os.system("clear")
             print(f"Error loading accounts: {e}. Retrying...")
+
 
 def main():
     # Initialize CSV files with headers
-    with open('login_results.csv', 'w', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'STATUS']
+    with open('/storage/emulated/0/login_results.csv', 'w', newline='', encoding='utf-8') as csvfile:
+        fieldnames = ['NAME', 'USED FOR LOGIN', 'PASSWORD', 'ACCOUNT LINK', 'STATUS']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
-    with open('login_errors.csv', 'w', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'STATUS']
+    with open('/storage/emulated/0/login_errors.csv', 'w', newline='', encoding='utf-8') as csvfile:
+        fieldnames = ['NAME', 'USED FOR LOGIN', 'PASSWORD', 'ACCOUNT LINK', 'STATUS']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
@@ -169,9 +237,11 @@ def main():
             if username not in logged_accounts:
                 logged_accounts.add(username)
                 executor.submit(keep_alive, name, username, password, account_link)
-                print(f"[➕] New account added and keep-alive started: {name}, {username}, {password}, {account_link}")
+                print(
+                    f"[➕] New account added and keep-alive started: {name} | {username} | {password} | {account_link}")
 
         time.sleep(60)
+
 
 if __name__ == "__main__":
     main()
