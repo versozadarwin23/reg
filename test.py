@@ -2,10 +2,9 @@ import csv
 import os
 import requests
 from bs4 import BeautifulSoup
-import time
 import random
 import string
-from multiprocessing import Pool, current_process
+from multiprocessing.dummy import Pool as ThreadPool  # Using threads instead of processes!
 
 def load_names_from_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -53,7 +52,6 @@ def create_fbunconfirmed(args):
     account_type, gender, email = args
     firstname, lastname, date, year, month, phone_number, password = generate_user_details(account_type, gender)
 
-    # Session setup
     session = requests.Session()
     headers = {
         'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]'
@@ -65,7 +63,7 @@ def create_fbunconfirmed(args):
         soup = BeautifulSoup(response.text, 'html.parser')
         form = soup.find("form")
         if not form:
-            print(f"[{current_process().name}] ⚠️ Form not found. Skipping.")
+            print(f"[THREAD] ⚠️ Form not found. Skipping.")
             return
         action_url = requests.compat.urljoin(url, form["action"])
         inputs = form.find_all("input")
@@ -90,22 +88,22 @@ def create_fbunconfirmed(args):
             profile_link = f"https://www.facebook.com/profile.php?id={uid}"
             full_name = f"{firstname} {lastname}"
             save_to_csv("/storage/emulated/0/Acc_Created.csv", [full_name, email, password, profile_link])
-            print(f"[{current_process().name}] ✅ Account created: {full_name} | {email} | {password}")
+            print(f"[THREAD] ✅ Account created: {full_name} | {email} | {password}")
         else:
-            print(f"[{current_process().name}] ⚠️ Failed to create account.")
+            print(f"[THREAD] ⚠️ Failed to create account.")
     except Exception as e:
-        print(f"[{current_process().name}] ❌ Error: {str(e)}")
+        print(f"[THREAD] ❌ Error: {str(e)}")
 
 def main():
     os.system("clear")
-    email = input("Enter your email (same for all workers): ").strip()
+    email = input("Enter your email (same for all threads): ").strip()
     account_type = 1
     gender = 1
 
-    # Prepare args for 5 workers
+    # Prepare args for 5 threads
     worker_args = [(account_type, gender, email) for _ in range(5)]
 
-    with Pool(processes=5) as pool:
+    with ThreadPool(5) as pool:  # Using threads to avoid Termux multiprocessing issues!
         pool.map(create_fbunconfirmed, worker_args)
 
 if __name__ == "__main__":
