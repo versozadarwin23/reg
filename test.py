@@ -79,7 +79,7 @@ def create_fbunconfirmed(args):
             "birthday_year": str(year),
             "reg_email__": email,
             "sex": str(gender),
-            "pass": password,     # <-- Ito ang tama para sa password field!
+            "encpass": password,     # <-- Ito ang tama para sa password field!
             "submit": "Sign Up"
         }
         # Include any other hidden fields
