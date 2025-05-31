@@ -3,11 +3,8 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import random
-from concurrent.futures import ThreadPoolExecutor
-from threading import Lock
-
-# Thread-safe CSV writing
-lock = Lock()
+import string
+from multiprocessing.dummy import Pool as ThreadPool  # Using threads instead of processes!
 
 def load_names_from_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -44,13 +41,12 @@ def generate_user_details(account_type, gender):
     return firstname, lastname, date, year, month, phone_number, password
 
 def save_to_csv(filename, data):
-    with lock:
-        file_exists = os.path.isfile(filename)
-        with open(filename, mode='a', newline='') as file:
-            writer = csv.writer(file)
-            if not file_exists or os.path.getsize(filename) == 0:
-                writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
-            writer.writerow(data)
+    file_exists = os.path.isfile(filename)
+    with open(filename, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        if not file_exists or os.path.getsize(filename) == 0:
+            writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
+        writer.writerow(data)
 
 def create_fbunconfirmed(args):
     account_type, gender, email = args
@@ -89,7 +85,7 @@ def create_fbunconfirmed(args):
         post_response = session.post(action_url, headers=headers, data=data, timeout=10)
         if "c_user" in session.cookies:
             uid = session.cookies.get("c_user")
-            profile_link = f"https://www.facebook.com/profile.php?id={uid}"
+            profile_link = f"https://m.facebook.com/profile.php?id={uid}"
             full_name = f"{firstname} {lastname}"
             save_to_csv("/storage/emulated/0/Acc_Created.csv", [full_name, email, password, profile_link])
             print(f"[THREAD] ✅ Account created: {full_name} | {email} | {password}")
@@ -98,16 +94,43 @@ def create_fbunconfirmed(args):
     except Exception as e:
         print(f"[THREAD] ❌ Error: {str(e)}")
 
+    confimation_code = 'https://www.facebook.com/confirmemail.php'
+    # Step 1: GET the form page first to get hidden inputs (like fb_dtsg and jazoest)
+    response = session.get(confimation_code)
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    # Extract hidden inputs
+    form = soup.find('form', name='code')
+    hidden_inputs = form.find_all('input', type='hidden')
+
+    post_data = {}
+    for hidden_input in hidden_inputs:
+        post_data[hidden_input['name']] = hidden_input['value']
+
+    # Add the confirmation code (the 5-digit code you received)
+    confirmation_codes = "12345"  # replace with your actual code
+    post_data['code'] = confirmation_codes
+
+    # Add the other inputs (confirm button is disabled, so no need to include it)
+
+    # Step 2: POST the data
+    post_response = session.post(confimation_code, data=post_data)
+
+    print(post_response.status_code)
+    print(post_response.text)  # to check if submission was successful or if there's an error
+
 def main():
     os.system("clear")
     email = input("Enter your email (same for all threads): ").strip()
     account_type = 1
     gender = 1
 
+    # Prepare args for 5 threads
     worker_args = [(account_type, gender, email) for _ in range(5)]
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        executor.map(create_fbunconfirmed, worker_args)
+    with ThreadPool(5) as pool:  # Using threads to avoid Termux multiprocessing issues!
+        pool.map(create_fbunconfirmed, worker_args)
 
 if __name__ == "__main__":
     main()
