@@ -6,30 +6,33 @@ from bs4 import BeautifulSoup
 import time
 import sys
 import random
+import string
 
 os.system("clear")
+
+custom_password = None  # global variable to store password
+
 
 def load_user_agents(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         user_agents = [line.strip() for line in file if line.strip()]
     return user_agents
 
+
 def get_random_user_agent(file_path):
     user_agents = load_user_agents(file_path)
     return random.choice(user_agents)
 
-# Example usage:
 
 MAX_RETRIES = 3
 RETRY_DELAY = 2
-# ANSI color codes
 
-# Emojis and Symbols
 SUCCESS = "✅"
 FAILURE = "✅"
 INFO = "✅"
 WARNING = "⚠️"
 LOADING = "⏳"
+
 
 def load_names_from_file(file_path):
     with open(file_path, 'r') as file:
@@ -38,24 +41,20 @@ def load_names_from_file(file_path):
 
 def get_names(account_type, gender):
     if account_type == 1:  # Philippines
-        # Load male and last names from file (ensure correct file paths)
         male_first_names = load_names_from_file("first_name.txt")
         last_names = load_names_from_file("last_name.txt")
-        female_first_names = []  # Female names not used for this account type
-    else:  # Other account type
-        male_first_names = []  # Not used
+        female_first_names = []
+    else:
+        male_first_names = []
         female_first_names = load_names_from_file('path_to_female_first_names.txt')
         last_names = load_names_from_file('path_to_last_names.txt')
 
-    # Select first name based on gender
     firstname = random.choice(male_first_names if gender == 1 else female_first_names)
     lastname = random.choice(last_names)
-
     return firstname, lastname
 
 
 def generate_random_phone_number():
-    """Generate a random phone number."""
     random_number = str(random.randint(1000000, 9999999))
     third = random.randint(0, 4)
     forth = random.randint(1, 7)
@@ -63,49 +62,49 @@ def generate_random_phone_number():
         f"9{third}{forth}{random_number}",
         f"9{third}{forth}{random_number}",
     ]
-    number = random.choice(phone_formats)
+    return random.choice(phone_formats)
 
-    return number
-
-
-import random
-import string
 
 def generate_random_password():
-    base = 'Promises'  # fixed part
+    base = 'Promises'
     symbols = '!@#$%^&*()_+-='
-    remaining_length = 3 - len(base)
-
-    # Ensure at least one symbol is included (only if base is short enough, which it's not)
-    if remaining_length > 0:
-        mixed_chars = string.digits + symbols
-        extra = ''.join(random.choices(mixed_chars, k=remaining_length - 1))
-        extra += random.choice(symbols)  # ensure at least one symbol
-        extra = ''.join(random.sample(extra, len(extra)))  # shuffle extra chars
-    else:
-        extra = ''
-
-    six_digit = str(random.randint(100000, 999999))  # random 6-digit number
-    password = base + extra + six_digit
+    six_digit = str(random.randint(100000, 999999))
+    password = base + six_digit
     return password
 
 
-
-def generate_user_details(account_type, gender):
-    """Generate random user details."""
+def generate_user_details(account_type, gender, password=None):
     firstname, lastname = get_names(account_type, gender)
     year = random.randint(1978, 2001)
     date = random.randint(1, 28)
     month = random.randint(1, 12)
-    password = generate_random_password()
+    if password is None:
+        password = generate_random_password()
     phone_number = generate_random_phone_number()
     return firstname, lastname, date, year, month, phone_number, password
 
 
-def create_fbunconfirmed(account_type, usern, gender):
-    global uid, profie_link, profile_link, token, profile_id, data_to_save, filename, save_to_csv
-    asdf = ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
-    firstname, lastname, date, year, month, phone_number, password = generate_user_details(account_type, gender)
+custom_password_base = None  # define this globally at top
+
+def create_fbunconfirmed(account_type, usern, gender, password=None):
+    global custom_password_base, profile_id, emailsss
+
+    # If no password supplied, handle base password logic
+    if password is None:
+        if custom_password_base is None:
+            inp = input("\033[1;92m😊 Enter password to continue: \033[0m")
+            if inp.strip() == '':
+                custom_password_base = None
+            else:
+                custom_password_base = inp.strip()
+
+        if custom_password_base is None:
+            password = generate_random_password()
+        else:
+            six_digit = str(random.randint(100000, 999999))
+            password = custom_password_base + six_digit
+
+    firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender, password)
 
     def check_page_loaded(url, headers):
         while True:
@@ -122,12 +121,11 @@ def create_fbunconfirmed(account_type, usern, gender):
     url = "https://m.facebook.com/reg"
     headers = {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        # "Accept-Language": "en-US,en;q=0.5",
         "Referer": "https://m.facebook.com/reg",
         "Connection": "keep-alive",
         "X-FB-Connection-Type": "MOBILE.LTE",
         "X-FB-Connection-Quality": "EXCELLENT",
-        "X-FB-Net-HNI": "51502",  # Smart PH
+        "X-FB-Net-HNI": "51502",
         "X-FB-SIM-HNI": "51502",
         "X-FB-HTTP-Engine": "Liger",
         'x-fb-connection-type': 'Unknown',
@@ -142,22 +140,16 @@ def create_fbunconfirmed(account_type, usern, gender):
             session = requests.Session()
             break
         except:
-            print('seasion error')
+            print('session error')
             pass
 
-    # # Save entire page as HTML
-    # with open('confirmation_page.html', 'w', encoding='utf-8') as f:
-    #     f.write(soup.prettify())
-    # print("Saved HTML successfully.")
-    # Polling loop
     while True:
         form = check_page_loaded(url, headers)
         if form:
-            break  # Exit loop if form is found
+            break
         else:
             print("Waiting for form to load...")
 
-    # Retry request function
     def retry_request(url, headers, method="get", data=None):
         global response
         while True:
@@ -166,23 +158,18 @@ def create_fbunconfirmed(account_type, usern, gender):
                     response = session.get(url, headers=headers)
                 elif method == "post":
                     response = session.post(url, headers=headers, data=data)
-                # Check for successful response
                 if response.status_code == 200:
                     return response
                 else:
                     print(f"Network error turn of and on airplane mode")
             except requests.exceptions.ConnectionError:
-                sys.exit()  # exit if not logged in
+                sys.exit()
 
     while True:
         try:
             response = retry_request(url, headers)
             soup = BeautifulSoup(response.text, "html.parser")
             form = soup.find("form")
-            # # Save entire page as HTML
-            # with open('confirmation_page.html', 'w', encoding='utf-8') as f:
-            #     f.write(soup.prettify())
-            # print("Saved HTML successfully.")
             break
         except:
             pass
@@ -198,7 +185,7 @@ def create_fbunconfirmed(account_type, usern, gender):
             "birthday_year": f"{year}",
             "reg_email__": f"{phone_number}",
             "sex": f"{gender}",
-            "encpass": f"{password}",
+            "encpass": f"{used_password}",
             "submit": "Sign Up"
         }
 
@@ -212,6 +199,7 @@ def create_fbunconfirmed(account_type, usern, gender):
                 break
             except:
                 pass
+
         try:
             if "c_user" in session.cookies:
                 uid = session.cookies.get("c_user")
@@ -220,10 +208,26 @@ def create_fbunconfirmed(account_type, usern, gender):
                 print("\033[1;91m⚠️ Create Account Failed. Retrying...\033[0m")
                 time.sleep(3)
                 os.system("clear")
-                return  # exit the function so NEMAIN() can call again
+                return
         except Exception as e:
             print("An error occurred:", str(e))
             sys.exit()
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                form = soup.find('form', action=lambda x: x and 'checkpoint' in x)
+                if form:
+                    print(
+                        "\033[1;91m⚠️ Created account blocked try on off airplane mode % clear data facebook lite\033[0m")
+                    time.sleep(3)
+                    os.system("clear")
+                    return
+                else:
+                    if attempt == max_retries - 1:
+                        form = None
+            except Exception:
+                if attempt == max_retries - 1:
+                    form = None
 
     while True:
         try:
@@ -268,104 +272,57 @@ def create_fbunconfirmed(account_type, usern, gender):
                 print('error email')
                 pass
 
+        os.system("clear")
+        print(f"\033[1;92m Account Email  | {emailsss}  | Pass  |  {password}  |\033[0m")
+
         while True:
             try:
                 retry_request(action_url, headers, method="post", data=data)
                 break
             except:
-                print('error email')
-                pass
+                print("\033[1;91m⚠️😢 Error: Invalid email. Please use another email.\033[0m")
+                time.sleep(3)
+                os.system("clear")
+                return
 
-        def save_to_csv(filename, data):
-            while True:
-                try:
-                    file_exists = os.path.isfile(filename)
-                    with open(filename, mode='a', newline='') as file:
-                        writer = csv.writer(file)
-                        # If the file is new or empty, write headers first
-                        if not file_exists or os.path.getsize(filename) == 0:
-                            writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
-                        writer.writerow(data)
-                    break  # success!
-                except Exception as e:
-                    print(f"Error saving to {filename}: {e}. Retrying...")
+    filename = "/storage/emulated/0/Acc_Created.csv"
+    full_name = f"{firstname} {lastname}"
+    data_to_save = [full_name, phone_number, used_password, profile_id + '\t']
 
-        # Start of the block
-        if "c_user" in session.cookies:
-            # 🟢 New: Check a URL using the active session
-            check_url = "https://m.facebook.com/changeemail/"  # Example: check settings page
-            try:
-                resp = session.get(check_url, headers=headers)
-                if resp.status_code == 200:
-                    # Do something with resp.text if you want to scrape
-                    pass
-                else:
-                    # Handle failed status code if needed
-                    pass
-            except Exception as e:
-                # Handle exceptions if needed
-                pass
-
-            max_retries = 3
-            for attempt in range(max_retries):
-                try:
-                    form = soup.find('form', action=lambda x: x and 'checkpoint' in x)
-                    if form:
-                        print("\033[1;91m⚠️ Created account blocked try on off airplane mode % clear data facebook lite\033[0m")
-                        time.sleep(3)
-                        os.system("clear")
-                        return
-                    else:
-                        if attempt == max_retries - 1:
-                            form = None
-                except Exception:
-                    if attempt == max_retries - 1:
-                        form = None
-
-            os.system("clear")
-            print(f"\033[1;92m Account Email  | {emailsss}  | Pass  |  {password}  |\033[0m")
-            # Process the result
-
-        user_input = input(
-            "\033[32mType b if the account is blocked, or press Enter if not blocked to continue:\033[0m ")
-        if user_input == "b":
-            print("\033[1;91m⚠️Creating another account because your account got blocked 😔\033[0m")
-            time.sleep(3)
-            os.system("clear")
-            return
-
-        # Otherwise, proceed
-        filename = "/storage/emulated/0/Acc_Created.csv"
-        full_name = f"{firstname} {lastname}"
-        data_to_save = [full_name, phone_number, password, profile_id+'\t']
-        print(f"\033[1;92m✅ Account created successfully! 😊 {full_name} |  {phone_number} | {password} |\033[0m")
-        time.sleep(3)
-        os.system("clear")
+    def save_to_csv(filename, data):
         while True:
             try:
-                save_to_csv(filename, data_to_save)
-                print('\033[1;92m✅ Created Account has been saved 😊')
-                time.sleep(3)
+                file_exists = os.path.isfile(filename)
+                with open(filename, mode='a', newline='') as file:
+                    writer = csv.writer(file)
+                    if not file_exists or os.path.getsize(filename) == 0:
+                        writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
+                    writer.writerow(data)
                 break
-            except:
-                pass
+            except Exception as e:
+                print(f"Error saving to {filename}: {e}. Retrying...")
+
+    while True:
+        try:
+            save_to_csv(filename, data_to_save)
+            print(
+                f"\033[1;92m✅ Created Account has been saved 😊 {full_name} | {emailsss} | {used_password} |\033[0m")
+            time.sleep(3)
+            break
+        except:
+            pass
+
+
 def NEMAIN():
     os.system("clear")
     max_create = 1
     account_type = 1
     gender = 1
-    oks = []
-    cps = []
     for i in range(max_create):
-        usern = "ali"  # Replace with actual username logic
-        result = create_fbunconfirmed(account_type, usern, gender)
+        usern = "ali"
+        create_fbunconfirmed(account_type, usern, gender)
 
-        if result:
-            oks.append(result)
-        else:
-            cps.append(result)
 
-# Instead of directly calling NEMAIN(), wrap it in a loop
 if __name__ == "__main__":
     while True:
         NEMAIN()
