@@ -285,6 +285,13 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
                 os.system("clear")
                 return
 
+    user_input = input(
+        "\033[32mType b if the account is blocked, or press Enter if not blocked to continue:\033[0m ")
+    if user_input == "b":
+        print("\033[1;91m⚠️Creating another account because your account got blocked 😔\033[0m")
+        time.sleep(3)
+        os.system("clear")
+        return
     filename = "/storage/emulated/0/Acc_Created.csv"
     full_name = f"{firstname} {lastname}"
     data_to_save = [full_name, phone_number, used_password, profile_id + '\t']
