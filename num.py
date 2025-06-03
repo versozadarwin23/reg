@@ -273,7 +273,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
                 pass
 
         os.system("clear")
-        print(f"\033[1;92m Account Email  | {emailsss}  | Pass  |  {password}  |\033[0m")
+        print(f"\033[1;92m Account| Pass | {password} |\033[0m")
 
         while True:
             try:
