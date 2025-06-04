@@ -274,7 +274,7 @@ def create_fbunconfirmed(account_type, usern, gender):
                         form = None
 
             os.system("clear")
-            print(f"\033[1;92m Account Email {email_or_phone} |{password}| \033[0m")
+            print(f"\033[1;92m      Account Pass |{password}| \033[0m")
             # Process the result
 
         user_input = input("Type b if the account is blocked, or press Enter if not blocked to continue:")
