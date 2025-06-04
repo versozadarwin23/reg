@@ -288,7 +288,7 @@ def create_fbunconfirmed(account_type, usern, gender):
         filename = "/storage/emulated/0/Acc_Created.csv"
         full_name = f"{firstname} {lastname}"
         data_to_save = [full_name, email_or_phone, password, profile_id+'\t']
-        print(f"\033[1;92m✅ Account created successfully! 😊 {full_name} |  {email_or_phone} | {password} |\033[0m")
+        print(f"\033[1;92m✅ Account created successfully! 😊 {full_name} |  Pass | {password} |\033[0m")
         time.sleep(3)
         os.system("clear")
         while True:
