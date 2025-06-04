@@ -310,6 +310,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
                 print(f"Error saving to {filename}: {e}. Retrying...")
 
     while True:
+        os.system("clear")
         try:
             save_to_csv(filename, data_to_save)
             print(
