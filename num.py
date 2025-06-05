@@ -288,7 +288,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
 
         os.system("clear")
         time.sleep(3)
-        print(f"\033[1;92m Account| Pass | {password} |\033[0m")
+        print(f"\033[1;92m          Account| Pass | {password} |\033[0m")
 
         while True:
             try:
