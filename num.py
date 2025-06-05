@@ -209,6 +209,50 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
                 time.sleep(3)
                 os.system("clear")
                 return
+
+            while True:
+                try:
+                    # Step 3: Change email
+                    change_email_url = "https://m.facebook.com/changeemail/"
+                    headerssss = {
+                        "sec-ch-ua-platform": '"Android"',
+                        "x-requested-with": "XMLHttpRequest",
+                        "accept": "*/*",
+                        'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
+                        "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
+                        "sec-ch-ua-mobile": "?1",
+                        "sec-fetch-site": "same-origin",
+                        "sec-fetch-mode": "cors",
+                        "sec-fetch-dest": "empty",
+                        "accept-encoding": "gzip, deflate,",
+                        "accept-language": "en-US,en;q=0.9",
+                        "priority": "u=1, i"
+                    }
+                    email_response = retry_request(change_email_url, headerssss)
+                    soup = BeautifulSoup(email_response.text, "html.parser")
+                    form = soup.find("form")
+                    break
+                except:
+                    pass
+
+            if form:
+                action_url = requests.compat.urljoin(change_email_url, form["action"]) if form.has_attr(
+                    "action") else change_email_url
+                inputs = form.find_all("input")
+                data = {}
+                for inp in inputs:
+                    if inp.has_attr("name") and inp["name"] not in data:
+                        data[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
+                while True:
+                    try:
+                        emailsss = input("Please enter your email: ")
+                        data["new"] = emailsss
+                        data["submit"] = "Add"
+                        break
+                    except:
+                        print('error email')
+                        pass
+
         except Exception as e:
             print("An error occurred:", str(e))
             sys.exit()
@@ -229,50 +273,8 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
                 if attempt == max_retries - 1:
                     form = None
 
-    while True:
-        try:
-            # Step 3: Change email
-            change_email_url = "https://m.facebook.com/changeemail/"
-            headerssss = {
-                "sec-ch-ua-platform": '"Android"',
-                "x-requested-with": "XMLHttpRequest",
-                "accept": "*/*",
-                'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
-                "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
-                "sec-ch-ua-mobile": "?1",
-                "sec-fetch-site": "same-origin",
-                "sec-fetch-mode": "cors",
-                "sec-fetch-dest": "empty",
-                "accept-encoding": "gzip, deflate,",
-                "accept-language": "en-US,en;q=0.9",
-                "priority": "u=1, i"
-            }
-            email_response = retry_request(change_email_url, headerssss)
-            soup = BeautifulSoup(email_response.text, "html.parser")
-            form = soup.find("form")
-            break
-        except:
-            pass
-
-    if form:
-        action_url = requests.compat.urljoin(change_email_url, form["action"]) if form.has_attr(
-            "action") else change_email_url
-        inputs = form.find_all("input")
-        data = {}
-        for inp in inputs:
-            if inp.has_attr("name") and inp["name"] not in data:
-                data[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
-        while True:
-            try:
-                emailsss = input("Please enter your email: ")
-                data["new"] = emailsss
-                data["submit"] = "Add"
-                break
-            except:
-                print('error email')
-                pass
-
         os.system("clear")
+        time.sleep(3)
         print(f"\033[1;92m Account| Pass | {password} |\033[0m")
 
         while True:
