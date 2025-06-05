@@ -92,7 +92,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
     # If no password supplied, handle base password logic
     if password is None:
         if custom_password_base is None:
-            inp = input("\033[1;92m😊 Enter password to continue: \033[0m")
+            inp = input("\033[1;92m😊 Type your password to continue: \033[0m")
             if inp.strip() == '':
                 custom_password_base = None
             else:
