@@ -121,7 +121,7 @@ def load_accounts():
             pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
 
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            filepath = os.path.join(script_dir, "Acc_Created.csv")
+            filepath = os.path.join(script_dir, "/storage/emulated/0/Acc_Created.csv")
             print(f"Trying to open file at: {filepath}")
 
             with open(filepath, newline='', encoding='latin-1') as csvfile:
