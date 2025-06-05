@@ -262,24 +262,22 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
                 email_response = retry_request(change_email_url, headerssss)
                 soup = BeautifulSoup(email_response.text, "html.parser")
 
-                # ✅ Check if registration-error exists
                 registration_error = soup.find(id="registration-error")
                 if registration_error:
+                    print("Registration error detected. Refreshing page...")
                     time.sleep(3)
-                    os.system("clear")
-                    # You can insert logic here to change the number before retrying
-                    continue  # Retry by continuing the loop
+                    os.system("clear")  # Clear terminal screen
+                    continue  # Retry by looping again (refresh)
 
-                # Check for checkpoint block
                 form = soup.find('form', action=lambda x: x and 'checkpoint' in x)
                 if form:
                     print(
                         "\033[1;91m⚠️ Created account blocked. Try toggling airplane mode or clearing Facebook Lite data.\033[0m")
                     time.sleep(3)
                     os.system("clear")
-                    return
+                    return  # Stop or exit here if needed
                 else:
-                    break  # Exit loop if no errors
+                    break  # Success, no errors, exit loop
 
             except Exception as e:
                 if attempt == max_retries - 1:
@@ -287,7 +285,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
                     sys.exit()
 
         os.system("clear")
-        time.sleep(3)
+        time.sleep(5)
         print(f"\033[1;92m          Account| Pass | {password} |\033[0m")
 
         while True:
