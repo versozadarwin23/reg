@@ -119,7 +119,12 @@ def load_accounts():
         try:
             accounts = []
             pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
-            with open("Acc_Created.csv", newline='', encoding='latin-1') as csvfile:
+
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            filepath = os.path.join(script_dir, "Acc_Created.csv")
+            print(f"Trying to open file at: {filepath}")
+
+            with open(filepath, newline='', encoding='latin-1') as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
                     name = row.get('NAME', '').strip()
@@ -130,6 +135,7 @@ def load_accounts():
                     username = pattern.sub('', account_link)
                     accounts.append([name, username, password, account_link])
             return accounts
+
         except Exception as e:
             time.sleep(3)
             os.system("clear")
