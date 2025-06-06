@@ -115,8 +115,9 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
                 os.system("clear")
                 return form
             except:
-                print('😢 error No internet connection. Check your Mobile Data or toggle Airplane mode.')
+                print('😢 Error No internet connection. Check your Mobile Data or on off Airplane mode.')
                 time.sleep(3)
+                os.system("clear")
 
     url = "https://m.facebook.com/reg"
     headers = {
@@ -161,7 +162,8 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
                 if response.status_code == 200:
                     return response
                 else:
-                    print(f"Network error turn of and on airplane mode")
+                    print(f"Network error turn on off airplane mode")
+                    return
             except requests.exceptions.ConnectionError:
                 sys.exit()
 
