@@ -171,9 +171,15 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
         except:
             pass
 
-    # Get email from clipboard
-    email_or_phone = pyperclip.paste()
+    def get_clipboard():
+        try:
+            return subprocess.check_output(["termux-clipboard-get"]).decode("utf-8").strip()
+        except subprocess.CalledProcessError:
+            return None
 
+    email_or_phone = get_clipboard()
+    print("Clipboard:", email_or_phone)
+    
     if form:
         action_url = requests.compat.urljoin(url, form["action"]) if form.has_attr("action") else url
         inputs = form.find_all("input")
