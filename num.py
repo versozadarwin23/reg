@@ -266,15 +266,14 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
 
                 registration_error = soup.find(id="registration-error")
                 if registration_error:
-                    print("Registration error detected. Refreshing page...")
+                    print("\033[1;91m⚠️ Created account blocked. Try toggling airplane mode or clearing Facebook Lite data.\033[0m")
                     time.sleep(3)
                     os.system("clear")  # Clear terminal screen
-                    continue  # Retry by looping again (refresh)
+                    return  # Retry by looping again (refresh)
 
                 form = soup.find('form', action=lambda x: x and 'checkpoint' in x)
                 if form:
-                    print(
-                        "\033[1;91m⚠️ Created account blocked. Try toggling airplane mode or clearing Facebook Lite data.\033[0m")
+                    print("\033[1;91m⚠️ Created account blocked. Try toggling airplane mode or clearing Facebook Lite data.\033[0m")
                     time.sleep(3)
                     os.system("clear")
                     return  # Stop or exit here if needed
@@ -338,12 +337,24 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
 
 def NEMAIN():
     os.system("clear")
-    max_create = 1
+    max_retries = 5  # Set how many times you want to retry account creation
+    attempt = 0
     account_type = 1
     gender = 1
-    for i in range(max_create):
-        usern = "ali"
-        create_fbunconfirmed(account_type, usern, gender)
+    usern = "ali"
+
+    while attempt < max_retries:
+        try:
+            create_fbunconfirmed(account_type, usern, gender)
+            break  # Break if successful (i.e., didn't return due to failure)
+        except Exception as e:
+            print(f"\033[1;91m⚠️ Attempt {attempt + 1} failed. Retrying...\033[0m")
+            attempt += 1
+            time.sleep(2)
+            os.system("clear")
+
+    if attempt == max_retries:
+        print("\033[1;91m❌ Maximum retries reached. Exiting...\033[0m")
 
 
 if __name__ == "__main__":
