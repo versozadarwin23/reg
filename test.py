@@ -172,8 +172,8 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
     try:
         email_or_phone = subprocess.check_output(["termux-clipboard-get"]).decode().strip()
         print(f"\033[92mEmail from clipboard:\033[0m {email_or_phone}")
-    except subprocess.CalledProcessError:
-        print("\033[91mFailed to get clipboard content.\033[0m")
+    except FileNotFoundError:
+        print("\033[91mtermux-clipboard-get not found. Make sure termux-api is installed.\033[0m")
         email_or_phone = ""
 
     if form:
