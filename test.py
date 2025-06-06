@@ -134,11 +134,20 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, email=None)
         if "c_user" in session.cookies:
             uid = session.cookies.get("c_user")
             profile_id = f"https://www.facebook.com/profile.php?id={uid}"
-            filename = "/storage/emulated/0/Acc_Created.csv"
-            full_name = f"{firstname} {lastname}"
-            data_to_save = [full_name, email_or_phone, used_password, profile_id + '\t']
 
             with lock:
+                print(f"{SUCCESS} Account info: | {email_or_phone} | Pass: {used_password}")
+                user_input = input(f"{email_or_phone} Type b if the account is blocked, or press Enter if not blocked to continue: ")
+                if user_input == "b":
+                    print("\033[1;91m⚠️ Creating another account because your account got blocked 😔\033[0m")
+                    time.sleep(3)
+                    os.system("clear")
+                    return  # Stop this worker here
+
+                filename = "/storage/emulated/0/Acc_Created.csv"
+                full_name = f"{firstname} {lastname}"
+                data_to_save = [full_name, email_or_phone, used_password, profile_id + '\t']
+
                 save_to_csv(filename, data_to_save)
                 print(f"{SUCCESS} Created: {full_name} | {email_or_phone} | Pass: {used_password}")
         else:
@@ -150,7 +159,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, email=None)
             print(f"{FAILURE} Exception: {str(e)}")
 
 def threaded_worker(index, account_type, gender, email):
-    time.sleep(3 * (index + 1))  # Delay start: worker 1 waits 3 sec, worker 2 waits 6 sec ...
+    time.sleep(3 * index)  # Delay start: worker 0 waits 0 sec, worker 1 waits 3 sec, etc.
     usern = f"user{index + 1}"   # username count starts at 1
     with lock:
         print(f"{INFO} Starting worker {index + 1} with email {email}...")
