@@ -77,19 +77,18 @@ custom_password = None  # Global variable for storing custom or generated passwo
 def generate_password():
     global custom_password
     if custom_password is None:
-        user_input = input("\033[1;92m😊 Type your password to continue: \033[0m").strip()
+        user_input = input("🔒 Enter a custom password (or press Enter to use random password): ").strip()
+        six_digit = str(random.randint(100000, 999999))  # always add this
+
         if user_input:
-            custom_password = user_input
+            custom_password = user_input + six_digit  # append random 6-digit
         else:
             base = 'Promises'
             symbols = '!@#$%^&*()_+-='
             extra = ''.join(random.choices(string.digits + symbols, k=2)) + random.choice(symbols)
             extra = ''.join(random.sample(extra, len(extra)))  # shuffle
-            six_digit = str(random.randint(100000, 999999))
             custom_password = base + extra + six_digit
     return custom_password
-
-
 
 def generate_user_details(account_type, gender):
     firstname, lastname = get_names(account_type, gender)
@@ -220,7 +219,9 @@ def create_fbunconfirmed(account_type, usern, gender):
                 uid = session.cookies.get("c_user")
                 profile_id = 'https://www.facebook.com/profile.php?id=' + uid
             else:
-                print("\033[1;91m⚠️ Create Account Failed. Retrying...\033[0m")
+                print("\033[1;91m⚠️ Create Account Failed. on off airplane mode Use another email.\033[0m")
+                time.sleep(3)
+                os.system("clear")
                 return  # exit the function so NEMAIN() can call again
         except Exception as e:
             print("An error occurred:", str(e))
