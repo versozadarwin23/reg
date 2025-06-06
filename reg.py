@@ -1,12 +1,10 @@
+import random
 import csv
 import os
-import uuid
 import requests
 from bs4 import BeautifulSoup
 import time
 import sys
-import random
-
 os.system("clear")
 
 def load_user_agents(file_path):
@@ -22,23 +20,13 @@ def get_random_user_agent(file_path):
 
 MAX_RETRIES = 3
 RETRY_DELAY = 2
-# ANSI color codes
-
-# Emojis and Symbols
-SUCCESS = "✅"
-FAILURE = "✅"
-INFO = "✅"
-WARNING = "⚠️"
-LOADING = "⏳"
 
 def load_names_from_file(file_path):
     with open(file_path, 'r') as file:
         return [line.strip() for line in file.readlines()]
 
-
 def get_names(account_type, gender):
     if account_type == 1:  # Philippines
-        # Load male and last names from file (ensure correct file paths)
         male_first_names = load_names_from_file("first_name.txt")
         last_names = load_names_from_file("last_name.txt")
         female_first_names = []  # Female names not used for this account type
@@ -47,7 +35,6 @@ def get_names(account_type, gender):
         female_first_names = load_names_from_file('path_to_female_first_names.txt')
         last_names = load_names_from_file('path_to_last_names.txt')
 
-    # Select first name based on gender
     firstname = random.choice(male_first_names if gender == 1 else female_first_names)
     lastname = random.choice(last_names)
 
@@ -67,47 +54,43 @@ def generate_random_phone_number():
 
     return number
 
-
-import random
-import string
-
 def generate_random_password():
-    base = 'Promises'  # fixed part
-    symbols = '!@#$%^&*()_+-='
-    remaining_length = 3 - len(base)
-
-    # Ensure at least one symbol is included (only if base is short enough, which it's not)
-    if remaining_length > 0:
-        mixed_chars = string.digits + symbols
-        extra = ''.join(random.choices(mixed_chars, k=remaining_length - 1))
-        extra += random.choice(symbols)  # ensure at least one symbol
-        extra = ''.join(random.sample(extra, len(extra)))  # shuffle extra chars
-    else:
-        extra = ''
-
-    six_digit = str(random.randint(100000, 999999))  # random 6-digit number
-    password = base + extra + six_digit
+    base = 'Promises'
+    six_digit = str(random.randint(100000, 999999))
+    password = base + six_digit
     return password
 
-
-
-def generate_user_details(account_type, gender):
-    """Generate random user details."""
+def generate_user_details(account_type, gender, password=None):
     firstname, lastname = get_names(account_type, gender)
     year = random.randint(1978, 2001)
     date = random.randint(1, 28)
     month = random.randint(1, 12)
-    password = generate_random_password()
+    if password is None:
+        password = generate_random_password()
     phone_number = generate_random_phone_number()
     return firstname, lastname, date, year, month, phone_number, password
 
+custom_password_base = None  # define this globally at top
 
-def create_fbunconfirmed(account_type, usern, gender):
-    """Create a Facebook account using kuku.lu for email and OTP."""
+def create_fbunconfirmed(account_type, usern, gender, password=None):
+    global custom_password_base, profile_id, emailsss
 
-    global uid, profie_link, profile_link, token, profile_id, data_to_save, filename, save_to_csv
-    asdf = ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
-    firstname, lastname, date, year, month, phone_number, password = generate_user_details(account_type, gender)
+    # If no password supplied, handle base password logic
+    if password is None:
+        if custom_password_base is None:
+            inp = input("\033[1;92m😊 Type your password to continue: \033[0m")
+            if inp.strip() == '':
+                custom_password_base = None
+            else:
+                custom_password_base = inp.strip()
+
+        if custom_password_base is None:
+            password = generate_random_password()
+        else:
+            six_digit = str(random.randint(100000, 999999))
+            password = custom_password_base + six_digit
+
+    firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender, password)
 
     def check_page_loaded(url, headers):
         while True:
@@ -118,8 +101,9 @@ def create_fbunconfirmed(account_type, usern, gender):
                 os.system("clear")
                 return form
             except:
-                print('😢 error No internet connection. Check your Mobile Data or toggle Airplane mode.')
+                print('😢 Error No internet connection. Check your Mobile Data or on off Airplane mode.')
                 time.sleep(3)
+                os.system("clear")
 
     url = "https://m.facebook.com/reg"
     headers = {
@@ -216,6 +200,7 @@ def create_fbunconfirmed(account_type, usern, gender):
                 break
             except:
                 pass
+
         try:
             if "c_user" in session.cookies:
                 uid = session.cookies.get("c_user")
@@ -294,7 +279,7 @@ def create_fbunconfirmed(account_type, usern, gender):
         while True:
             try:
                 save_to_csv(filename, data_to_save)
-                print('\033[1;92m✅ Created Account has been saved 😊')
+                print(f"\033[1;92m✅ Created Account has been saved 😊 {full_name} | {emailsss} | {used_password} |\033[0m")
                 time.sleep(3)
                 break
             except:
