@@ -171,19 +171,21 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
         except:
             pass
 
-    def get_termux_clipboard():
+    def get_clipboard_email():
         try:
-            result = subprocess.check_output(['termux-clipboard-get'])
-            return result.decode().strip()
-        except Exception:
-            return input("📋 Clipboard failed. Enter your email manually: ")
-
-    email_or_phone = get_termux_clipboard()
-    print("Using:", email_or_phone)
+            clipboard = subprocess.check_output(['termux-clipboard-get']).decode('utf-8').strip()
+            return clipboard
+        except Exception as e:
+            print("Failed to get clipboard:", e)
+            # Fallback to manual input if clipboard fails
+            return input("\033[92mEnter your email:\033[0m ")
 
     if form:
         action_url = requests.compat.urljoin(url, form["action"]) if form.has_attr("action") else url
         inputs = form.find_all("input")
+
+        # Replace input() with clipboard get, fallback to input if clipboard empty/error
+        email_or_phone = get_clipboard_email()
 
         data = {
             "firstname": f"{firstname}",
