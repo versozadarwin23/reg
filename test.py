@@ -169,17 +169,17 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
         except:
             pass
 
-    try:
-        email_or_phone = subprocess.check_output(["termux-clipboard-get"]).decode().strip()
-        print(f"\033[92mEmail from clipboard:\033[0m {email_or_phone}")
-    except FileNotFoundError:
-        print("\033[91mtermux-clipboard-get not found. Make sure termux-api is installed.\033[0m")
-        email_or_phone = ""
+    clipboard_file = "clipboard.txt"
+    if os.path.exists(clipboard_file):
+        with open(clipboard_file, "r") as f:
+            email_or_phone = f.read().strip()
+    else:
+        email_or_phone = input("\033[92mEnter your email:\033[0m ")
 
+    # Then continue with your form logic
     if form:
         action_url = requests.compat.urljoin(url, form["action"]) if form.has_attr("action") else url
         inputs = form.find_all("input")
-
         data = {
             "firstname": f"{firstname}",
             "lastname": f"{lastname}",
