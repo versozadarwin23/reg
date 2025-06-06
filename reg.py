@@ -294,7 +294,7 @@ def create_fbunconfirmed(account_type, usern, gender):
         while True:
             try:
                 save_to_csv(filename, data_to_save)
-                print('\033[1;92m✅ Created Account has been saved 😊')
+                print(f"\033[1;92m✅ Created Account has been saved 😊 {full_name} | {email_or_phone} | {password} |\033[0m")
                 time.sleep(3)
                 break
             except:
