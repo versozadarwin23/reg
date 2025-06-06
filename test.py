@@ -171,15 +171,21 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
         except:
             pass
 
-    def get_clipboard():
+    def get_clipboard_safe():
         try:
-            return subprocess.check_output(["termux-clipboard-get"]).decode("utf-8").strip()
-        except subprocess.CalledProcessError:
-            return None
+            # Try reading clipboard with timeout logic
+            start = time.time()
+            while time.time() - start < 2:  # 2 second timeout
+                data = pyperclip.paste()
+                if data.strip():
+                    return data.strip()
+            raise TimeoutError("Clipboard read timed out.")
+        except Exception:
+            return input("📋 Clipboard failed. Enter your email manually: ")
 
-    email_or_phone = get_clipboard()
-    print("Clipboard:", email_or_phone)
-    
+    email_or_phone = get_clipboard_safe()
+    print("Using:", email_or_phone)
+
     if form:
         action_url = requests.compat.urljoin(url, form["action"]) if form.has_attr("action") else url
         inputs = form.find_all("input")
