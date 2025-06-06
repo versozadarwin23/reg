@@ -77,7 +77,7 @@ custom_password = None  # Global variable for storing custom or generated passwo
 def generate_password():
     global custom_password
     if custom_password is None:
-        user_input = input("🔒 Enter a custom password (or press Enter to use random password): ").strip()
+        user_input = input("\033[1;92m😊 Type your password to continue: \033[0m").strip()
         six_digit = str(random.randint(100000, 999999))  # always add this
 
         if user_input:
