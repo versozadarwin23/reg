@@ -225,6 +225,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
                 profile_id = 'https://www.facebook.com/profile.php?id=' + uid
             else:
                 print("\033[1;91m⚠️ Create Account Failed. Use another email.\033[0m")
+                time.sleep(3)
                 return  # exit the function so NEMAIN() can call again
         except Exception as e:
             print("An error occurred:", str(e))
