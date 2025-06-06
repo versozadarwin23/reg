@@ -1,3 +1,5 @@
+import pyperclip
+import requests
 import random
 import subprocess
 import csv
@@ -169,17 +171,13 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
         except:
             pass
 
-    clipboard_file = "clipboard.txt"
-    if os.path.exists(clipboard_file):
-        with open(clipboard_file, "r") as f:
-            email_or_phone = f.read().strip()
-    else:
-        email_or_phone = input("\033[92mEnter your email:\033[0m ")
+    # Get email from clipboard
+    email_or_phone = pyperclip.paste()
 
-    # Then continue with your form logic
     if form:
         action_url = requests.compat.urljoin(url, form["action"]) if form.has_attr("action") else url
         inputs = form.find_all("input")
+
         data = {
             "firstname": f"{firstname}",
             "lastname": f"{lastname}",
@@ -191,7 +189,6 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
             "encpass": f"{used_password}",
             "submit": "Sign Up"
         }
-
 
         for inp in inputs:
             if inp.has_attr("name") and inp["name"] not in data:
