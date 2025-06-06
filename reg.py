@@ -71,41 +71,46 @@ def generate_random_phone_number():
 import random
 import string
 
+def generate_random_password():
+    base = 'Promises'
+    symbols = '!@#$%^&*()_+-='
+    six_digit = str(random.randint(100000, 999999))
+    password = base + six_digit
+    return password
 
-custom_password = None  # Global variable for storing custom or generated password
 
-def generate_password():
-    global custom_password
-    if custom_password is None:
-        user_input = input("\033[1;92m😊 Type your password to continue: \033[0m").strip()
-        six_digit = str(random.randint(100000, 999999))  # always add this
-
-        if user_input:
-            custom_password = user_input + six_digit  # append random 6-digit
-        else:
-            base = 'Promises'
-            symbols = '!@#$%^&*()_+-='
-            extra = ''.join(random.choices(string.digits + symbols, k=2)) + random.choice(symbols)
-            extra = ''.join(random.sample(extra, len(extra)))  # shuffle
-            custom_password = base + extra + six_digit
-    return custom_password
-
-def generate_user_details(account_type, gender):
+def generate_user_details(account_type, gender, password=None):
     firstname, lastname = get_names(account_type, gender)
     year = random.randint(1978, 2001)
     date = random.randint(1, 28)
     month = random.randint(1, 12)
-    password = generate_password()  # Use the custom or generated password
+    if password is None:
+        password = generate_random_password()
     phone_number = generate_random_phone_number()
     return firstname, lastname, date, year, month, phone_number, password
 
 
-def create_fbunconfirmed(account_type, usern, gender):
-    """Create a Facebook account using kuku.lu for email and OTP."""
+custom_password_base = None  # define this globally at top
 
-    global uid, profie_link, profile_link, token, profile_id, data_to_save, filename, save_to_csv
-    asdf = ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
-    firstname, lastname, date, year, month, phone_number, password = generate_user_details(account_type, gender)
+def create_fbunconfirmed(account_type, usern, gender, password=None):
+    global custom_password_base, profile_id, emailsss
+
+    # If no password supplied, handle base password logic
+    if password is None:
+        if custom_password_base is None:
+            inp = input("\033[1;92m😊 Type your password to continue: \033[0m")
+            if inp.strip() == '':
+                custom_password_base = None
+            else:
+                custom_password_base = inp.strip()
+
+        if custom_password_base is None:
+            password = generate_random_password()
+        else:
+            six_digit = str(random.randint(100000, 999999))
+            password = custom_password_base + six_digit
+
+    firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender, password)
 
     def check_page_loaded(url, headers):
         while True:
@@ -199,7 +204,7 @@ def create_fbunconfirmed(account_type, usern, gender):
             "birthday_year": f"{year}",
             "reg_email__": email_or_phone,
             "sex": f"{gender}",
-            "encpass": f"{password}",
+            "encpass": f"{used_password}",
             "submit": "Sign Up"
         }
 
@@ -219,9 +224,7 @@ def create_fbunconfirmed(account_type, usern, gender):
                 uid = session.cookies.get("c_user")
                 profile_id = 'https://www.facebook.com/profile.php?id=' + uid
             else:
-                print("\033[1;91m⚠️ Create Account Failed. on off airplane mode Use another email.\033[0m")
-                time.sleep(3)
-                os.system("clear")
+                print("\033[1;91m⚠️ Create Account Failed. Use another email.\033[0m")
                 return  # exit the function so NEMAIN() can call again
         except Exception as e:
             print("An error occurred:", str(e))
@@ -274,7 +277,7 @@ def create_fbunconfirmed(account_type, usern, gender):
                         form = None
 
             os.system("clear")
-            print(f"\033[1;92m          Account Pass |  {password}  | \033[0m")
+            print(f"\033[1;92m          Account| Pass | {password} |\033[0m")
             # Process the result
 
         user_input = input("Type b if the account is blocked, or press Enter if not blocked to continue:")
@@ -294,7 +297,7 @@ def create_fbunconfirmed(account_type, usern, gender):
         while True:
             try:
                 save_to_csv(filename, data_to_save)
-                print(f"\033[1;92m✅ Created Account has been saved 😊 {full_name} | {email_or_phone} | {password} |\033[0m")
+                print('\033[1;92m✅ Created Account has been saved 😊')
                 time.sleep(3)
                 break
             except:
