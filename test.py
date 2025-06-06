@@ -150,9 +150,10 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, email=None)
             print(f"{FAILURE} Exception: {str(e)}")
 
 def threaded_worker(index, account_type, gender, email):
-    usern = f"user{index}"
+    time.sleep(3 * (index + 1))  # Delay start: worker 1 waits 3 sec, worker 2 waits 6 sec ...
+    usern = f"user{index + 1}"   # username count starts at 1
     with lock:
-        print(f"{INFO} Starting worker {index} with email {email}...")
+        print(f"{INFO} Starting worker {index + 1} with email {email}...")
     create_fbunconfirmed(account_type, usern, gender, email=email)
 
 def main_with_threads():
