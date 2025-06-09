@@ -139,12 +139,8 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, email=None,
         # Check if checkpointed
         checkpoint_form = refreshed_soup.find('form', action=lambda x: x and 'checkpoint' in x)
         if checkpoint_form or "checkpoint" in post_response.url.lower():
-            with lock:
-                print(f"{WARNING} {email_or_phone} got checkpointed.")
-
             if retry_if_checkpoint:
                 new_password = generate_random_password()
-                print(f"{INFO} Retrying creation using same email but new password: {new_password}")
                 time.sleep(2)
                 return create_fbunconfirmed(account_type, usern, gender, password=new_password, email=email, retry_if_checkpoint=False)
             else:
@@ -163,7 +159,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, email=None,
                 print(f"{SUCCESS} Created: {full_name} | {email_or_phone} | Pass: {used_password}")
         else:
             with lock:
-                print(f"{FAILURE} {email_or_phone} creation failed. No session found.")
+                print(f"{FAILURE} {email_or_phone} creation failed. Account got blocked.")
     except Exception as e:
         print(f"{FAILURE} Error during creation: {e}")
 
