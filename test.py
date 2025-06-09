@@ -82,7 +82,7 @@ def save_to_csv(filename, data):
         except Exception as e:
             print(f"Error saving to {filename}: {e}. Retrying...")
 
-def create_fbunconfirmed(account_type, usern, gender, password=None, email=None):
+def create_fbunconfirmed(account_type, usern, gender, password=None, email=None, retry_if_checkpoint=True):
     global custom_password_base
     firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender, password)
 
@@ -131,36 +131,46 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, email=None)
                 data[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
 
         post_response = session.post(action_url, headers=headers, data=data)
+
+        refresh_url = "https://m.facebook.com/reg"
+        refreshed_response = session.get(refresh_url, headers=headers)
+        refreshed_soup = BeautifulSoup(refreshed_response.text, "html.parser")
+
+        # Check if checkpointed
+        checkpoint_form = refreshed_soup.find('form', action=lambda x: x and 'checkpoint' in x)
+        if checkpoint_form or "checkpoint" in post_response.url.lower():
+            with lock:
+                print(f"{WARNING} {email_or_phone} got checkpointed.")
+
+            if retry_if_checkpoint:
+                new_password = generate_random_password()
+                print(f"{INFO} Retrying creation using same email but new password: {new_password}")
+                time.sleep(2)
+                return create_fbunconfirmed(account_type, usern, gender, password=new_password, email=email, retry_if_checkpoint=False)
+            else:
+                print(f"{FAILURE} {email_or_phone} failed twice. Skipping.")
+                return
+
         if "c_user" in session.cookies:
             uid = session.cookies.get("c_user")
             profile_id = f"https://www.facebook.com/profile.php?id={uid}"
+            full_name = f"{firstname} {lastname}"
+            filename = "/storage/emulated/0/Acc_Created.csv"
+            data_to_save = [full_name, email_or_phone, used_password, profile_id + '\t']
+            save_to_csv(filename, data_to_save)
 
             with lock:
-                print(f"{SUCCESS} Account info: | {email_or_phone} | Pass: {used_password}")
-                user_input = input(f"{email_or_phone} Type b if the account is blocked, or press Enter if not blocked to continue: ")
-                if user_input == "b":
-                    print("\033[1;91m⚠️ Creating another account because your account got blocked 😔\033[0m")
-                    time.sleep(3)
-                    os.system("clear")
-                    return  # Stop this worker here
-
-                filename = "/storage/emulated/0/Acc_Created.csv"
-                full_name = f"{firstname} {lastname}"
-                data_to_save = [full_name, email_or_phone, used_password, profile_id + '\t']
-
-                save_to_csv(filename, data_to_save)
                 print(f"{SUCCESS} Created: {full_name} | {email_or_phone} | Pass: {used_password}")
         else:
             with lock:
-                print(f"{FAILURE} ❌ Failed or checkpointed. Email: {email_or_phone}")
-
+                print(f"{FAILURE} {email_or_phone} creation failed. No session found.")
     except Exception as e:
-        with lock:
-            print(f"{FAILURE} Exception: {str(e)}")
+        print(f"{FAILURE} Error during creation: {e}")
+
 
 def threaded_worker(index, account_type, gender, email):
-    time.sleep(3 * index)  # Delay start: worker 0 waits 0 sec, worker 1 waits 3 sec, etc.
-    usern = f"user{index + 1}"   # username count starts at 1
+    time.sleep(3 * index)  # delay start
+    usern = f"user{index + 1}"
     with lock:
         print(f"{INFO} Starting worker {index + 1} with email {email}...")
     create_fbunconfirmed(account_type, usern, gender, email=email)
