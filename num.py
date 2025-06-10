@@ -317,7 +317,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
                 with open(filename, mode='a', newline='') as file:
                     writer = csv.writer(file)
                     if not file_exists or os.path.getsize(filename) == 0:
-                        writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
+                        writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'STATUS'])
                     writer.writerow(data)
                 break
             except Exception as e:
