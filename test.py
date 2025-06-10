@@ -167,8 +167,8 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, email=None,
 def threaded_worker(index, account_type, gender, email):
     time.sleep(3 * index)  # delay start
     usern = f"user{index + 1}"
-    with lock:
-        print(f"{INFO} Starting worker {index + 1} with email {email}...")
+    os.system("clear")
+    time.sleep(3)
     create_fbunconfirmed(account_type, usern, gender, email=email)
 
 def main_with_threads():
