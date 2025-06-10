@@ -239,7 +239,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
                         writer = csv.writer(file)
                         # If the file is new or empty, write headers first
                         if not file_exists or os.path.getsize(filename) == 0:
-                            writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
+                            writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'STATUS'])
                         writer.writerow(data)
                     break  # success!
                 except Exception as e:
