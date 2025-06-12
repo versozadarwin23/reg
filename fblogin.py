@@ -54,7 +54,6 @@ def keep_alive(name, username, password, account_link):
 
         form = soup.find('form', {'id': 'login_form'})
         if not form:
-            print(f"[❌] [{name}] Login form not found.")
             with lock:
                 error_count += 1
             update_status_in_acc_created(username, 'Login form not found')
@@ -78,13 +77,11 @@ def keep_alive(name, username, password, account_link):
                 success_count += 1
             update_status_in_acc_created(username, f'Login Sucess')
         else:
-            print(f"[❌] {name} Login failed.")
             with lock:
                 error_count += 1
             update_status_in_acc_created(username, 'Login failed')
             return
     except Exception as e:
-        print(f"[⚠️] [{name}] Login error: {e}")
         with lock:
             error_count += 1
         update_status_in_acc_created(username, f'Error: {e}')
@@ -105,12 +102,10 @@ def keep_alive(name, username, password, account_link):
                 minutes = elapsed_minutes % 60
                 active_time = f"{hours}h {minutes}m" if hours > 0 else f"{minutes}m"
                 profile_link = f'https://www.facebook.com/profile.php?id={uid}'
-                print(f"[💓] {name} Keep-alive OK: {profile_link} | Active: {active_time}")
             else:
-                print(f"[❌] [{name}] Session expired.")
                 return
         except Exception as e:
-            print(f"[⚠️] [{name}] Keep-alive error: {e}")
+            pass
 
         time.sleep(60)
 
@@ -138,7 +133,6 @@ def load_accounts():
         except Exception as e:
             time.sleep(3)
             os.system("clear")
-            print(f"Error loading accounts: {e}. Retrying...")
 
 def main():
     executor = None
@@ -154,13 +148,11 @@ def main():
             max_workers = current_account_count if current_account_count > 0 else 1
             executor = ThreadPoolExecutor(max_workers=max_workers)
             prev_account_count = current_account_count
-            print(f"[🔄] Restarted ThreadPoolExecutor with max_workers={max_workers}")
 
         for name, username, password, account_link in accounts:
             if username not in logged_accounts:
                 logged_accounts.add(username)
                 executor.submit(keep_alive, name, username, password, account_link)
-                print(f"[➕] New account added and keep-alive started: {name}, {username}, {password}, {account_link}")
 
         time.sleep(60)
 
