@@ -76,12 +76,13 @@ def keep_alive(name, username, password, account_link):
             uid = session.cookies.get("c_user")
             with lock:
                 success_count += 1
-            update_status_in_acc_created(username, f'Login Success')
+            # update_status_in_acc_created(username, f'Login Success')
+            print(f"\033[92m[✔] {name} | {uid} | Login Success.\033[0m")
         else:
             print(f"[❌] {name} Login failed.")
             with lock:
                 error_count += 1
-            update_status_in_acc_created(username, 'Login failed')
+            # update_status_in_acc_created(username, 'Login failed')
             return
     except Exception as e:
         with lock:
