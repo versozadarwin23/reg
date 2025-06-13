@@ -49,11 +49,12 @@ def keep_alive(name, username, password, account_link):
 
     session = requests.Session()
     try:
-        login_page = session.get('https://m.facebook.com/login', headers=headers, timeout=10, allow_redirects=True)
+        login_page = session.get('https://m.facebook.com/login', headers=headers, timeout=60, allow_redirects=True)
         soup = BeautifulSoup(login_page.text, 'html.parser')
 
         form = soup.find('form', {'id': 'login_form'})
         if not form:
+            print(f"[❌] [{name}] Login form not found.")
             with lock:
                 error_count += 1
             update_status_in_acc_created(username, 'Login form not found')
@@ -75,8 +76,9 @@ def keep_alive(name, username, password, account_link):
             uid = session.cookies.get("c_user")
             with lock:
                 success_count += 1
-            update_status_in_acc_created(username, f'Login Sucess')
+            update_status_in_acc_created(username, f'Login Success')
         else:
+            print(f"[❌] {name} Login failed.")
             with lock:
                 error_count += 1
             update_status_in_acc_created(username, 'Login failed')
@@ -87,7 +89,10 @@ def keep_alive(name, username, password, account_link):
         update_status_in_acc_created(username, f'Error: {e}')
         return
 
+    # Start keep-alive loop
     start_time = time.time()
+    retry_count = 0
+    max_retries = 3  # Reset timer after 3 consecutive network errors
 
     while True:
         try:
@@ -95,19 +100,32 @@ def keep_alive(name, username, password, account_link):
             response = session.get(url, headers=windows_headers, timeout=10, allow_redirects=True)
 
             if "c_user" in session.cookies:
+                retry_count = 0  # Reset retry counter after success
                 uid = session.cookies.get("c_user")
                 elapsed_seconds = time.time() - start_time
                 elapsed_minutes = int(elapsed_seconds // 60)
                 hours = elapsed_minutes // 60
                 minutes = elapsed_minutes % 60
                 active_time = f"{hours}h {minutes}m" if hours > 0 else f"{minutes}m"
-                profile_link = f'https://www.facebook.com/profile.php?id={uid}'
+                print(f"[💓] {name} Keep-alive OK: {uid} | Active: {active_time}")
             else:
+                print(f"[❌] [{name}] Session expired.")
                 return
+
+        except requests.exceptions.RequestException as e:
+            retry_count += 1
+            print(f"[⚠️] [{name}] Internet issue: {e} (Retry {retry_count}/{max_retries})")
+
+            if retry_count >= max_retries:
+                print(f"[🔁] [{name}] Resetting timer due to repeated network errors.")
+                start_time = time.time()
+                retry_count = 0
+
         except Exception as e:
-            pass
+            print(f"[⚠️] [{name}] Unexpected error: {e}")
 
         time.sleep(60)
+
 
 def load_accounts():
     while True:
@@ -133,6 +151,7 @@ def load_accounts():
         except Exception as e:
             time.sleep(3)
             os.system("clear")
+            print(f"Error loading accounts: {e}. Retrying...")
 
 def main():
     executor = None
@@ -148,11 +167,13 @@ def main():
             max_workers = current_account_count if current_account_count > 0 else 1
             executor = ThreadPoolExecutor(max_workers=max_workers)
             prev_account_count = current_account_count
+            print(f"[🔄] Restarted ThreadPoolExecutor with max_workers={max_workers}")
 
         for name, username, password, account_link in accounts:
             if username not in logged_accounts:
                 logged_accounts.add(username)
                 executor.submit(keep_alive, name, username, password, account_link)
+                print(f"[➕] New account added and keep-alive started: {name}, {username}, {password}, {account_link}")
 
         time.sleep(60)
 
