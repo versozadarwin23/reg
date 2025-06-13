@@ -70,7 +70,7 @@ def keep_alive(name, username, password, account_link):
             if name_input and name_input not in payload:
                 payload[name_input] = value
 
-        response = session.post(post_url, data=payload, headers=headers, timeout=10, allow_redirects=True)
+        response = session.post(post_url, data=payload, headers=headers, timeout=60, allow_redirects=True)
 
         if "c_user" in session.cookies:
             uid = session.cookies.get("c_user")
@@ -107,7 +107,7 @@ def keep_alive(name, username, password, account_link):
                 hours = elapsed_minutes // 60
                 minutes = elapsed_minutes % 60
                 active_time = f"{hours}h {minutes}m" if hours > 0 else f"{minutes}m"
-                print(f"[💓] {name} Keep-alive OK: {uid} | Active: {active_time}")
+                print(f"\033[92m[✔] {name} Keep-alive OK: {uid} | Active: {active_time}\033[0m")
             else:
                 print(f"[❌] [{name}] Session expired.")
                 return
