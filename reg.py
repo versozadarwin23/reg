@@ -7,6 +7,8 @@ import time
 import sys
 import random
 import string
+import psutil
+import subprocess
 
 os.system("clear")
 
@@ -221,6 +223,17 @@ def NEMAIN(session):
         usern = "ali"
         create_fbunconfirmed(account_type, usern, gender, session=session)
 
+# ✅ Check if another script is already running
+def is_script_running(script_name):
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            cmdline = proc.info.get('cmdline')
+            if cmdline and script_name in ' '.join(cmdline):
+                return True
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+    return False
+
 if __name__ == "__main__":
     session = requests.Session()
     last_session_time = time.time()
@@ -231,4 +244,12 @@ if __name__ == "__main__":
             session.close()
             session = requests.Session()
             last_session_time = current_time
+
         NEMAIN(session)
+
+        # ✅ Run script2.py only if it's not already running
+        if not is_script_running("fblogin.py"):
+            print("⏳ Starting script2.py ...")
+            subprocess.Popen(["python3", "fblogin.py"])  # or "python" if on Windows
+        else:
+            print("✅ script2.py is already running.")
