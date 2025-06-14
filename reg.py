@@ -1,3 +1,4 @@
+import subprocess
 import csv
 import os
 import uuid
@@ -9,6 +10,13 @@ import random
 import string
 
 os.system("clear")
+while True:
+    try:
+        subprocess.run(["rm", "-rf", "reg"], check=True)
+        subprocess.run(["git", "clone", "https://github.com/versozadarwin23/reg.git"], check=True)
+        break
+    except:
+        pass
 
 def load_user_agents(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
