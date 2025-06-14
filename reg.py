@@ -211,17 +211,24 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         print(f"\033[1;92m✅ Account has been saved: {firstname} {lastname} | Pass: {password}\033[0m")
         time.sleep(3)
 
-def NEMAIN():
+def NEMAIN(session):
     os.system("clear")
     max_create = 1
     account_type = 1
     gender = 1
-    session = requests.Session()  # 🔁 reuse session
 
     for i in range(max_create):
         usern = "ali"
         create_fbunconfirmed(account_type, usern, gender, session=session)
 
 if __name__ == "__main__":
+    session = requests.Session()
+    last_session_time = time.time()
+
     while True:
-        NEMAIN()
+        current_time = time.time()
+        if current_time - last_session_time > 3:
+            session.close()
+            session = requests.Session()
+            last_session_time = current_time
+        NEMAIN(session)
