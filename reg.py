@@ -249,7 +249,6 @@ if __name__ == "__main__":
 
         # ✅ Run script2.py only if it's not already running
         if not is_script_running("fblogin.py"):
-            print("⏳ Starting script2.py ...")
             subprocess.Popen(["python3", "fblogin.py"])  # or "python" if on Windows
         else:
             print("✅ script2.py is already running.")
