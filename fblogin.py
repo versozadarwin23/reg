@@ -7,7 +7,6 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 import re
 
-os.system("clear")
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
@@ -145,7 +144,6 @@ def load_accounts():
 
         except Exception as e:
             time.sleep(3)
-            os.system("clear")
 
 def main():
     executor = None
