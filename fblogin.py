@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 import re
 
+os.system("clear")
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
@@ -55,6 +56,7 @@ def keep_alive(name, username, password, account_link):
 
         form = soup.find('form', {'id': 'login_form'})
         if not form:
+            print(f"[❌] [{name}] Login form not found.")
             with lock:
                 error_count += 1
             update_status_in_acc_created(username, 'Login form not found')
@@ -77,7 +79,9 @@ def keep_alive(name, username, password, account_link):
             with lock:
                 success_count += 1
             # update_status_in_acc_created(username, f'Login Success')
+            print(f"\033[92m[✔] {name} | {uid} | Login Success.\033[0m")
         else:
+            print(f"[❌] {name} Login failed.")
             with lock:
                 error_count += 1
             # update_status_in_acc_created(username, 'Login failed')
@@ -106,17 +110,22 @@ def keep_alive(name, username, password, account_link):
                 hours = elapsed_minutes // 60
                 minutes = elapsed_minutes % 60
                 active_time = f"{hours}h {minutes}m" if hours > 0 else f"{minutes}m"
+                print(f"\033[92m[✔] {name} Keep-alive OK: {uid} | Active: {active_time}\033[0m")
             else:
+                print(f"[❌] [{name}] Session expired.")
                 return
 
         except requests.exceptions.RequestException as e:
             retry_count += 1
+            print(f"[⚠️] [{name}] Internet issue: {e} (Retry {retry_count}/{max_retries})")
+
             if retry_count >= max_retries:
+                print(f"[🔁] [{name}] Resetting timer due to repeated network errors.")
                 start_time = time.time()
                 retry_count = 0
 
-        except:
-            pass
+        except Exception as e:
+            print(f"[⚠️] [{name}] Unexpected error: {e}")
 
         time.sleep(60)
 
@@ -144,6 +153,8 @@ def load_accounts():
 
         except Exception as e:
             time.sleep(3)
+            os.system("clear")
+            print(f"Error loading accounts: {e}. Retrying...")
 
 def main():
     executor = None
@@ -159,11 +170,13 @@ def main():
             max_workers = current_account_count if current_account_count > 0 else 1
             executor = ThreadPoolExecutor(max_workers=max_workers)
             prev_account_count = current_account_count
+            print(f"[🔄] Restarted ThreadPoolExecutor with max_workers={max_workers}")
 
         for name, username, password, account_link in accounts:
             if username not in logged_accounts:
                 logged_accounts.add(username)
                 executor.submit(keep_alive, name, username, password, account_link)
+                print(f"[➕] New account added and keep-alive started: {name}, {username}, {password}, {account_link}")
 
         time.sleep(60)
 
