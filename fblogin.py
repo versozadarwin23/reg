@@ -28,23 +28,6 @@ success_count = 0
 error_count = 0
 logged_accounts = set()
 
-def update_status_in_acc_created(username, status):
-    with lock:
-        with open("/storage/emulated/0/Acc_Created.csv", 'r', newline='', encoding='latin-1') as csvfile:
-            reader = csv.DictReader(csvfile)
-            rows = list(reader)
-
-        for row in rows:
-            account_link = row.get('ACCOUNT LINK', '').strip()
-            if account_link.endswith(username):
-                row['STATUS'] = status
-
-        with open("/storage/emulated/0/Acc_Created.csv", 'w', newline='', encoding='latin-1') as csvfile:
-            fieldnames = rows[0].keys() if rows else ['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'STATUS']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(rows)
-
 def keep_alive(name, username, password, account_link):
     global success_count, error_count
 
@@ -78,7 +61,6 @@ def keep_alive(name, username, password, account_link):
             if not form:
                 with lock:
                     error_count += 1
-                update_status_in_acc_created(username, 'Login form not found')
                 return
 
             action = form.get('action')
@@ -106,12 +88,10 @@ def keep_alive(name, username, password, account_link):
             else:
                 with lock:
                     error_count += 1
-                update_status_in_acc_created(username, 'Login failed')
                 return
         except Exception as e:
             with lock:
                 error_count += 1
-            update_status_in_acc_created(username, f'Error: {e}')
             return
 
     start_time = time.time()
