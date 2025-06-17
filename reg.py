@@ -11,6 +11,17 @@ import string
 
 os.system("clear")
 
+# Refresh session function
+def refresh_session(session, url="https://m.facebook.com/home.php", headers=None, retries=3):
+    print(f"\n🔄 Refreshing session {retries} times...\n")
+    for i in range(retries):
+        try:
+            response = session.get(url, headers=headers)
+            time.sleep(1)
+        except Exception as e:
+            print(f"  ⚠️ Refresh {i + 1} failed: {e}")
+
+
 custom_password_base = None
 profile_id = None
 user_provided_contact_info = None
@@ -168,88 +179,98 @@ def create_fbunconfirmed(account_type, usern, gender):
 
     initial_contact_was_phone = (initial_contact_choice_global == '1')
 
-    url = "https://m.facebook.com/reg"
-    headers = {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Referer": "https://m.facebook.com/reg",
-        "Connection": "keep-alive",
-        "X-FB-Connection-Type": "MOBILE.LTE",
-        "X-FB-Connection-Quality": "EXCELLENT",
-        "X-FB-Net-HNI": "51502",
-        "X-FB-SIM-HNI": "51502",
-        "X-FB-HTTP-Engine": "Liger",
-        'x-fb-connection-type': 'Unknown',
-        'accept-encoding': 'gzip, deflate',
-        'content-type': 'application/x-www-form-urlencoded',
-        "User-Agent": 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
-    }
-
-    form = check_page_loaded(url, headers)
-    if not form:
-        print(f"{FAILURE} Initial registration form not found. Cannot proceed with this account creation attempt.")
-        return False
-
-    internal_creation_attempts = 0
-    max_internal_attempts = 5
-
-    while internal_creation_attempts < max_internal_attempts:
-        internal_creation_attempts += 1
-        print(f"\033[92m\nPlease wait, I'm trying to skip the checkpoint block ({internal_creation_attempts}/{max_internal_attempts})\033[0m")
-
-        firstname, lastname, date, year, month, used_password = \
-            generate_user_details_initial(account_type, gender, custom_password_base)
-
-        action_url = requests.compat.urljoin(url, form["action"]) if form.has_attr("action") else url
-        inputs = form.find_all("input")
-
-        data = {
-            "firstname": firstname,
-            "lastname": lastname,
-            "birthday_day": str(date),
-            "birthday_month": str(month),
-            "birthday_year": str(year),
-            "sex": str(gender),
-            "encpass": used_password,
-            "submit": "Sign Up",
-            "reg_email__": user_provided_contact_info,
+    while True:
+        url = "https://m.facebook.com/reg"
+        headers = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Referer": "https://m.facebook.com/reg",
+            "Connection": "keep-alive",
+            "X-FB-Connection-Type": "MOBILE.LTE",
+            "X-FB-Connection-Quality": "EXCELLENT",
+            "X-FB-Net-HNI": "51502",
+            "X-FB-SIM-HNI": "51502",
+            "X-FB-HTTP-Engine": "Liger",
+            'x-fb-connection-type': 'Unknown',
+            'accept-encoding': 'gzip, deflate',
+            'content-type': 'application/x-www-form-urlencoded',
+            "User-Agent": 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
         }
 
-        for inp in inputs:
-            if inp.has_attr("name") and inp["name"] not in data:
-                data[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
+        form = check_page_loaded(url, headers)
+        if not form:
+            print(f"{FAILURE} Initial registration form not found. Cannot proceed with this account creation attempt.")
+            continue  # Retry from the top
 
-        reg_response = retry_request(action_url, headers, method="post", data=data)
-        if not reg_response:
-            print(f"{WARNING} Registration post failed. Trying next internal attempt.")
-            time.sleep(RETRY_DELAY * 2)
-            continue
+        internal_creation_attempts = 0
+        max_internal_attempts = 5
 
-        try:
-            if "c_user" in session.cookies:
-                uid = session.cookies.get("c_user")
-                profile_id = f'https://www.facebook.com/profile.php?id={uid}'
-                break
-            else:
-                soup_after_reg = BeautifulSoup(reg_response.text, "html.parser")
-                registration_error = soup_after_reg.find(id="registration-error")
-                checkpoint_form = soup_after_reg.find('form', action=lambda x: x and 'checkpoint' in x)
+        while internal_creation_attempts < max_internal_attempts:
+            internal_creation_attempts += 1
+            print(
+                f"\033[92m\nPlease wait, I'm trying to skip the checkpoint block ({internal_creation_attempts}/{max_internal_attempts})\033[0m")
 
-                if registration_error:
-                    error_text = registration_error.get_text(strip=True)
-                elif checkpoint_form:
-                    print(f"{WARNING} Account hit a checkpoint immediately. Trying next internal attempt...")
+            firstname, lastname, date, year, month, used_password = generate_user_details_initial(account_type, gender,
+                                                                                                  custom_password_base)
+
+            action_url = requests.compat.urljoin(url, form["action"]) if form.has_attr("action") else url
+            inputs = form.find_all("input")
+
+            data = {
+                "firstname": firstname,
+                "lastname": lastname,
+                "birthday_day": str(date),
+                "birthday_month": str(month),
+                "birthday_year": str(year),
+                "sex": str(gender),
+                "encpass": used_password,
+                "submit": "Sign Up",
+                "reg_email__": user_provided_contact_info,
+            }
+
+            for inp in inputs:
+                if inp.has_attr("name") and inp["name"] not in data:
+                    data[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
+
+            reg_response = retry_request(action_url, headers, method="post", data=data)
+            if not reg_response:
+                print(f"{WARNING} Registration post failed. Trying next internal attempt.")
+                time.sleep(RETRY_DELAY * 2)
+                continue
+
+            try:
+                if "c_user" in session.cookies:
+                    uid = session.cookies.get("c_user")
+                    profile_id = f'https://www.facebook.com/profile.php?id={uid}'
+                    print(f"{SUCCESS} Account created successfully: {profile_id}")
+                    break  # Exit internal loop
                 else:
-                    print(
-                        f"{WARNING} Create Account Failed: No c_user cookie found and no clear error message. Trying next internal attempt...")
+                    soup_after_reg = BeautifulSoup(reg_response.text, "html.parser")
+                    registration_error = soup_after_reg.find(id="registration-error")
+                    checkpoint_form = soup_after_reg.find('form', action=lambda x: x and 'checkpoint' in x)
 
+                    if registration_error:
+                        error_text = registration_error.get_text(strip=True)
+                        print(f"{FAILURE} Registration error: {error_text}")
+                    elif checkpoint_form:
+                        print(f"{WARNING} Account hit a checkpoint immediately. Trying next internal attempt...")
+                    else:
+                        print(f"{WARNING} Create Account Failed: No c_user cookie found and no clear error message. Trying next internal attempt...")
+
+                    # 🔄 Refresh session before retry
+                    refresh_session(session, headers=headers, retries=3)
+
+                    time.sleep(RETRY_DELAY * 2)
+                    os.system("clear")
+
+            except Exception as e:
+                print(
+                    f"{FAILURE} An unexpected error occurred during account verification: {e}. Trying next internal attempt.")
                 time.sleep(RETRY_DELAY * 2)
                 os.system("clear")
 
-        except Exception as e:
-            print(
-                f"{FAILURE} An unexpected error occurred during account verification: {e}. Trying next internal attempt.")
-            time.sleep(RETRY_DELAY * 2)
-            os.system("clear")
+        # Exit outer while loop if successful
+        if "c_user" in session.cookies:
+            break
 
     if not profile_id:
         print(
@@ -263,7 +284,6 @@ def create_fbunconfirmed(account_type, usern, gender):
         try:
             # Step 3: Change email
             change_email_url = "https://m.facebook.com/changeemail/"
-            # Use headers defined in the main scope of create_fbunconfirmed
             headers_email_change = {
                 "sec-ch-ua-platform": '"Android"',
                 "x-requested-with": "XMLHttpRequest",
@@ -287,37 +307,43 @@ def create_fbunconfirmed(account_type, usern, gender):
                 form_email_change = soup_email_form.find("form")
 
                 if form_email_change:
-                    action_url_email_change = requests.compat.urljoin(change_email_url, form_email_change[
-                        "action"]) if form_email_change.has_attr("action") else change_email_url
+                    action_url_email_change = requests.compat.urljoin(
+                        change_email_url,
+                        form_email_change["action"] if form_email_change.has_attr("action") else change_email_url
+                    )
                     inputs_email_change = form_email_change.find_all("input")
                     data_email_change = {}
+
                     for inp in inputs_email_change:
                         if inp.has_attr("name") and inp["name"] not in data_email_change:
                             data_email_change[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
 
                     while True:
-                        new_email_input = input(
-                            f" Type your Email:  \033[0m").strip()
+                        new_email_input = input(f" Type your Email:  \033[0m").strip()
                         if '@' in new_email_input and '.' in new_email_input:
                             data_email_change["new"] = new_email_input
-                            data_email_change["submit"] = "Add"  # Assuming 'Add' is the submit button name
+                            data_email_change["submit"] = "Add"
                             break
                         else:
                             print(f"{WARNING} Invalid email format. Please enter a valid email address.")
 
-                    email_change_post_response = retry_request(action_url_email_change, headers_email_change,
-                                                               method="post", data=data_email_change)
-                    if email_change_post_response and "c_user" in session.cookies:  # Check if still logged in after post
-                        user_provided_contact_info = new_email_input  # Update global variable
+                    email_change_post_response = retry_request(
+                        action_url_email_change,
+                        headers_email_change,
+                        method="post",
+                        data=data_email_change
+                    )
+
+                    if email_change_post_response and "c_user" in session.cookies:
+                        user_provided_contact_info = new_email_input
                     else:
                         print(
-                            f"\033[1;91m⚠️😢 Error: Failed to change email. It might be invalid or an issue occurred.\033[0m")
-                        # Do not return False here, account is already created, just email change failed.
+                            "\033[1;91m⚠️😢 Error: Failed to change email. It might be invalid or an issue occurred.\033[0m")
                 else:
                     print(f"{WARNING} Could not find the email change form. Skipping email change.")
         except Exception as e:
             print(f"{FAILURE} An unexpected error occurred during the email change process: {e}")
-            # Do not return False here, account is already created, just email change failed.
+
     os.system("clear")
     print(f"          Password: {used_password}")
     user_input_blocked = input(
