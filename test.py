@@ -10,7 +10,7 @@ import string
 from concurrent.futures import ThreadPoolExecutor
 import threading
 
-os.system("clear")
+os.system("clear")  # Clear only once at start
 
 # GLOBALS
 SUCCESS = "✅"
@@ -156,23 +156,24 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, email=None,
             save_to_csv(filename, data_to_save)
 
             with lock:
-                print(f"{SUCCESS} Created: {full_name} | {email_or_phone} | Pass: {used_password}")
+                msg = f"{SUCCESS} Created: {full_name} | {email_or_phone} | Pass: {used_password}"
+                print(msg)
+                with open("fb_created_log.txt", "a") as log_file:
+                    log_file.write(msg + "\n")
         else:
             with lock:
                 print(f"{FAILURE} {email_or_phone} creation failed. Account got blocked.")
     except Exception as e:
         print(f"{FAILURE} Error during creation: {e}")
 
-
 def threaded_worker(index, account_type, gender, email):
     time.sleep(3 * index)  # delay start
     usern = f"user{index + 1}"
-    os.system("clear")
+    # os.system("clear") removed here to prevent erasing terminal output
     time.sleep(3)
     create_fbunconfirmed(account_type, usern, gender, email=email)
 
 def main_with_threads():
-    os.system("clear")
     try:
         max_create = int(input("🔢 Enter number of accounts to create: "))
         max_workers = int(input("🧵 Enter max workers (threads): "))
