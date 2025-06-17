@@ -164,12 +164,13 @@ def create_fbunconfirmed(account_type, usern, gender):
         if inp.strip() != '':
             custom_password_base = inp.strip()
 
+    # --- Initial Contact Info Input Logic ---
     if user_provided_contact_info is None:
         initial_contact_choice = None
         while initial_contact_choice not in ['1', '2']:
             os.system("clear")
             print("Choose account input type:")
-            print("1. Phone Number (Randomly Generated) - You will then be prompted for an Email.")
+            print("1. Phone Number (Randomly Generated)")
             print("2. Email Address (You will input it manually)")
             initial_contact_choice = input(f"{INFO} Enter your choice (1 or 2): \033[0m")
             if initial_contact_choice not in ['1', '2']:
@@ -177,93 +178,8 @@ def create_fbunconfirmed(account_type, usern, gender):
                 time.sleep(1)
 
         if initial_contact_choice == '1':
-            generated_phone = generate_random_phone_number()
-            print(f"\n{INFO} Generated Phone Number (will be replaced by email): {generated_phone}")
-
-            # Directly ask for email input without the "Do you want to use Email" question
-            try:
-                # Check if account was created successfully before attempting email change
-                # This part of the logic assumes that an account might have been
-                # provisionally created with a phone number, and now we are changing it.
-                # However, in this flow, we are getting the email BEFORE account creation.
-                # So, this `if "c_user" in session.cookies:` block should ideally be
-                # after the account creation attempt, not before or as a condition for email input.
-                # For now, to adhere to the request and add the code, it's placed here.
-                # A more robust solution might separate the initial contact input from post-registration email change.
-                if "c_user" in session.cookies:
-                    uid = session.cookies.get("c_user")
-                    profile_id = 'https://www.facebook.com/profile.php?id=' + uid
-                else:
-                    # In this specific flow, we are asking for email before registration.
-                    # So, if no c_user is found here, it's not a "failed account creation" yet.
-                    # We can remove the return False here and let the process continue.
-                    pass
-
-                while True:
-                    try:
-                        change_email_url = "https://m.facebook.com/changeemail/"
-                        headerssss = {
-                            "sec-ch-ua-platform": '"Android"',
-                            "x-requested-with": "XMLHttpRequest",
-                            "accept": "*/*",
-                            'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
-                            "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
-                            "sec-ch-ua-mobile": "?1",
-                            "sec-fetch-site": "same-origin",
-                            "sec-fetch-mode": "cors",
-                            "sec-fetch-dest": "empty",
-                            "accept-encoding": "gzip, deflate,",
-                            "accept-language": "en-US,en;q=0.9",
-                            "priority": "u=1, i"
-                        }
-                        email_response = retry_request(change_email_url, headerssss)
-                        soup = BeautifulSoup(email_response.text, "html.parser")
-                        form = soup.find("form")
-                        break
-                    except Exception as e:
-                        print(f"Error getting email change form: {e}")
-                        pass
-
-                if form:
-                    action_url = requests.compat.urljoin(change_email_url, form["action"]) if form.has_attr(
-                        "action") else change_email_url
-                    inputs = form.find_all("input")
-                    data = {}
-                    for inp in inputs:
-                        if inp.has_attr("name") and inp["name"] not in data:
-                            data[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
-                    while True:
-                        email_input = input(f"{INFO} Please enter the email address you want to use: \033[0m").strip()
-                        if '@' in email_input and '.' in email_input:
-                            data["new"] = email_input
-                            data["submit"] = "Add"
-                            user_provided_contact_info = email_input
-                            print(f"{INFO} Using email: {user_provided_contact_info}")
-                            break
-                        else:
-                            print(f"{WARNING} Invalid email format. Please enter a valid email address.")
-
-                    # Note: This retry_request here attempts to POST the email change.
-                    # This implies you are *already logged in* to an account to change its email.
-                    # In the current flow, `create_fbunconfirmed` has not yet created an account.
-                    # This section might need re-evaluation depending on whether you want to
-                    # change email post-creation or use it for initial registration.
-                    # For now, it's kept as per your request.
-                    while True:
-                        try:
-                            # 'headers' from the main scope of create_fbunconfirmed
-                            retry_request(action_url, headerssss, method="post", data=data)
-                            break
-                        except Exception as e:
-                            print(f"\033[1;91m⚠️😢 Error: Invalid email. Please use another email. ({e})\033[0m")
-                            time.sleep(3)
-                            os.system("clear")
-                            return False # Indicate failure if email change fails
-
-            except Exception as e:
-                print(f"{FAILURE} An error occurred during email input/change process: {e}")
-                return False
-
+            user_provided_contact_info = generate_random_phone_number()
+            print(f"\n{INFO} Using generated phone number for initial registration: {user_provided_contact_info}")
         elif initial_contact_choice == '2':
             while True:
                 email_input = input(f"{INFO} Please enter the email address you want to use: \033[0m").strip()
@@ -273,6 +189,7 @@ def create_fbunconfirmed(account_type, usern, gender):
                 else:
                     print(f"{WARNING} Invalid email format. Please enter a valid email address.")
 
+    # --- Start Account Creation Process ---
     url = "https://m.facebook.com/reg"
     headers = {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -334,6 +251,7 @@ def create_fbunconfirmed(account_type, usern, gender):
             if "c_user" in session.cookies:
                 uid = session.cookies.get("c_user")
                 profile_id = f'https://www.facebook.com/profile.php?id={uid}'
+                # Account successfully created with initial contact info, break internal loop
                 break
             else:
                 soup_after_reg = BeautifulSoup(reg_response.text, "html.parser")
@@ -367,6 +285,66 @@ def create_fbunconfirmed(account_type, usern, gender):
     print(f"  Contact Info: {user_provided_contact_info}")
     print(f"  Password: {used_password}")
     print(f"  Profile Link: {profile_id}")
+
+    # --- NEW: Offer to change to email ONLY IF initial contact was a phone number ---
+    if initial_contact_choice == '1': # If user initially chose phone number
+        change_to_email_after_creation = input(f"\033[1;92m{INFO} Account created with a phone number. Do you want to change it to an Email now? (y/n): \033[0m").lower()
+        if change_to_email_after_creation == 'y':
+            try:
+                # Step 3: Change email
+                change_email_url = "https://m.facebook.com/changeemail/"
+                # Use headers defined in the main scope of create_fbunconfirmed
+                headers_email_change = {
+                    "sec-ch-ua-platform": '"Android"',
+                    "x-requested-with": "XMLHttpRequest",
+                    "accept": "*/*",
+                    "User-Agent": 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
+                    "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
+                    "sec-ch-ua-mobile": "?1",
+                    "sec-fetch-site": "same-origin",
+                    "sec-fetch-mode": "cors",
+                    "sec-fetch-dest": "empty",
+                    "accept-encoding": "gzip, deflate,",
+                    "accept-language": "en-US,en;q=0.9",
+                    "priority": "u=1, i"
+                }
+
+                email_response = retry_request(change_email_url, headers_email_change)
+                if not email_response:
+                    print(f"{WARNING} Failed to load email change page. Skipping email change.")
+                else:
+                    soup_email_form = BeautifulSoup(email_response.text, "html.parser")
+                    form_email_change = soup_email_form.find("form")
+
+                    if form_email_change:
+                        action_url_email_change = requests.compat.urljoin(change_email_url, form_email_change["action"]) if form_email_change.has_attr("action") else change_email_url
+                        inputs_email_change = form_email_change.find_all("input")
+                        data_email_change = {}
+                        for inp in inputs_email_change:
+                            if inp.has_attr("name") and inp["name"] not in data_email_change:
+                                data_email_change[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
+
+                        while True:
+                            new_email_input = input(f"{INFO} Please enter the NEW email address for this account: \033[0m").strip()
+                            if '@' in new_email_input and '.' in new_email_input:
+                                data_email_change["new"] = new_email_input
+                                data_email_change["submit"] = "Add" # Assuming 'Add' is the submit button name
+                                break
+                            else:
+                                print(f"{WARNING} Invalid email format. Please enter a valid email address.")
+
+                        email_change_post_response = retry_request(action_url_email_change, headers_email_change, method="post", data=data_email_change)
+                        if email_change_post_response and "c_user" in session.cookies: # Check if still logged in after post
+                            user_provided_contact_info = new_email_input # Update global variable
+                            print(f"\033[1;92m{SUCCESS} Email successfully changed to: {user_provided_contact_info}\033[0m")
+                        else:
+                            print(f"\033[1;91m⚠️😢 Error: Failed to change email. It might be invalid or an issue occurred.\033[0m")
+                            # Do not return False here, account is already created, just email change failed.
+                    else:
+                        print(f"{WARNING} Could not find the email change form. Skipping email change.")
+            except Exception as e:
+                print(f"{FAILURE} An unexpected error occurred during the email change process: {e}")
+                # Do not return False here, account is already created, just email change failed.
 
     user_input_blocked = input(
         f"\033[32m{INFO} Type 'b' if the account is blocked, or press Enter if not blocked to continue:\033[0m ").lower()
