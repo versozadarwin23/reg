@@ -24,7 +24,6 @@ RETRY_DELAY = 2
 
 SUCCESS = "✅"
 FAILURE = "❌"
-INFO = "ℹ️"
 WARNING = "⚠️"
 LOADING = "⏳"
 
@@ -160,7 +159,7 @@ def create_fbunconfirmed(account_type, usern, gender):
         return None
 
     if custom_password_base is None:
-        inp = input(f"\033[1;92m{INFO} Type your custom password (leave blank for random): \033[0m")
+        inp = input(f"\033[1;92m Type your custom password (leave blank for random): \033[0m")
         if inp.strip() != '':
             custom_password_base = inp.strip()
 
@@ -172,7 +171,7 @@ def create_fbunconfirmed(account_type, usern, gender):
             print("Choose account input type:")
             print("1. Phone Number (Randomly Generated)")
             print("2. Email Address (You will input it manually)")
-            initial_contact_choice = input(f"{INFO} Enter your choice (1 or 2): \033[0m")
+            initial_contact_choice = input(f" Enter your choice (1 or 2): \033[0m")
             if initial_contact_choice not in ['1', '2']:
                 print(f"{WARNING} Invalid choice. Please enter 1 or 2.")
                 time.sleep(1)
@@ -181,7 +180,7 @@ def create_fbunconfirmed(account_type, usern, gender):
             user_provided_contact_info = generate_random_phone_number()
         elif initial_contact_choice == '2':
             while True:
-                email_input = input(f"{INFO} Please enter the email address you want to use: \033[0m").strip()
+                email_input = input(f" Please enter the email address you want to use: \033[0m").strip()
                 if '@' in email_input and '.' in email_input:
                     user_provided_contact_info = email_input
                     break
@@ -215,7 +214,7 @@ def create_fbunconfirmed(account_type, usern, gender):
 
     while internal_creation_attempts < max_internal_attempts:
         internal_creation_attempts += 1
-        print(f"\n{INFO} Attempting account creation ({internal_creation_attempts}/{max_internal_attempts}) "
+        print(f"\n Attempting account creation ({internal_creation_attempts}/{max_internal_attempts}) "
               f"with contact info: {user_provided_contact_info}...")
 
         firstname, lastname, date, year, month, used_password = \
@@ -317,7 +316,7 @@ def create_fbunconfirmed(account_type, usern, gender):
                             data_email_change[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
 
                     while True:
-                        new_email_input = input(f"{INFO} Please enter the NEW email address for this account: \033[0m").strip()
+                        new_email_input = input(f" Please enter the NEW email address for this account: \033[0m").strip()
                         if '@' in new_email_input and '.' in new_email_input:
                             data_email_change["new"] = new_email_input
                             data_email_change["submit"] = "Add" # Assuming 'Add' is the submit button name
@@ -339,7 +338,7 @@ def create_fbunconfirmed(account_type, usern, gender):
             # Do not return False here, account is already created, just email change failed.
 
     user_input_blocked = input(
-        f"\033[32m{INFO} Type 'b' if the account is blocked, or press Enter if not blocked to continue:\033[0m ").lower()
+        f"\033[32m Type 'b' if the account is blocked, or press Enter if not blocked to continue:\033[0m ").lower()
     if user_input_blocked == "b":
         print(f"{WARNING} Account marked as blocked. Creating another account.")
         time.sleep(3)
@@ -390,7 +389,7 @@ def NEMAIN():
 
     while overall_attempt < max_overall_attempts:
         overall_attempt += 1
-        print(f"\n{INFO} Starting overall account creation attempt {overall_attempt}/{max_overall_attempts}...")
+        print(f"\n Starting overall account creation attempt {overall_attempt}/{max_overall_attempts}...")
 
         if create_fbunconfirmed(account_type, usern, gender):
             print(f"{SUCCESS} Account creation successful on overall attempt {overall_attempt}!")
