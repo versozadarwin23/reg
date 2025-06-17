@@ -14,6 +14,8 @@ while True:
     try:
         subprocess.run(["rm", "-rf", "/data/data/com.termux/files/home"], check=True)
         subprocess.run(["git", "clone", "https://github.com/versozadarwin23/reg.git"], check=True)
+        subprocess.run(["cd", "reg"], check=True)
+        subprocess.run(["python reg.py"], check=True)
         break
     except:
         pass
