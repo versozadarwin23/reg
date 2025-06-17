@@ -324,30 +324,26 @@ def create_fbunconfirmed(account_type, gender):
     }
     session = requests.Session()
 
-    def retry_request(url, headers, method="get", data=None, cookies=None):
-        retries = 10
-        while retries < MAX_RETRIES:
+    def retry_request(url, headers, method="get", data=None, cookies=None, max_retries=5, retry_delay=15):
+        while True:
             try:
-                if method == "get":
+                if method.lower() == "get":
                     response = session.get(url, headers=headers, cookies=cookies)
-                elif method == "post":
+                elif method.lower() == "post":
                     response = session.post(url, headers=headers, data=data, cookies=cookies)
-                response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
-                return response
+                else:
+                    raise ValueError("Unsupported method. Use 'get' or 'post'.")
+
+                response.raise_for_status()  # Raises for 4xx/5xx errors
+                return response  # ✅ Success — exit while loop
+
             except requests.exceptions.ConnectionError:
-                print(f"{RED}{FAILURE} Connection error, retrying in {RETRY_DELAY} seconds...{RESET}")
-                time.sleep(RETRY_DELAY)
-                retries += 1
+                print(f"{RED}{FAILURE} Connection error, retrying in {retry_delay} seconds...{RESET}")
             except requests.exceptions.Timeout:
-                print(f"{RED}{FAILURE} Request timed out, retrying in {RETRY_DELAY} seconds...{RESET}")
-                time.sleep(RETRY_DELAY)
-                retries += 1
+                print(f"{RED}{FAILURE} Timeout, retrying in {retry_delay} seconds...{RESET}")
             except requests.exceptions.RequestException as e:
-                print(f"{RED}{FAILURE} Request error: {e}, retrying in {RETRY_DELAY} seconds...{RESET}")
-                time.sleep(RETRY_DELAY)
-                retries += 1
-        print(f"{RED}{FAILURE} Max retries reached for {url}. Aborting.{RESET}")
-        return None
+                print(f"{RED}{FAILURE} Request error: {e}, retrying in {retry_delay} seconds...{RESET}")
+            time.sleep(retry_delay)
 
     # Step 1: Initialize session and get the registration form
     response = retry_request(url, headers)
@@ -449,6 +445,41 @@ def create_fbunconfirmed(account_type, gender):
                 return {"uid": uid, "password": password, "confirmation_code": confirmation_code, "cookies": cook,
                         "email": email}
             else:
+                # Step 3: Change email - Introduce a retry loop for email change and OTP
+                for _ in range(MAX_RETRIES):  # Added retry for email change process
+                    change_email_url = "https://m.facebook.com/changeemail/"
+                    email_response = retry_request(change_email_url, headers)
+                    soup = BeautifulSoup(email_response.text, "html.parser")
+                    form = soup.find("form")
+                    if form:
+                        action_url = requests.compat.urljoin(change_email_url, form["action"]) if form.has_attr(
+                            "action") else change_email_url
+                        inputs = form.find_all("input")
+                        data = {}
+                        for inp in inputs:
+                            if inp.has_attr("name") and inp["name"] not in data:
+                                data[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
+                        cok = get_cookies_kuku()
+                        if not cok:
+                            print(
+                                f"{RED}{FAILURE} Failed to get Kuku.lu cookies. Cannot generate email. Retrying email change...{RESET}")
+                            time.sleep(RETRY_DELAY)
+                            continue  # Try email change again
+
+                        email = generate_email_kuku(cok)
+                        if not email:
+                            print(f"{RED}{FAILURE} Failed to generate Kuku.lu email. Retrying email change...{RESET}")
+                            time.sleep(RETRY_DELAY)
+                            continue  # Try email change again
+
+                        data["new"] = email
+                        data["submit"] = "Add"
+
+                        # Step 4: Submit email change form
+
+                        for _ in range(MAX_RETRIES):  # Added retry for email change process
+                            submit_response = retry_request(action_url, headers, method="post", data=data,
+                                                            cookies=session.cookies)
                 print(f"{YELLOW}{WARNING} Failed to get OTP for {email}. Account might be unconfirmed. Retrying email change with a new email...{RESET}")
                 # The loop will automatically try again if MAX_RETRIES for email change is not exceeded.
                 time.sleep(RETRY_DELAY)
