@@ -202,7 +202,7 @@ def create_fbunconfirmed(account_type, usern, gender):
         # However, for creating *multiple* accounts, unique emails are usually better.
         # So we will prompt for email each time if email was the initial choice.
         while True:
-            email_input = input(f" Please enter the email address you want to use: \033[0m").strip()
+            email_input = input(f" Type your Email:  \033[0m").strip()
             if '@' in email_input and '.' in email_input:
                 user_provided_contact_info = email_input
                 break
