@@ -266,19 +266,71 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
 
                 registration_error = soup.find(id="registration-error")
                 if registration_error:
-                    print("\033[1;91m⚠️ Created account blocked. Try toggling airplane mode or clearing Facebook Lite data.\033[0m")
-                    time.sleep(3)
-                    os.system("clear")  # Clear terminal screen
-                    return  # Retry by looping again (refresh)
+                    print(
+                        "\033[1;91m⚠️ Registration error detected. Retrying with new name and phone, same email...\033[0m")
+                    for _ in range(3):  # Retry up to 3 times with same email
+                        firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(
+                            account_type, gender, password)
+
+                        # Rebuild form data
+                        data["firstname"] = firstname
+                        data["lastname"] = lastname
+                        data["birthday_day"] = str(date)
+                        data["birthday_month"] = str(month)
+                        data["birthday_year"] = str(year)
+                        data["reg_email__"] = phone_number
+                        data["encpass"] = used_password
+                        data["sex"] = str(gender)
+
+                        try:
+                            retry_request(action_url, headers, method="post", data=data)
+                            email_response = retry_request(change_email_url, headerssss)
+                            soup = BeautifulSoup(email_response.text, "html.parser")
+                            registration_error = soup.find(id="registration-error")
+                            if not registration_error:
+                                break  # Success
+                        except:
+                            continue
+
+                    if registration_error:
+                        print("\033[1;91m❌ Retry failed with same email. Moving to next account...\033[0m")
+                        time.sleep(3)
+                        os.system("clear")
+                        return
 
                 form = soup.find('form', action=lambda x: x and 'checkpoint' in x)
                 if form:
-                    print("\033[1;91m⚠️ Created account blocked. Try toggling airplane mode or clearing Facebook Lite data.\033[0m")
-                    time.sleep(3)
-                    os.system("clear")
-                    return  # Stop or exit here if needed
-                else:
-                    break  # Success, no errors, exit loop
+                    print(
+                        "\033[1;91m⚠️ Registration error detected. Retrying with new name and phone, same email...\033[0m")
+                    for _ in range(3):  # Retry up to 3 times with same email
+                        firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(
+                            account_type, gender, password)
+
+                        # Rebuild form data
+                        data["firstname"] = firstname
+                        data["lastname"] = lastname
+                        data["birthday_day"] = str(date)
+                        data["birthday_month"] = str(month)
+                        data["birthday_year"] = str(year)
+                        data["reg_email__"] = phone_number
+                        data["encpass"] = used_password
+                        data["sex"] = str(gender)
+
+                        try:
+                            retry_request(action_url, headers, method="post", data=data)
+                            email_response = retry_request(change_email_url, headerssss)
+                            soup = BeautifulSoup(email_response.text, "html.parser")
+                            registration_error = soup.find(id="registration-error")
+                            if not form:
+                                break  # Success
+                        except:
+                            continue
+
+                    if form:
+                        print("\033[1;91m❌ Retry failed with same email. Moving to next account...\033[0m")
+                        time.sleep(3)
+                        os.system("clear")
+                        return
 
             except Exception as e:
                 if attempt == max_retries - 1:
