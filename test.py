@@ -9,6 +9,7 @@ import random
 import string
 from concurrent.futures import ThreadPoolExecutor
 import threading
+from openpyxl import Workbook, load_workbook # Import openpyxl
 
 os.system("clear")  # Clear only once at start
 
@@ -23,7 +24,7 @@ lock = threading.Lock()
 
 def load_user_agents(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
-        user_agents = [line.strip() for line in file if line.strip()]
+        user_agents = [line.strip() for line in file if file.strip()]
     return user_agents
 
 def get_random_user_agent(file_path):
@@ -38,26 +39,23 @@ def get_names(account_type, gender):
     if account_type == 1:
         male_first_names = load_names_from_file("first_name.txt")
         last_names = load_names_from_file("last_name.txt")
-        female_first_names = [] # Ensure this is an empty list if not used
+        female_first_names = []
     else:
-        male_first_names = [] # Ensure this is an empty list if not used
+        male_first_names = []
         female_first_names = load_names_from_file('path_to_female_first_names.txt')
         last_names = load_names_from_file('path_to_last_names.txt')
 
-    # Ensure there are names to choose from
     if gender == 1 and male_first_names:
         firstname = random.choice(male_first_names)
     elif gender != 1 and female_first_names:
         firstname = random.choice(female_first_names)
     else:
-        # Handle cases where name lists might be empty for the given gender/type
-        firstname = "John" if gender == 1 else "Jane" # Default names
+        firstname = "John" if gender == 1 else "Jane"
         with lock:
             print(f"{WARNING} No names found for specified gender/account type. Using default.")
 
     lastname = random.choice(last_names)
     return firstname, lastname
-
 
 def generate_random_phone_number():
     random_number = str(random.randint(1000000, 9999999))
@@ -85,28 +83,31 @@ def generate_user_details(account_type, gender, password=None, current_firstname
     phone_number = generate_random_phone_number()
     return firstname, lastname, date, year, month, phone_number, password
 
-
-def save_to_csv(filename, data):
+def save_to_xlsx(filename, data):
     while True:
         try:
-            file_exists = os.path.isfile(filename)
-            with open(filename, mode='a', newline='') as file:
-                writer = csv.writer(file)
-                if not file_exists or os.path.getsize(filename) == 0:
-                    writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
-                writer.writerow(data)
+            if os.path.isfile(filename):
+                workbook = load_workbook(filename)
+                sheet = workbook.active
+            else:
+                workbook = Workbook()
+                sheet = workbook.active
+                sheet.append(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK']) # Add header row
+
+            sheet.append(data)
+            workbook.save(filename)
             break
         except Exception as e:
             print(f"Error saving to {filename}: {e}. Retrying...")
+            time.sleep(1) # Wait a bit before retrying
 
-def create_fbunconfirmed(account_type, usern, gender, email, retries_left=5, current_password=None, current_firstname=None, current_lastname=None):
+def create_fbunconfirmed(account_type, usern, gender, email, retries_left=3, current_password=None, current_firstname=None, current_lastname=None):
     global custom_password_base
     if retries_left == 0:
         with lock:
             print(f"{FAILURE} {email} failed after maximum retries. Skipping.")
         return
 
-    # Generate user details. If this is a retry, keep the same name but generate a new password
     firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(
         account_type, gender,
         password=current_password if current_password else generate_random_password(),
@@ -136,10 +137,8 @@ def create_fbunconfirmed(account_type, usern, gender, email, retries_left=5, cur
         if not form:
             with lock:
                 print(f"{FAILURE} Failed to load registration form for {email}. Retrying ({retries_left-1} left).")
-            # If form not found, it might be a temporary issue or block, retry
-            time.sleep(5) # Wait a bit before retrying
+            time.sleep(5)
             return create_fbunconfirmed(account_type, usern, gender, email, retries_left - 1, generate_random_password(), firstname, lastname)
-
 
         action_url = requests.compat.urljoin(url, form["action"]) if form.has_attr("action") else url
         inputs = form.find_all("input")
@@ -167,22 +166,20 @@ def create_fbunconfirmed(account_type, usern, gender, email, retries_left=5, cur
         refreshed_response = session.get(refresh_url, headers=headers)
         refreshed_soup = BeautifulSoup(refreshed_response.text, "html.parser")
 
-        # Check if checkpointed or blocked
         checkpoint_form = refreshed_soup.find('form', action=lambda x: x and 'checkpoint' in x)
         if checkpoint_form or "checkpoint" in post_response.url.lower():
             with lock:
                 print(f"{WARNING} {email_or_phone} hit a checkpoint. Retrying with new password ({retries_left-1} left).")
-            time.sleep(2) # Add a delay before retrying
+            time.sleep(2)
             return create_fbunconfirmed(account_type, usern, gender, email, retries_left - 1, generate_random_password(), firstname, lastname)
 
         if "c_user" in session.cookies:
             uid = session.cookies.get("c_user")
             profile_id = f"https://www.facebook.com/profile.php?id={uid}"
             full_name = f"{firstname} {lastname}"
-            filename = "/storage/emulated/0/Acc_Created.csv"
+            filename = "/storage/emulated/0/Acc_Created.xlsx"
             data_to_save = [full_name, email_or_phone, used_password, profile_id + '\t']
-            save_to_csv(filename, data_to_save)
-
+            save_to_xlsx(filename, data_to_save)
             with lock:
                 msg = f"{SUCCESS} Created: {full_name} | {email_or_phone} | Pass: {used_password}"
                 print(msg)
@@ -191,23 +188,22 @@ def create_fbunconfirmed(account_type, usern, gender, email, retries_left=5, cur
         else:
             with lock:
                 print(f"{FAILURE} {email_or_phone} creation failed. Account might be blocked. Retrying ({retries_left-1} left).")
-            time.sleep(5) # Wait before retrying
+            time.sleep(5)
             return create_fbunconfirmed(account_type, usern, gender, email, retries_left - 1, generate_random_password(), firstname, lastname)
     except requests.exceptions.RequestException as e:
         with lock:
             print(f"{FAILURE} Network error during creation for {email}: {e}. Retrying ({retries_left-1} left).")
-        time.sleep(5) # Wait before retrying
+        time.sleep(5)
         return create_fbunconfirmed(account_type, usern, gender, email, retries_left - 1, generate_random_password(), firstname, lastname)
     except Exception as e:
         with lock:
             print(f"{FAILURE} Unexpected error during creation for {email}: {e}. Retrying ({retries_left-1} left).")
-        time.sleep(5) # Wait before retrying
+        time.sleep(5)
         return create_fbunconfirmed(account_type, usern, gender, email, retries_left - 1, generate_random_password(), firstname, lastname)
 
 def threaded_worker(index, account_type, gender, email):
-    time.sleep(3 * index)  # delay start
+    time.sleep(3 * index)
     usern = f"user{index + 1}"
-    # The initial call to create_fbunconfirmed starts the retry process with default retries_left
     create_fbunconfirmed(account_type, usern, gender, email)
 
 def main_with_threads():
@@ -223,29 +219,8 @@ def main_with_threads():
         email = input(f"📧 Enter email for account #{i + 1}: ")
         emails.append(email.strip())
 
-    account_type = 1 # Assuming a fixed account type for simplicity
-    gender = 1       # Assuming a fixed gender for simplicity
-
-    # Placeholder for actual file paths. Make sure these files exist.
-    # For example, create dummy first_name.txt, last_name.txt, and path_to_female_first_names.txt
-    # with some names in them.
-    # Example:
-    # first_name.txt:
-    # John
-    # Michael
-    # David
-
-    # last_name.txt:
-    # Smith
-    # Johnson
-    # Williams
-
-    # path_to_female_first_names.txt:
-    # Mary
-    # Susan
-    # Linda
-
-    # You might want to pass these paths to get_names or make them global if used broadly.
+    account_type = 1
+    gender = 1
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
@@ -256,7 +231,6 @@ def main_with_threads():
             future.result()
 
 if __name__ == "__main__":
-    # Create dummy name files for testing if they don't exist
     if not os.path.exists("first_name.txt"):
         with open("first_name.txt", "w") as f:
             f.write("John\nMichael\nDavid\n")
