@@ -400,98 +400,67 @@ def create_fbunconfirmed(account_type, gender):
 
     # Step 3: Change email - Introduce a retry loop for email change and OTP
     for _ in range(MAX_RETRIES): # Added retry for email change process
-        change_email_url = "https://m.facebook.com/changeemail/"
-        email_response = retry_request(change_email_url, headers)
-        soup = BeautifulSoup(email_response.text, "html.parser")
-        form = soup.find("form")
-        if form:
-            action_url = requests.compat.urljoin(change_email_url, form["action"]) if form.has_attr(
-                "action") else change_email_url
+        MAX_OTP_RETRIES = 5  # Number of email + OTP attempts
+
+        for attempt in range(MAX_OTP_RETRIES):
+            print(f"{CYAN}[INFO] Attempting email change and OTP ({attempt + 1}/{MAX_OTP_RETRIES}){RESET}")
+
+            change_email_url = "https://m.facebook.com/changeemail/"
+            email_response = retry_request(change_email_url, headers)
+            soup = BeautifulSoup(email_response.text, "html.parser")
+            form = soup.find("form")
+
+            if not form:
+                print(f"{RED}{FAILURE} No email change form found. Retrying...{RESET}")
+                time.sleep(RETRY_DELAY)
+                continue
+
+            action_url = requests.compat.urljoin(change_email_url, form.get("action", change_email_url))
             inputs = form.find_all("input")
-            data = {}
-            for inp in inputs:
-                if inp.has_attr("name") and inp["name"] not in data:
-                    data[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
+            data = {inp["name"]: inp.get("value", "") for inp in inputs if inp.has_attr("name")}
+
             cok = get_cookies_kuku()
             if not cok:
-                print(f"{RED}{FAILURE} Failed to get Kuku.lu cookies. Cannot generate email. Retrying email change...{RESET}")
+                print(f"{RED}{FAILURE} Failed to get Kuku.lu cookies. Retrying...{RESET}")
                 time.sleep(RETRY_DELAY)
-                continue # Try email change again
+                continue
 
             email = generate_email_kuku(cok)
             if not email:
-                print(f"{RED}{FAILURE} Failed to generate Kuku.lu email. Retrying email change...{RESET}")
+                print(f"{RED}{FAILURE} Failed to generate Kuku.lu email. Retrying...{RESET}")
                 time.sleep(RETRY_DELAY)
-                continue # Try email change again
+                continue
 
             data["new"] = email
             data["submit"] = "Add"
 
-            # Step 4: Submit email change form
+            submit_response = retry_request(action_url, headers, method="post", data=data, cookies=session.cookies)
 
-            for _ in range(MAX_RETRIES):  # Added retry for email change process
-                submit_response = retry_request(action_url, headers, method="post", data=data, cookies=session.cookies)
-
-            # Wait for and check OTP
+            # Wait/check OTP
             confirmation_code = check_otp_kuku(email, cok)
-            cook = ";".join([f"{key}={value}" for key, value in session.cookies.items()])
 
             if confirmation_code:
-                sys.stdout.write(f'\r\033[K{RESET}  [{GREEN}Successfull{RESET}]: {CYAN}{firstname} {lastname}|{GREEN}{phone_number}|{password}|{confirmation_code}|{email}{RESET}\n')
+                cook = ";".join([f"{key}={value}" for key, value in session.cookies.items()])
+                sys.stdout.write(
+                    f'\r\033[K{RESET}  [{GREEN}Successfull{RESET}]: {CYAN}{firstname} {lastname}|{GREEN}{phone_number}|{password}|{confirmation_code}|{email}{RESET}\n')
                 sys.stdout.flush()
-                # open("/sdcard/Cookie Files.txt", "a").write(f"{uid}|{password}|{confirmation_code}|{cook}|{email}\n") # Uncomment if you want to save cookies
                 open("/sdcard/Created Accounts.txt", "a").write(
                     f"{firstname} {lastname}|{phone_number}|{password}|{uid}|{email}\n")
-                return {"uid": uid, "password": password, "confirmation_code": confirmation_code, "cookies": cook,
-                        "email": email}
-            else:
-                # Step 3: Change email - Introduce a retry loop for email change and OTP
-                for _ in range(MAX_RETRIES):  # Added retry for email change process
-                    change_email_url = "https://m.facebook.com/changeemail/"
-                    email_response = retry_request(change_email_url, headers)
-                    soup = BeautifulSoup(email_response.text, "html.parser")
-                    form = soup.find("form")
-                    if form:
-                        action_url = requests.compat.urljoin(change_email_url, form["action"]) if form.has_attr(
-                            "action") else change_email_url
-                        inputs = form.find_all("input")
-                        data = {}
-                        for inp in inputs:
-                            if inp.has_attr("name") and inp["name"] not in data:
-                                data[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
-                        cok = get_cookies_kuku()
-                        if not cok:
-                            print(
-                                f"{RED}{FAILURE} Failed to get Kuku.lu cookies. Cannot generate email. Retrying email change...{RESET}")
-                            time.sleep(RETRY_DELAY)
-                            continue  # Try email change again
+                return {
+                    "uid": uid,
+                    "password": password,
+                    "confirmation_code": confirmation_code,
+                    "cookies": cook,
+                    "email": email
+                }
 
-                        email = generate_email_kuku(cok)
-                        if not email:
-                            print(f"{RED}{FAILURE} Failed to generate Kuku.lu email. Retrying email change...{RESET}")
-                            time.sleep(RETRY_DELAY)
-                            continue  # Try email change again
-
-                        data["new"] = email
-                        data["submit"] = "Add"
-
-                        # Step 4: Submit email change form
-
-                        for _ in range(MAX_RETRIES):  # Added retry for email change process
-                            submit_response = retry_request(action_url, headers, method="post", data=data,
-                                                            cookies=session.cookies)
-                print(f"{YELLOW}{WARNING} Failed to get OTP for {email}. Account might be unconfirmed. Retrying email change with a new email...{RESET}")
-                # The loop will automatically try again if MAX_RETRIES for email change is not exceeded.
-                time.sleep(RETRY_DELAY)
-                continue # This 'continue' will go to the next iteration of the outer loop for email change.
-        else:
-            print(f"{RED}{FAILURE} No email change form found on Facebook. Retrying email change...{RESET}")
+            print(f"{YELLOW}{WARNING} Failed to get OTP for email: {email}{RESET}")
             time.sleep(RETRY_DELAY)
-            continue # Try email change again
 
-    # If all retries for email change and OTP fail
-    print(f"{RED}{FAILURE} Exhausted retries for email change and OTP for account associated with UID: {uid}. Account unconfirmed.{RESET}")
-    return None # Or return {"uid": uid, "password": password, "email": email, "status": "no_otp"}
+        # If all 5 attempts failed
+        print(
+            f"{RED}{FAILURE} Exhausted retries for email change and OTP for account associated with UID: {uid}. Account unconfirmed.{RESET}")
+        return None
 
 
 def NEMAIN():
