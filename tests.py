@@ -230,7 +230,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None):
             "birthday_day": f"{date}",
             "birthday_month": f"{month}",
             "birthday_year": f"{year}",
-            "email_addr": f"{phone_number}", # CHANGED THIS LINE
+            "reg_email__": f"{phone_number}", # CHANGED THIS LINE
             "sex": f"{gender}",
             "encpass": f"{used_password}",
             "submit": "Sign Up"
