@@ -179,7 +179,6 @@ def create_fbunconfirmed(account_type, usern, gender):
 
         if initial_contact_choice == '1':
             user_provided_contact_info = generate_random_phone_number()
-            print(f"\n{INFO} Using generated phone number for initial registration: {user_provided_contact_info}")
         elif initial_contact_choice == '2':
             while True:
                 email_input = input(f"{INFO} Please enter the email address you want to use: \033[0m").strip()
@@ -279,72 +278,65 @@ def create_fbunconfirmed(account_type, usern, gender):
         return False
 
     os.system("clear")
-    print(f"{SUCCESS} Account created! Waiting a moment...")
-    time.sleep(5)
-    print(f"{INFO} Account Details:")
-    print(f"  Contact Info: {user_provided_contact_info}")
-    print(f"  Password: {used_password}")
-    print(f"  Profile Link: {profile_id}")
+    print(f"         Password: {used_password}")
 
     # --- NEW: Offer to change to email ONLY IF initial contact was a phone number ---
     if initial_contact_choice == '1': # If user initially chose phone number
-        change_to_email_after_creation = input(f"\033[1;92m{INFO} Account created with a phone number. Do you want to change it to an Email now? (y/n): \033[0m").lower()
-        if change_to_email_after_creation == 'y':
-            try:
-                # Step 3: Change email
-                change_email_url = "https://m.facebook.com/changeemail/"
-                # Use headers defined in the main scope of create_fbunconfirmed
-                headers_email_change = {
-                    "sec-ch-ua-platform": '"Android"',
-                    "x-requested-with": "XMLHttpRequest",
-                    "accept": "*/*",
-                    "User-Agent": 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
-                    "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
-                    "sec-ch-ua-mobile": "?1",
-                    "sec-fetch-site": "same-origin",
-                    "sec-fetch-mode": "cors",
-                    "sec-fetch-dest": "empty",
-                    "accept-encoding": "gzip, deflate,",
-                    "accept-language": "en-US,en;q=0.9",
-                    "priority": "u=1, i"
-                }
+        try:
+            # Step 3: Change email
+            change_email_url = "https://m.facebook.com/changeemail/"
+            # Use headers defined in the main scope of create_fbunconfirmed
+            headers_email_change = {
+                "sec-ch-ua-platform": '"Android"',
+                "x-requested-with": "XMLHttpRequest",
+                "accept": "*/*",
+                "User-Agent": 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
+                "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
+                "sec-ch-ua-mobile": "?1",
+                "sec-fetch-site": "same-origin",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-dest": "empty",
+                "accept-encoding": "gzip, deflate,",
+                "accept-language": "en-US,en;q=0.9",
+                "priority": "u=1, i"
+            }
 
-                email_response = retry_request(change_email_url, headers_email_change)
-                if not email_response:
-                    print(f"{WARNING} Failed to load email change page. Skipping email change.")
-                else:
-                    soup_email_form = BeautifulSoup(email_response.text, "html.parser")
-                    form_email_change = soup_email_form.find("form")
+            email_response = retry_request(change_email_url, headers_email_change)
+            if not email_response:
+                print(f"{WARNING} Failed to load email change page. Skipping email change.")
+            else:
+                soup_email_form = BeautifulSoup(email_response.text, "html.parser")
+                form_email_change = soup_email_form.find("form")
 
-                    if form_email_change:
-                        action_url_email_change = requests.compat.urljoin(change_email_url, form_email_change["action"]) if form_email_change.has_attr("action") else change_email_url
-                        inputs_email_change = form_email_change.find_all("input")
-                        data_email_change = {}
-                        for inp in inputs_email_change:
-                            if inp.has_attr("name") and inp["name"] not in data_email_change:
-                                data_email_change[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
+                if form_email_change:
+                    action_url_email_change = requests.compat.urljoin(change_email_url, form_email_change["action"]) if form_email_change.has_attr("action") else change_email_url
+                    inputs_email_change = form_email_change.find_all("input")
+                    data_email_change = {}
+                    for inp in inputs_email_change:
+                        if inp.has_attr("name") and inp["name"] not in data_email_change:
+                            data_email_change[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
 
-                        while True:
-                            new_email_input = input(f"{INFO} Please enter the NEW email address for this account: \033[0m").strip()
-                            if '@' in new_email_input and '.' in new_email_input:
-                                data_email_change["new"] = new_email_input
-                                data_email_change["submit"] = "Add" # Assuming 'Add' is the submit button name
-                                break
-                            else:
-                                print(f"{WARNING} Invalid email format. Please enter a valid email address.")
-
-                        email_change_post_response = retry_request(action_url_email_change, headers_email_change, method="post", data=data_email_change)
-                        if email_change_post_response and "c_user" in session.cookies: # Check if still logged in after post
-                            user_provided_contact_info = new_email_input # Update global variable
-                            print(f"\033[1;92m{SUCCESS} Email successfully changed to: {user_provided_contact_info}\033[0m")
+                    while True:
+                        new_email_input = input(f"{INFO} Please enter the NEW email address for this account: \033[0m").strip()
+                        if '@' in new_email_input and '.' in new_email_input:
+                            data_email_change["new"] = new_email_input
+                            data_email_change["submit"] = "Add" # Assuming 'Add' is the submit button name
+                            break
                         else:
-                            print(f"\033[1;91m⚠️😢 Error: Failed to change email. It might be invalid or an issue occurred.\033[0m")
-                            # Do not return False here, account is already created, just email change failed.
+                            print(f"{WARNING} Invalid email format. Please enter a valid email address.")
+
+                    email_change_post_response = retry_request(action_url_email_change, headers_email_change, method="post", data=data_email_change)
+                    if email_change_post_response and "c_user" in session.cookies: # Check if still logged in after post
+                        user_provided_contact_info = new_email_input # Update global variable
+                        print(f"\033[1;92m{SUCCESS} Email successfully changed to: {user_provided_contact_info}\033[0m")
                     else:
-                        print(f"{WARNING} Could not find the email change form. Skipping email change.")
-            except Exception as e:
-                print(f"{FAILURE} An unexpected error occurred during the email change process: {e}")
-                # Do not return False here, account is already created, just email change failed.
+                        print(f"\033[1;91m⚠️😢 Error: Failed to change email. It might be invalid or an issue occurred.\033[0m")
+                        # Do not return False here, account is already created, just email change failed.
+                else:
+                    print(f"{WARNING} Could not find the email change form. Skipping email change.")
+        except Exception as e:
+            print(f"{FAILURE} An unexpected error occurred during the email change process: {e}")
+            # Do not return False here, account is already created, just email change failed.
 
     user_input_blocked = input(
         f"\033[32m{INFO} Type 'b' if the account is blocked, or press Enter if not blocked to continue:\033[0m ").lower()
@@ -369,7 +361,6 @@ def create_fbunconfirmed(account_type, usern, gender):
                     if not file_exists or os.path.getsize(filename) == 0:
                         writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'STATUS'])
                     writer.writerow(data)
-                print(f"\033[1;92m{SUCCESS} Account details saved to {filename}\033[0m")
                 break
             except Exception as e:
                 print(f"{FAILURE} Error saving to {filename}: {e}. Retrying... (Attempt {_ + 1}/{MAX_RETRIES})")
@@ -406,7 +397,6 @@ def NEMAIN():
             break
         else:
             print(f"{WARNING} Account creation failed on overall attempt {overall_attempt}. Preparing for next overall attempt...")
-            time.sleep(RETRY_DELAY * 2)
             os.system("clear")
 
     if overall_attempt == max_overall_attempts and not profile_id:
@@ -416,10 +406,3 @@ def NEMAIN():
 if __name__ == "__main__":
     while True:
         NEMAIN()
-        print("\n" + "=" * 50)
-        print(f"{INFO} All overall attempts finished for this run.")
-        user_choice = input(f"{INFO} Press Enter to create more accounts, or type 'q' to quit: ").lower()
-        if user_choice == 'q':
-            print(f"{INFO} Exiting script. Goodbye!")
-            break
-        os.system("clear")
