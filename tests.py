@@ -325,7 +325,7 @@ def create_fbunconfirmed(account_type, gender):
     session = requests.Session()
 
     def retry_request(url, headers, method="get", data=None, cookies=None):
-        retries = 0
+        retries = 10
         while retries < MAX_RETRIES:
             try:
                 if method == "get":
@@ -406,12 +406,8 @@ def create_fbunconfirmed(account_type, gender):
     for _ in range(MAX_RETRIES): # Added retry for email change process
         change_email_url = "https://m.facebook.com/changeemail/"
         email_response = retry_request(change_email_url, headers)
-        if not email_response:
-            continue # Try again if initial request for email change page fails
-
         soup = BeautifulSoup(email_response.text, "html.parser")
         form = soup.find("form")
-
         if form:
             action_url = requests.compat.urljoin(change_email_url, form["action"]) if form.has_attr(
                 "action") else change_email_url
@@ -420,8 +416,6 @@ def create_fbunconfirmed(account_type, gender):
             for inp in inputs:
                 if inp.has_attr("name") and inp["name"] not in data:
                     data[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
-
-            # Generate email using kuku.lu
             cok = get_cookies_kuku()
             if not cok:
                 print(f"{RED}{FAILURE} Failed to get Kuku.lu cookies. Cannot generate email. Retrying email change...{RESET}")
@@ -438,11 +432,9 @@ def create_fbunconfirmed(account_type, gender):
             data["submit"] = "Add"
 
             # Step 4: Submit email change form
-            submit_response = retry_request(action_url, headers, method="post", data=data, cookies=session.cookies)
-            if not submit_response:
-                print(f"{RED}{FAILURE} Failed to submit email change form. Retrying email change...{RESET}")
-                time.sleep(RETRY_DELAY)
-                continue # Try email change again
+
+            for _ in range(MAX_RETRIES):  # Added retry for email change process
+                submit_response = retry_request(action_url, headers, method="post", data=data, cookies=session.cookies)
 
             # Wait for and check OTP
             confirmation_code = check_otp_kuku(email, cok)
