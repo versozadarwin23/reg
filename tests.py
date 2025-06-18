@@ -46,33 +46,34 @@ def keep_alive(name, username, password, account_link):
                 with lock:
                     success_count += 1
                 uid = session.cookies.get("c_user")
-                print(f"\033[92m[✓] {name} Keep-alive OK: {uid} |  (session reused)\033[0m")
+                print(f"\033[92m[✓] {name} Keep-alive OK: {uid} | (session reused)\033[0m")
                 reused_session = True
-        except:
-            pass
+        except Exception as e:
+            print(f"[ERROR] Failed to reuse session for {username}: {e}")
 
     if not reused_session:
         try:
-            login_page = session.get('https://m.facebook.com/login', headers=headers, timeout=60, allow_redirects=True)
+            login_page = session.get('https://m.facebook.com/login', headers=headers, timeout=60)
             soup = BeautifulSoup(login_page.text, 'html.parser')
-
             form = soup.find('form', {'id': 'login_form'})
+
             if not form:
+                print(f"[ERROR] Login form not found for {username}")
                 with lock:
                     error_count += 1
                 return
 
             action = form.get('action')
             post_url = 'https://m.facebook.com' + action
-
             payload = {'email': username, 'pass': password}
+
             for input_tag in form.find_all('input'):
                 name_input = input_tag.get('name')
                 value = input_tag.get('value', '')
                 if name_input and name_input not in payload:
                     payload[name_input] = value
 
-            response = session.post(post_url, data=payload, headers=headers, timeout=60, allow_redirects=True)
+            response = session.post(post_url, data=payload, headers=headers, timeout=60)
 
             if "c_user" in session.cookies:
                 uid = session.cookies.get("c_user")
@@ -87,8 +88,12 @@ def keep_alive(name, username, password, account_link):
             else:
                 with lock:
                     error_count += 1
+                print(f"[FAILED LOGIN] {name} | {username}")
+                with open(f"debug_{username}.html", "w", encoding="utf-8") as f:
+                    f.write(response.text)
                 return
-        except Exception:
+        except Exception as e:
+            print(f"[ERROR] Login exception for {username}: {e}")
             with lock:
                 error_count += 1
             return
@@ -100,7 +105,7 @@ def keep_alive(name, username, password, account_link):
     while True:
         try:
             url = 'https://m.facebook.com/home.php'
-            response = session.get(url, headers=windows_headers, timeout=10, allow_redirects=True)
+            response = session.get(url, headers=windows_headers, timeout=10)
 
             if "c_user" in session.cookies:
                 retry_count = 0
@@ -118,16 +123,15 @@ def keep_alive(name, username, password, account_link):
 
                 print(f"\033[92m[✓] {name} Keep-alive OK: {uid} | Active: {active_time}\033[0m")
             else:
+                print(f"[INFO] Session expired or user not logged in: {username}")
                 return
 
-        except requests.exceptions.RequestException:
+        except requests.exceptions.RequestException as e:
             retry_count += 1
+            print(f"[WARN] Connection issue for {username}: {e} (retry {retry_count})")
             if retry_count >= max_retries:
                 start_time = time.time()
                 retry_count = 0
-
-        except:
-            pass
 
         time.sleep(60)
 
@@ -135,7 +139,6 @@ def load_accounts():
     while True:
         try:
             accounts = []
-            pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
             filepath = "/storage/emulated/0/Acc_Created.txt"
 
             with open(filepath, newline='', encoding='utf-8') as txtfile:
@@ -151,11 +154,8 @@ def load_accounts():
                     if not username or not password or not account_link:
                         continue
 
-                    fb_id = pattern.sub('', account_link)
-                    accounts.append([name, fb_id, password, account_link])
-
+                    accounts.append([name, username, password, account_link])
             return accounts
-
         except Exception as e:
             print("[ERROR] Failed to load accounts:", str(e))
             time.sleep(3)
@@ -178,6 +178,7 @@ def main():
         for name, username, password, account_link in accounts:
             if username not in logged_accounts:
                 logged_accounts.add(username)
+                print(f"[STARTING] {name} | {username}")
                 executor.submit(keep_alive, name, username, password, account_link)
 
         time.sleep(60)
