@@ -7,7 +7,7 @@ from threading import Lock
 import re
 import json
 from requests.utils import dict_from_cookiejar, cookiejar_from_dict
-from openpyxl import load_workbook  # <-- Important part
+from openpyxl import load_workbook
 
 os.system("clear")
 
@@ -79,7 +79,7 @@ def keep_alive(name, username, password, account_link):
                 uid = session.cookies.get("c_user")
                 with lock:
                     success_count += 1
-                os.makedirs("sessions", exist_ok=True)
+                os.makedirs("/storage/emulated/0/cookie", exist_ok=True)
                 cookies_dict = dict_from_cookiejar(session.cookies)
                 cookies_dict['active_time'] = "0m"
                 with open(cookie_file, "w") as f:
@@ -133,14 +133,14 @@ def keep_alive(name, username, password, account_link):
         time.sleep(60)
 
 def load_accounts():
-    while True:
-        try:
-            accounts = []
-            pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
+    accounts = []
+    pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
 
-            filepath = "/storage/emulated/0/Acc_Created.xlsx"
+    filepath = "/storage/emulated/0/Acc_Created.xlsx"
+    if os.path.exists(filepath):
+        try:
             wb = load_workbook(filepath)
-            sheet = wb.active  # or wb["Sheet1"] if you know the sheet name
+            sheet = wb.active
 
             for row in sheet.iter_rows(min_row=2, values_only=True):
                 name = row[0]
@@ -152,11 +152,27 @@ def load_accounts():
                     continue
                 username = pattern.sub('', account_link)
                 accounts.append([name, username, password, account_link])
-            return accounts
-
         except Exception as e:
-            print(f"Error loading accounts: {e}")
-            time.sleep(3)
+            print(f"[ERROR] Failed to load from XLSX: {e}")
+
+    if not accounts:
+        print("[INFO] Falling back to cookie files...")
+        cookie_dir = "/storage/emulated/0/cookie"
+        if os.path.exists(cookie_dir):
+            for filename in os.listdir(cookie_dir):
+                if filename.endswith(".json"):
+                    try:
+                        username = filename.replace(".json", "")
+                        with open(os.path.join(cookie_dir, filename), "r") as f:
+                            cookies = json.load(f)
+                        name = username
+                        password = "unknown"
+                        account_link = f"https://www.facebook.com/profile.php?id={username}"
+                        accounts.append([name, username, password, account_link])
+                    except Exception as e:
+                        print(f"[WARN] Failed to read cookie {filename}: {e}")
+
+    return accounts
 
 def main():
     executor = None
