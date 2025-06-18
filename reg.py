@@ -357,7 +357,7 @@ def create_fbunconfirmed(account_type, usern, gender):
     filename = "/storage/emulated/0/Acc_Created.csv"
     full_name = f"{firstname} {lastname}"
 
-    data_to_save = [full_name, user_provided_contact_info, used_password, profile_id + '\t', "Live"]
+    data_to_save = [full_name, user_provided_contact_info, used_password, profile_id]
 
     def save_to_csv(filename, data):
         """Saves account details to a CSV file."""
