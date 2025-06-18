@@ -1,12 +1,9 @@
-import csv
 import os
-import uuid
 import requests
 from bs4 import BeautifulSoup
 import time
-import sys
 import random
-import string
+import re
 from concurrent.futures import ThreadPoolExecutor
 import threading
 from openpyxl import Workbook, load_workbook
@@ -82,23 +79,36 @@ def generate_user_details(account_type, gender, password=None, current_firstname
     phone_number = generate_random_phone_number()
     return firstname, lastname, date, year, month, phone_number, password
 
-def save_to_xlsx(filename, data):
-    while True:
-        try:
-            if os.path.isfile(filename):
-                workbook = load_workbook(filename)
-                sheet = workbook.active
-            else:
-                workbook = Workbook()
-                sheet = workbook.active
-                sheet.append(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
+# ✅ CLEAN TEXT FUNCTION
+def clean_excel_text(text):
+    """Remove invalid control characters for Excel."""
+    if not isinstance(text, str):
+        text = str(text)
+    return re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F]", "", text)
 
-            sheet.append(data)
-            workbook.save(filename)
-            break
-        except Exception as e:
-            print(f"Error saving to {filename}: {e}. Retrying...")
-            time.sleep(1)
+# ✅ UPDATED SAVE FUNCTION (thread-safe and corruption-safe)
+def save_to_xlsx(filename, data):
+    with lock:
+        retries = 3
+        while retries > 0:
+            try:
+                cleaned_data = [clean_excel_text(item) for item in data]
+
+                if os.path.isfile(filename):
+                    workbook = load_workbook(filename)
+                    sheet = workbook.active
+                else:
+                    workbook = Workbook()
+                    sheet = workbook.active
+                    sheet.append(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
+
+                sheet.append(cleaned_data)
+                workbook.save(filename)
+                break
+            except Exception as e:
+                print(f"{FAILURE} Error saving to {filename}: {e}. Retrying...")
+                time.sleep(1)
+                retries -= 1
 
 def create_fbunconfirmed(account_type, usern, gender, email, retries_left=3, current_password=None, current_firstname=None, current_lastname=None):
     global custom_password_base
@@ -180,10 +190,15 @@ def create_fbunconfirmed(account_type, usern, gender, email, retries_left=3, cur
             data_to_save = [full_name, email_or_phone, used_password, profile_id]
             save_to_xlsx(filename, data_to_save)
             with lock:
-                msg = f"{SUCCESS} Created: {full_name} | {email_or_phone} | Pass: {used_password}"
-                print(msg)
-                with open("fb_created_log.txt", "a") as log_file:
-                    log_file.write(msg + "\n")
+                info = f"{SUCCESS}| Email | {email_or_phone} | Pass: {used_password} |"
+                msg = f"{SUCCESS} Created: {full_name} | {email_or_phone} | Pass: {used_password} | {profile_id}"
+                print(info)
+                try:
+                    with open("/storage/emulated/0/fb_created_log.txt", "a", encoding="utf-8") as log_file:
+                        log_file.write(msg + "\n")
+                except Exception as e:
+                    print(f"{FAILURE} Failed to write log: {e}")
+
         else:
             with lock:
                 print(f"{FAILURE} {email_or_phone} creation failed. Account might be blocked. Retrying ({retries_left-1} left).")
