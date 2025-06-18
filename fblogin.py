@@ -2,12 +2,12 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import time
-import csv
 from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 import re
 import json
 from requests.utils import dict_from_cookiejar, cookiejar_from_dict
+from openpyxl import load_workbook  # <-- Important part
 
 os.system("clear")
 
@@ -32,7 +32,7 @@ def keep_alive(name, username, password, account_link):
     global success_count, error_count
 
     session = requests.Session()
-    cookie_file = f"sessions/{username}.json"
+    cookie_file = f"/storage/emulated/0/cookie/{username}.json"
 
     reused_session = False
 
@@ -138,21 +138,24 @@ def load_accounts():
             accounts = []
             pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
 
-            filepath = "/storage/emulated/0/Acc_Created.csv"
+            filepath = "/storage/emulated/0/Acc_Created.xlsx"
+            wb = load_workbook(filepath)
+            sheet = wb.active  # or wb["Sheet1"] if you know the sheet name
 
-            with open(filepath, newline='', encoding='latin-1') as csvfile:
-                reader = csv.DictReader(csvfile)
-                for row in reader:
-                    name = row.get('NAME', '').strip()
-                    account_link = row.get('ACCOUNT LINK', '').strip()
-                    password = row.get('PASSWORD', '').strip()
-                    if not account_link or not password:
-                        continue
-                    username = pattern.sub('', account_link)
-                    accounts.append([name, username, password, account_link])
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                name = row[0]
+                email_or_id = row[1]
+                password = row[2]
+                account_link = row[3] if len(row) > 3 else ""
+
+                if not account_link or not password:
+                    continue
+                username = pattern.sub('', account_link)
+                accounts.append([name, username, password, account_link])
             return accounts
 
-        except Exception:
+        except Exception as e:
+            print(f"Error loading accounts: {e}")
             time.sleep(3)
 
 def main():
