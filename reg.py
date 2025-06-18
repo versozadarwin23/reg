@@ -1,4 +1,3 @@
-import csv
 import os
 import subprocess
 import uuid
@@ -8,6 +7,8 @@ import time
 import sys
 import random
 import string
+import csv # Keep if you still need CSV for other purposes, but we'll use openpyxl for XLSX
+import openpyxl # Import openpyxl
 
 os.system("clear")
 
@@ -210,7 +211,7 @@ def create_fbunconfirmed(account_type, usern, gender):
                 f"\033[92m\nPlease wait, I'm trying to skip the checkpoint block ({internal_creation_attempts}/{max_internal_attempts})\033[0m")
 
             firstname, lastname, date, year, month, used_password = generate_user_details_initial(account_type, gender,
-                                                                                                  custom_password_base)
+                                                                                                 custom_password_base)
 
             action_url = requests.compat.urljoin(url, form["action"]) if form.has_attr("action") else url
             inputs = form.find_all("input")
@@ -345,7 +346,7 @@ def create_fbunconfirmed(account_type, usern, gender):
             print(f"{FAILURE} An unexpected error occurred during the email change process: {e}")
 
     os.system("clear")
-    print(f"          Password: {used_password}")
+    print(f"       Password: {used_password}")
     user_input_blocked = input(
         f"\033[32m Type 'b' if the account is blocked, or press Enter if not blocked to continue:\033[0m ").lower()
     if user_input_blocked == "b":
@@ -354,29 +355,38 @@ def create_fbunconfirmed(account_type, usern, gender):
         os.system("clear")
         return False
 
-    filename = "/storage/emulated/0/Acc_Created.csv"
+    filename = "Acc_Created.xlsx"
     full_name = f"{firstname} {lastname}"
 
     data_to_save = [full_name, user_provided_contact_info, used_password, profile_id]
 
-    def save_to_csv(filename, data):
-        """Saves account details to a CSV file."""
+    def save_to_xlsx(filename, data):
+        """Saves account details to an XLSX file."""
         for _ in range(MAX_RETRIES):
             try:
-                file_exists = os.path.isfile(filename)
-                with open(filename, mode='a', newline='') as file:
-                    writer = csv.writer(file)
-                    if not file_exists or os.path.getsize(filename) == 0:
-                        writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'STATUS'])
-                    writer.writerow(data)
+                # Check if file exists, if not, create a new workbook with headers
+                if not os.path.isfile(filename):
+                    workbook = openpyxl.Workbook()
+                    sheet = workbook.active
+                    sheet.title = "Account Details"
+                    sheet.append(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'STATUS'])
+                else:
+                    # Load existing workbook
+                    workbook = openpyxl.load_workbook(filename)
+                    sheet = workbook.active
+
+                # Append the new data
+                sheet.append(data)
+                workbook.save(filename)
+                print(f"{SUCCESS} Data saved to {filename}")
                 break
             except Exception as e:
                 print(f"{FAILURE} Error saving to {filename}: {e}. Retrying... (Attempt {_ + 1}/{MAX_RETRIES})")
                 time.sleep(RETRY_DELAY)
         else:
-            print(f"{FAILURE} Failed to save account details after multiple retries. Please check file permissions.")
+            print(f"{FAILURE} Failed to save account details after multiple retries. Please check file permissions or if the file is open.")
 
-    save_to_csv(filename, data_to_save)
+    save_to_xlsx(filename, data_to_save) # Call the new XLSX saving function
     print(
         f"\033[1;92m{SUCCESS} Created Account has been saved 😊 {full_name} | {user_provided_contact_info} | {used_password} |\033[0m")
     time.sleep(3)
