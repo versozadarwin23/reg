@@ -136,7 +136,6 @@ def load_accounts():
         try:
             accounts = []
             pattern = re.compile(r'^https://www\.facebook\.com/profile\.php\?id=')
-
             filepath = "/storage/emulated/0/Acc_Created.txt"
 
             with open(filepath, newline='', encoding='utf-8') as txtfile:
@@ -154,6 +153,7 @@ def load_accounts():
 
                     fb_id = pattern.sub('', account_link)
                     accounts.append([name, fb_id, password, account_link])
+
             return accounts
 
         except Exception as e:
