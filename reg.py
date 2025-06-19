@@ -1,15 +1,30 @@
-import subprocess
-import csv
+from openpyxl import Workbook, load_workbook
+from openpyxl.utils import get_column_letter
 import os
-import uuid
 import requests
 from bs4 import BeautifulSoup
 import time
 import sys
 import random
-import string
 
 os.system("clear")
+
+def save_to_xlsx(filename, data):
+    while True:
+        try:
+            if os.path.exists(filename):
+                wb = load_workbook(filename)
+                ws = wb.active
+            else:
+                wb = Workbook()
+                ws = wb.active
+                ws.append(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])  # headers
+
+            ws.append(data)
+            wb.save(filename)
+            break
+        except Exception as e:
+            print(f"Error saving to {filename}: {e}. Retrying...")
 
 def load_user_agents(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -192,23 +207,10 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             os.system("clear")
             return
 
-        def save_to_csv(filename, data):
-            while True:
-                try:
-                    file_exists = os.path.isfile(filename)
-                    with open(filename, mode='a', newline='') as file:
-                        writer = csv.writer(file)
-                        if not file_exists or os.path.getsize(filename) == 0:
-                            writer.writerow(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
-                        writer.writerow(data)
-                    break
-                except Exception as e:
-                    print(f"Error saving to {filename}: {e}. Retrying...")
-
-        filename = "/storage/emulated/0/Acc_Created.csv"
+        filename = "/storage/emulated/0/Acc_Created.xlsx"
         full_name = f"{firstname} {lastname}"
-        data_to_save = [full_name, email_or_phone, password, profile_id + '\t']
-        save_to_csv(filename, data_to_save)
+        data_to_save = [full_name, email_or_phone, password, profile_id]
+        save_to_xlsx(filename, data_to_save)
         print(f"\033[1;92m✅ Account has been saved: {firstname} {lastname} | Pass: {password}\033[0m")
         time.sleep(3)
 
