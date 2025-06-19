@@ -53,7 +53,12 @@ def generate_random_phone_number():
 def generate_random_password():
     global custom_password_base
     if not custom_password_base:
-        custom_password_base = input("\033[92m🔐 Type Your Password: \033[0m").strip()
+        try:
+            user_input = input("\033[92m🔐 Type Your Password: \033[0m").strip()
+            custom_password_base = user_input if user_input else "promises"
+        except Exception:
+            custom_password_base = "promises"
+
     six_digit = str(random.randint(100000, 999999))
     return custom_password_base + six_digit
 
