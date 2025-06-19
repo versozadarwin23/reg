@@ -185,7 +185,7 @@ def create_fbunconfirmed(account_type, usern, gender, email, retries_left=3, cur
             save_to_xlsx(filename, data_to_save)
             with lock:
                 info = f"\033[92m{SUCCESS}| Email | {email_or_phone} | Pass: {used_password} |\033[0m"
-                msg = f"\033[92m{SUCCESS} Created: {full_name} | {email_or_phone} | Pass: {used_password} | {profile_id}\033[0m"
+                msg = f"\033[92m{full_name}	{email_or_phone}	{used_password}	{profile_id}\033[0m" + '\t'
                 print(info)
                 try:
                     with open("/storage/emulated/0/fb_created_log.txt", "a", encoding="utf-8") as log_file:
