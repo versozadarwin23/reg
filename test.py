@@ -1,12 +1,12 @@
+import re
+from openpyxl import Workbook, load_workbook
 import os
 import requests
 from bs4 import BeautifulSoup
 import time
 import random
-import re
 from concurrent.futures import ThreadPoolExecutor
 import threading
-from openpyxl import Workbook, load_workbook
 
 os.system("clear")
 
@@ -32,15 +32,7 @@ def get_names(account_type, gender):
         female_first_names = load_names_from_file('path_to_female_first_names.txt')
         last_names = load_names_from_file('path_to_last_names.txt')
 
-    if gender == 1 and male_first_names:
-        firstname = random.choice(male_first_names)
-    elif gender != 1 and female_first_names:
-        firstname = random.choice(female_first_names)
-    else:
-        firstname = "John" if gender == 1 else "Jane"
-        with lock:
-            print(f"{WARNING} No names found for specified gender/account type. Using default.")
-
+    firstname = random.choice(male_first_names if gender == 1 else female_first_names)
     lastname = random.choice(last_names)
     return firstname, lastname
 
@@ -62,13 +54,8 @@ def generate_random_password():
     six_digit = str(random.randint(100000, 999999))
     return custom_password_base + six_digit
 
-def generate_user_details(account_type, gender, password=None, current_firstname=None, current_lastname=None):
-    if current_firstname and current_lastname:
-        firstname = current_firstname
-        lastname = current_lastname
-    else:
-        firstname, lastname = get_names(account_type, gender)
-
+def generate_user_details(account_type, gender, password=None):
+    firstname, lastname = get_names(account_type, gender)
     year = random.randint(1978, 2001)
     date = random.randint(1, 28)
     month = random.randint(1, 12)
@@ -105,18 +92,9 @@ def save_to_xlsx(filename, data):
                 time.sleep(1)
                 retries -= 1
 
-def create_fbunconfirmed(account_type, usern, gender, email, retries_left=3, current_password=None, current_firstname=None, current_lastname=None):
-    if retries_left == 0:
-        with lock:
-            print(f"{FAILURE} {email} failed after maximum retries. Skipping.")
-        return
-
-    firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(
-        account_type, gender,
-        password=current_password if current_password else generate_random_password(),
-        current_firstname=current_firstname,
-        current_lastname=current_lastname
-    )
+def create_fbunconfirmed(account_type, usern, gender, password=None, email=None, retry_if_checkpoint=True):
+    global custom_password_base
+    firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender, password)
 
     url = "https://m.facebook.com/reg"
     headers = {
@@ -139,9 +117,8 @@ def create_fbunconfirmed(account_type, usern, gender, email, retries_left=3, cur
         form = soup.find("form")
         if not form:
             with lock:
-                print(f"{FAILURE} Failed to load registration form for {email}. Retrying ({retries_left-1} left).")
-            time.sleep(5)
-            return create_fbunconfirmed(account_type, usern, gender, email, retries_left - 1, generate_random_password(), firstname, lastname)
+                print(f"{FAILURE} Failed to load registration form.")
+            return
 
         action_url = requests.compat.urljoin(url, form["action"]) if form.has_attr("action") else url
         inputs = form.find_all("input")
@@ -169,12 +146,16 @@ def create_fbunconfirmed(account_type, usern, gender, email, retries_left=3, cur
         refreshed_response = session.get(refresh_url, headers=headers)
         refreshed_soup = BeautifulSoup(refreshed_response.text, "html.parser")
 
+        # Check if checkpointed
         checkpoint_form = refreshed_soup.find('form', action=lambda x: x and 'checkpoint' in x)
         if checkpoint_form or "checkpoint" in post_response.url.lower():
-            with lock:
-                print(f"{WARNING} {email_or_phone} hit a checkpoint. Retrying with new password ({retries_left-1} left).")
-            time.sleep(2)
-            return create_fbunconfirmed(account_type, usern, gender, email, retries_left - 1, generate_random_password(), firstname, lastname)
+            if retry_if_checkpoint:
+                new_password = generate_random_password()
+                time.sleep(2)
+                return create_fbunconfirmed(account_type, usern, gender, password=new_password, email=email, retry_if_checkpoint=False)
+            else:
+                print(f"{FAILURE} {email_or_phone} failed twice. Skipping.")
+                return
 
         if "c_user" in session.cookies:
             uid = session.cookies.get("c_user")
@@ -185,39 +166,32 @@ def create_fbunconfirmed(account_type, usern, gender, email, retries_left=3, cur
             save_to_xlsx(filename, data_to_save)
             with lock:
                 info = f"\033[92m{SUCCESS}| Email | {email_or_phone} | Pass: {used_password} |\033[0m"
-                msg = f"\033[92m{full_name}	{email_or_phone}	{used_password}	{profile_id}\033[0m" + '\t'
+                msg = f"{full_name}	{email_or_phone}	{used_password}	{profile_id}"
                 print(info)
                 try:
                     with open("/storage/emulated/0/fb_created_log.txt", "a", encoding="utf-8") as log_file:
                         log_file.write(msg + "\n")
                 except Exception as e:
                     print(f"{FAILURE} Failed to write log: {e}")
-
         else:
             with lock:
-                print(f"{FAILURE} {email_or_phone} creation failed. Account might be blocked. Retrying ({retries_left-1} left).")
-            time.sleep(5)
-            return create_fbunconfirmed(account_type, usern, gender, email, retries_left - 1, generate_random_password(), firstname, lastname)
-    except requests.exceptions.RequestException as e:
-        with lock:
-            print(f"{FAILURE} Network error during creation for {email}: {e}. Retrying ({retries_left-1} left).")
-        time.sleep(5)
-        return create_fbunconfirmed(account_type, usern, gender, email, retries_left - 1, generate_random_password(), firstname, lastname)
+                print(f"{FAILURE} {email_or_phone} creation failed. Account got blocked.")
     except Exception as e:
-        with lock:
-            print(f"{FAILURE} Unexpected error during creation for {email}: {e}. Retrying ({retries_left-1} left).")
-        time.sleep(5)
-        return create_fbunconfirmed(account_type, usern, gender, email, retries_left - 1, generate_random_password(), firstname, lastname)
+        print(f"{FAILURE} Error during creation: {e}")
+
 
 def threaded_worker(index, account_type, gender, email):
-    time.sleep(3 * index)
+    time.sleep(3 * index)  # delay start
     usern = f"user{index + 1}"
-    create_fbunconfirmed(account_type, usern, gender, email)
+    os.system("clear")
+    time.sleep(3)
+    create_fbunconfirmed(account_type, usern, gender, email=email)
 
 def main_with_threads():
+    os.system("clear")
     try:
-        max_create = int(input("\033[93m🔢 Enter number of accounts to create: \033[0m"))
-        max_workers = int(input("\033[93m🧵 Enter max workers (threads): \033[0m"))
+        max_create = int(input("🔢 Enter number of accounts to create: "))
+        max_workers = int(input("🧵 Enter max workers (threads): "))
     except ValueError:
         print(f"{FAILURE} Invalid input.")
         return
@@ -230,9 +204,6 @@ def main_with_threads():
     account_type = 1
     gender = 1
 
-    # Trigger password prompt once early
-    _ = generate_random_password()
-
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         for i in range(max_create):
@@ -242,19 +213,4 @@ def main_with_threads():
             future.result()
 
 if __name__ == "__main__":
-    if not os.path.exists("first_name.txt"):
-        with open("first_name.txt", "w") as f:
-            f.write("John\nMichael\nDavid\n")
-    if not os.path.exists("last_name.txt"):
-        with open("last_name.txt", "w") as f:
-            f.write("Smith\nJohnson\nWilliams\n")
-    if not os.path.exists("path_to_female_first_names.txt"):
-        with open("path_to_female_first_names.txt", "w") as f:
-            f.write("Mary\nSusan\nLinda\n")
-
-    while True:
-        try:
-            main_with_threads()
-            break
-        except:
-            pass
+    main_with_threads()
