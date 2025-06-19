@@ -165,7 +165,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, email=None,
             data_to_save = [full_name, email_or_phone, used_password, profile_id]
             save_to_xlsx(filename, data_to_save)
             with lock:
-                info = f"\033[92m{SUCCESS}| Email | {email_or_phone} | Pass: {used_password} |\033[0m"
+                info = f"\033[92m{SUCCESS}| {email_or_phone} | {used_password} |\033[0m"
                 msg = f"{full_name}	{email_or_phone}	{used_password}	{profile_id}"
                 print(info)
                 try:
