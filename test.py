@@ -44,15 +44,10 @@ def generate_random_phone_number():
 
 def generate_random_password():
     global custom_password_base
-    if not custom_password_base:
-        try:
-            user_input = input("\033[92m🔐 Type Your Password: \033[0m").strip()
-            custom_password_base = user_input if user_input else "promises"
-        except Exception:
-            custom_password_base = "promises"
-
+    # Never ask for input here
     six_digit = str(random.randint(100000, 999999))
     return custom_password_base + six_digit
+
 
 def generate_user_details(account_type, gender, password=None):
     firstname, lastname = get_names(account_type, gender)
@@ -71,26 +66,21 @@ def clean_excel_text(text):
 
 def save_to_xlsx(filename, data):
     with lock:
-        retries = 3
-        while retries > 0:
-            try:
-                cleaned_data = [clean_excel_text(item) for item in data]
+        try:
+            cleaned_data = [clean_excel_text(item) for item in data]
 
-                if os.path.isfile(filename):
-                    workbook = load_workbook(filename)
-                    sheet = workbook.active
-                else:
-                    workbook = Workbook()
-                    sheet = workbook.active
-                    sheet.append(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
+            if os.path.isfile(filename):
+                workbook = load_workbook(filename)
+                sheet = workbook.active
+            else:
+                workbook = Workbook()
+                sheet = workbook.active
+                sheet.append(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
 
-                sheet.append(cleaned_data)
-                workbook.save(filename)
-                break
-            except Exception as e:
-                print(f"{FAILURE} Error saving to {filename}: {e}. Retrying...")
-                time.sleep(1)
-                retries -= 1
+            sheet.append(cleaned_data)
+            workbook.save(filename)
+        except Exception as e:
+            print(f"{FAILURE} Error saving to {filename}: {e}. Retrying...")
 
 def create_fbunconfirmed(account_type, usern, gender, password=None, email=None, retry_if_checkpoint=True):
     global custom_password_base
@@ -151,7 +141,6 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, email=None,
         if checkpoint_form or "checkpoint" in post_response.url.lower():
             if retry_if_checkpoint:
                 new_password = generate_random_password()
-                time.sleep(2)
                 return create_fbunconfirmed(account_type, usern, gender, password=new_password, email=email, retry_if_checkpoint=False)
             else:
                 print(f"{FAILURE} {email_or_phone} failed twice. Skipping.")
@@ -195,6 +184,10 @@ def main_with_threads():
     except ValueError:
         print(f"{FAILURE} Invalid input.")
         return
+
+    # ✅ Prompt password base once
+    global custom_password_base
+    custom_password_base = input("\033[92m🔐 Type your password: \033[0m").strip() or "promises"
 
     emails = []
     for i in range(max_create):
