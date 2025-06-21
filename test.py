@@ -88,15 +88,19 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, email=None,
 
     url = "https://m.facebook.com/reg"
     headers = {
-        "User-Agent": 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Referer": "https://m.facebook.com/reg",
+        "Connection": "keep-alive",
         "X-FB-Connection-Type": "MOBILE.LTE",
         "X-FB-Connection-Quality": "EXCELLENT",
         "X-FB-Net-HNI": "51502",
         "X-FB-SIM-HNI": "51502",
         "X-FB-HTTP-Engine": "Liger",
+        'x-fb-connection-type': 'Unknown',
         'accept-encoding': 'gzip, deflate',
         'content-type': 'application/x-www-form-urlencoded',
+        'x-fb-http-engine': 'Liger',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
     }
 
     session = requests.Session()
