@@ -65,9 +65,10 @@ def keep_alive(name, username, password, account_link):
 
             action = form.get('action')
             post_url = 'https://m.facebook.com' + action
-
+            sleep_time = random.uniform(5.7, 7.3)  # gives a float between 5.0 and 7.0
             payload = {'email': username, 'pass': password}
             for input_tag in form.find_all('input'):
+                time.sleep(sleep_time)
                 name_input = input_tag.get('name')
                 value = input_tag.get('value', '')
                 if name_input and name_input not in payload:
