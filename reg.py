@@ -198,14 +198,23 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             return
 
         os.system("clear")
+        print("‎ ")
+        print("‎ ")
+        print("‎ ")
+        print("‎ ")
         print(f"\033[1;92m✅ Account      | Pass: {password}\033[0m")
 
-        user_input = input("Type 'b' if blocked, or press Enter to continue: ")
-        if user_input.lower() == 'b':
-            print("\033[1;91m⚠️ Creating another account because the last one was blocked.\033[0m")
-            time.sleep(3)
-            os.system("clear")
-            return
+        while True:
+            try:
+                user_input = input("Type 'b' if blocked, or press Enter to continue: ")
+                if user_input.lower() == 'b':
+                    print("\033[1;91m⚠️ Creating another account because the last one was blocked.\033[0m")
+                    time.sleep(3)
+                    os.system("clear")
+                    return
+                break
+            except:
+                pass
 
         filename = "/storage/emulated/0/Acc_Created.xlsx"
         full_name = f"{firstname} {lastname}"
