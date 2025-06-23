@@ -1,4 +1,7 @@
+
 import os
+import random
+
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -12,12 +15,33 @@ from openpyxl import load_workbook
 os.system("clear")
 
 headers = {
-    'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
-    'Referer': 'https://m.facebook.com/',
-    'Content-Type': 'application/x-www-form-urlencoded'
-}
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Referer": "https://m.facebook.com/reg",
+        "Connection": "keep-alive",
+        "X-FB-Connection-Type": "MOBILE.LTE",
+        "X-FB-Connection-Quality": "EXCELLENT",
+        "X-FB-Net-HNI": "51502",
+        "X-FB-SIM-HNI": "51502",
+        "X-FB-HTTP-Engine": "Liger",
+        'x-fb-connection-type': 'Unknown',
+        'accept-encoding': 'gzip, deflate',
+        'content-type': 'application/x-www-form-urlencoded',
+        'x-fb-http-engine': 'Liger',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
+    }
 
 windows_headers = {
+    "Connection": "keep-alive",
+    "X-FB-Connection-Type": "MOBILE.LTE",
+    "X-FB-Connection-Quality": "EXCELLENT",
+    "X-FB-Net-HNI": "51502",
+    "X-FB-SIM-HNI": "51502",
+    "X-FB-HTTP-Engine": "Liger",
+    'x-fb-connection-type': 'Unknown',
+    'accept-encoding': 'gzip, deflate',
+    'content-type': 'application/x-www-form-urlencoded',
+    'x-fb-http-engine': 'Liger',
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
     'Referer': 'https://m.facebook.com/',
     'Content-Type': 'application/x-www-form-urlencoded'
@@ -42,7 +66,7 @@ def keep_alive(name, username, password, account_link):
                 cookies = json.load(f)
             session.cookies = cookiejar_from_dict(cookies)
 
-            home_check = session.get("https://m.facebook.com/home.php", headers=windows_headers, timeout=15)
+            home_check = session.get("https://m.facebook.com/home.php", headers=windows_headers, timeout=60)
             if "c_user" in session.cookies:
                 with lock:
                     success_count += 1
@@ -65,16 +89,17 @@ def keep_alive(name, username, password, account_link):
 
             action = form.get('action')
             post_url = 'https://m.facebook.com' + action
-            sleep_time = random.uniform(5.7, 7.3)  # gives a float between 5.0 and 7.0
+            # sleep_time = random.uniform(5.7, 7.3)  # gives a float between 5.0 and 7.0
             payload = {'email': username, 'pass': password}
             for input_tag in form.find_all('input'):
-                time.sleep(sleep_time)
+                # time.sleep(sleep_time)
                 name_input = input_tag.get('name')
                 value = input_tag.get('value', '')
                 if name_input and name_input not in payload:
                     payload[name_input] = value
 
             response = session.post(post_url, data=payload, headers=headers, timeout=60, allow_redirects=True)
+            uid = session.cookies.get("c_user")
 
             if "c_user" in session.cookies:
                 uid = session.cookies.get("c_user")
@@ -85,7 +110,7 @@ def keep_alive(name, username, password, account_link):
                 cookies_dict['active_time'] = "0m"
                 with open(cookie_file, "w") as f:
                     json.dump(cookies_dict, f)
-                print(f"\033[92m[✓] {name} Keep-alive OK: {uid} | (login success)\033[0m")
+                print(f"\033[93m[✓] {name} Keep-alive OK: {username} | (login success)\033[0m")
             else:
                 with lock:
                     error_count += 1
@@ -102,7 +127,8 @@ def keep_alive(name, username, password, account_link):
     while True:
         try:
             url = 'https://m.facebook.com/home.php'
-            response = session.get(url, headers=windows_headers, timeout=10, allow_redirects=True)
+            response = session.get(url, headers=windows_headers, timeout=60, allow_redirects=True)
+            uid = session.cookies.get("c_user")
 
             if "c_user" in session.cookies:
                 retry_count = 0
