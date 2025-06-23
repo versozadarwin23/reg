@@ -18,8 +18,7 @@ def save_to_xlsx(filename, data):
             else:
                 wb = Workbook()
                 ws = wb.active
-                ws.append(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])  # headers
-
+                ws.append(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
             ws.append(data)
             wb.save(filename)
             break
@@ -89,15 +88,11 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     global custom_password_base, profile_id
 
     if password is None:
-        if custom_password_base is None:
-            inp = input("\033[1;92m😊 Type your password to continue: \033[0m")
-            if inp.strip():
-                custom_password_base = inp.strip()
-        if custom_password_base is None:
-            password = generate_random_password()
-        else:
+        if custom_password_base:
             six_digit = str(random.randint(100000, 999999))
             password = custom_password_base + six_digit
+        else:
+            password = generate_random_password()
 
     firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender, password)
 
@@ -198,10 +193,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             return
 
         os.system("clear")
-        print("‎ ")
-        print("‎ ")
-        print("‎ ")
-        print("‎ ")
+        print("\n\n\n")
         print(f"\033[1;92m✅ Account      | Pass: {password}\033[0m")
 
         while True:
@@ -220,7 +212,8 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         full_name = f"{firstname} {lastname}"
         data_to_save = [full_name, email_or_phone, password, profile_id]
         save_to_xlsx(filename, data_to_save)
-        print(f"\033[1;92m✅ Account has been saved: {firstname} {lastname} | Pass: {password}\033[0m")
+        os.system("clear")
+        print(f"\033[1;92m✅ Account saved: {firstname} {lastname} | Pass: {password}\033[0m")
         time.sleep(3)
 
 def NEMAIN():
@@ -228,7 +221,12 @@ def NEMAIN():
     max_create = 1
     account_type = 1
     gender = 1
-    session = requests.Session()  # 🔁 reuse session
+    session = requests.Session()
+
+    global custom_password_base
+    if custom_password_base is None:
+        inp = input("\033[1;92m😊 Type your password to continue: \033[0m").strip()
+        custom_password_base = inp if inp else "promises"
 
     for i in range(max_create):
         usern = "ali"
