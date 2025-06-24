@@ -151,27 +151,9 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         if form:
             break
 
-    def retry_request(url, headers, method="get", data=None, max_retries=3):
-        global response
-        for attempt in range(max_retries):
-            try:
-                if method == "get":
-                    response = session.get(url, headers=headers, timeout=10)
-                else:
-                    response = session.post(url, headers=headers, data=data, timeout=10)
-
-                if response.status_code == 200:
-                    return response
-                else:
-                    print(f"Attempt {attempt + 1}/{max_retries}: Status {response.status_code}")
-            except:
-                pass
-
-        return None
-
     while True:
         try:
-            response = retry_request(url, headers)
+            response = session.get(url, headers=headers, timeout=10)
             soup = BeautifulSoup(response.text, "html.parser")
             form = soup.find("form")
             break
@@ -198,7 +180,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             if inp.has_attr("name") and inp["name"] not in data:
                 data[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
 
-        retry_request(action_url, headers, method="post", data=data)
+        response = session.post(action_url, headers=headers, data=data)
 
         if "c_user" not in session.cookies:
             print("\033[1;91m⚠️ Create Account Failed. Try toggling airplane mode or use another email.\033[0m")
@@ -238,6 +220,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         os.system("clear")
         print(f"\033[1;92m✅ Account saved: {firstname} {lastname} | Pass: {password}\033[0m")
         time.sleep(3)
+
 
 def NEMAIN():
     os.system("clear")
