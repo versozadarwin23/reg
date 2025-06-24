@@ -1,3 +1,5 @@
+import json
+from requests.utils import dict_from_cookiejar, cookiejar_from_dict
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
 import os
@@ -8,6 +10,23 @@ import sys
 import random
 
 os.system("clear")
+
+windows_headers = {
+    "Connection": "keep-alive",
+    "X-FB-Connection-Type": "MOBILE.LTE",
+    "X-FB-Connection-Quality": "EXCELLENT",
+    "X-FB-Net-HNI": "51502",
+    "X-FB-SIM-HNI": "51502",
+    "X-FB-HTTP-Engine": "Liger",
+    'x-fb-connection-type': 'Unknown',
+    'accept-encoding': 'gzip, deflate',
+    'content-type': 'application/x-www-form-urlencoded',
+    'x-fb-http-engine': 'Liger',
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+    'Referer': 'https://m.facebook.com/',
+    'Content-Type': 'application/x-www-form-urlencoded'
+}
 
 def save_to_xlsx(filename, data):
     while True:
@@ -192,6 +211,24 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             os.system("clear")
             return
 
+        session = requests.Session()
+        cookie_file = f"/storage/emulated/0/cookie/{uid}.json"
+
+        reused_session = False
+
+        if os.path.exists(cookie_file):
+            try:
+                with open(cookie_file, "r") as f:
+                    cookies = json.load(f)
+                session.cookies = cookiejar_from_dict(cookies)
+
+                home_check = session.get("https://m.facebook.com/home.php", headers=windows_headers, timeout=60)
+                if "c_user" in session.cookies:
+                    uid = session.cookies.get("c_user")
+                    print(f"\033[92m[✓] {email_or_phone} Keep-alive OK: {uid} |  (session reused)\033[0m")
+                    reused_session = True
+            except:
+                pass
         os.system("clear")
         print("\n\n\n")
         print(f"\033[1;92m✅ Account      | Pass: {password}\033[0m")
