@@ -204,7 +204,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             cookies_dict["active_time"] = "0m"
             with open(cookie_file, "w") as f:
                 json.dump(cookies_dict, f)
-            print(f"[✓] {username} cookie saved to {cookie_file}")
+            print(f"[✓] {firstname} {lastname} cookie saved to {cookie_file}")
 
         os.system("clear")
         print("\n\n\n")
