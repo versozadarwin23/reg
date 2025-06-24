@@ -125,7 +125,6 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                 return form
             except:
                 print('😢 No internet. Check data or toggle airplane mode.')
-                time.sleep(3)
 
     url = "https://m.facebook.com/reg"
     headers = {
@@ -152,18 +151,23 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         if form:
             break
 
-    def retry_request(url, headers, method="get", data=None):
+    def retry_request(url, headers, method="get", data=None, max_retries=3):
         global response
-        while True:
+        for attempt in range(max_retries):
             try:
                 if method == "get":
-                    response = session.get(url, headers=headers)
-                elif method == "post":
-                    response = session.post(url, headers=headers, data=data)
+                    response = session.get(url, headers=headers, timeout=10)
+                else:
+                    response = session.post(url, headers=headers, data=data, timeout=10)
+
                 if response.status_code == 200:
                     return response
-            except requests.exceptions.ConnectionError:
-                sys.exit()
+                else:
+                    print(f"Attempt {attempt + 1}/{max_retries}: Status {response.status_code}")
+            except:
+                pass
+
+        return None
 
     while True:
         try:
@@ -211,24 +215,6 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             os.system("clear")
             return
 
-        session = requests.Session()
-        cookie_file = f"/storage/emulated/0/cookie/{uid}.json"
-
-        reused_session = False
-
-        if os.path.exists(cookie_file):
-            try:
-                with open(cookie_file, "r") as f:
-                    cookies = json.load(f)
-                session.cookies = cookiejar_from_dict(cookies)
-
-                home_check = session.get("https://m.facebook.com/home.php", headers=windows_headers, timeout=60)
-                if "c_user" in session.cookies:
-                    uid = session.cookies.get("c_user")
-                    print(f"\033[92m[✓] {email_or_phone} Keep-alive OK: {uid} |  (session reused)\033[0m")
-                    reused_session = True
-            except:
-                pass
         os.system("clear")
         print("\n\n\n")
         print(f"\033[1;92m✅ Account      | Pass: {password}\033[0m")
