@@ -1,3 +1,6 @@
+import json
+
+from requests.utils import dict_from_cookiejar, cookiejar_from_dict
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
 import os
@@ -191,6 +194,17 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             time.sleep(3)
             os.system("clear")
             return
+
+        if "c_user" in session.cookies:
+            uid = session.cookies.get("c_user")
+            username = uid
+            cookie_file = f"/storage/emulated/0/cookie/{username}.json"
+            os.makedirs("/storage/emulated/0/cookie", exist_ok=True)
+            cookies_dict = dict_from_cookiejar(session.cookies)
+            cookies_dict["active_time"] = "0m"
+            with open(cookie_file, "w") as f:
+                json.dump(cookies_dict, f)
+            print(f"[✓] {username} cookie saved to {cookie_file}")
 
         os.system("clear")
         print("\n\n\n")
