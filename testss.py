@@ -241,7 +241,7 @@ def main():
     threads = []
     try:
         while True:
-            account_email = input(f"\033[1;92mEnter email for account [{account_email_count}]: \033[0m").strip()
+            account_email = input(f"\033[1;92mEnter email for account: \033[0m").strip()
             if not account_email:
                 print("\033[1;93mNo email entered, stopping account creation.\033[0m")
                 break
@@ -250,7 +250,6 @@ def main():
 
             if result:
                 uid, profile_link, account_password = result
-                # Mag-spawn ng isang thread para sa keep_alive
                 t = threading.Thread(target=handler.keep_alive, args=(uid, account_password), daemon=True)
                 t.start()
                 threads.append(t)
