@@ -1,3 +1,4 @@
+import threading
 import json
 import re
 import os
@@ -11,6 +12,23 @@ os.system("clear")
 
 class FacebookAccountHandler:
     """Handler for creating and keeping Facebook unconfirmed accounts alive."""
+
+    windows_headers = {
+        "Connection": "keep-alive",
+        "X-FB-Connection-Type": "MOBILE.LTE",
+        "X-FB-Connection-Quality": "EXCELLENT",
+        "X-FB-Net-HNI": "51502",
+        "X-FB-SIM-HNI": "51502",
+        "X-FB-HTTP-Engine": "Liger",
+        'x-fb-connection-type': 'Unknown',
+        'accept-encoding': 'gzip, deflate',
+        'content-type': 'application/x-www-form-urlencoded',
+        'x-fb-http-engine': 'Liger',
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+        'Referer': 'https://m.facebook.com/',
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
 
     HEADERS = {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -185,7 +203,7 @@ class FacebookAccountHandler:
         start_time = time.time()
         while True:
             try:
-                resp = self.session.get("https://m.facebook.com/home.php", headers=self.HEADERS, timeout=60)
+                resp = self.session.get("https://m.facebook.com/home.php", headers=self.windows_headers, timeout=60)
 
                 if "c_user" in self.session.cookies:
                     elapsed_minutes = int((time.time() - start_time) / 60)
@@ -216,19 +234,37 @@ class FacebookAccountHandler:
 def main():
     os.system("clear")
     handler = FacebookAccountHandler()
-    account_email = input("\033[1;92mEnter email for account: \033[0m").strip()
     custom_password = input("\033[1;93mType Your Password: \033[0m").strip()
+    password = custom_password if custom_password else None
 
-    if custom_password:
-        password = custom_password
-    else:
-        password = None  # Will trigger the BASE_PASSWORD + random suffix in generate_user_details
+    account_email_count = 1
+    threads = []
+    try:
+        while True:
+            account_email = input(f"\033[1;92mEnter email for account [{account_email_count}]: \033[0m").strip()
+            if not account_email:
+                print("\033[1;93mNo email entered, stopping account creation.\033[0m")
+                break
 
-    result = handler.create_account(account_email, password=password)
+            result = handler.create_account(account_email, password=password)
 
-    if result:
-        uid, profile_link, account_password = result
-        handler.keep_alive(uid, account_password)
+            if result:
+                uid, profile_link, account_password = result
+                # Mag-spawn ng isang thread para sa keep_alive
+                t = threading.Thread(target=handler.keep_alive, args=(uid, account_password), daemon=True)
+                t.start()
+                threads.append(t)
+
+                account_email_count += 1
+            else:
+                print("\033[1;91mAccount creation failed. Try another email.\033[0m")
+
+    except KeyboardInterrupt:
+        print("\n\033[1;93mExiting account creation.\033[0m")
+
+    # Optional: Maghintay sa lahat ng threads kung gusto
+    for t in threads:
+        t.join()
 
 
 if __name__ == "__main__":
