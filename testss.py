@@ -148,11 +148,14 @@ class FacebookAccountHandler:
             print(f"\033[1;91m⚠️ Failed to save cookie: {e}\033[0m")
 
         print(password)
-        if "checkpoint" in resp.text:
-            print("\033[1;91m⚠️ Created account is blocked (checkpoint required).\033[0m")
-            return
 
-        # Save Account Details
+        if "checkpoint" in resp.text:
+            print(
+                "\033[1;91m⚠️ Created account is blocked (checkpoint required). Trying phone number instead...\033[0m")
+            phone_only = phone_number
+            return self.create_account(phone_only)
+
+            # Save Account Details
         filename = f"{self.save_dir}/Acc_Created.xlsx"
         full_name = f"{firstname} {lastname}"
         self.save_to_xlsx(filename, [full_name, email_or_phone, password, profile_id])
