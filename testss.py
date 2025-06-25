@@ -5,9 +5,8 @@ import requests
 import time
 import random
 from bs4 import BeautifulSoup
-from requests.utils import dict_from_cookiejar
+from requests.utils import dict_from_cookiejar, cookiejar_from_dict
 from openpyxl import Workbook, load_workbook
-from concurrent.futures import ThreadPoolExecutor
 
 class FacebookAccountHandler:
     """Handler for creating and keeping Facebook unconfirmed accounts alive."""
@@ -30,7 +29,7 @@ class FacebookAccountHandler:
 
     BASE_PASSWORD = "promises"
 
-    def __init__(self, account_type=1, gender=1, session=None, save_dir="/storage/emulated/0/cookie"):
+    def __init__(self, account_type=1, gender=1, session=None, save_dir="/storage/emulated/0/"):
         """Initialize the handler."""
         self.account_type = account_type
         self.gender = gender
@@ -56,10 +55,29 @@ class FacebookAccountHandler:
                 print(f"Error saving to {filename}: {e}. Retrying...")
                 time.sleep(1)
 
+    def load_names_from_file(self, file_path):
+        """Load names from a text file."""
+        with open(file_path, 'r') as file:
+            return [line.strip() for line in file.readlines()]
+
+    def get_names(self):
+        """Get random first and last names based on account type and gender."""
+        if self.account_type == 1:
+            male_first_names = self.load_names_from_file("first_name.txt")
+            last_names = self.load_names_from_file("last_name.txt")
+            female_first_names = []
+        else:
+            male_first_names = []
+            female_first_names = self.load_names_from_file("path_to_female_first_names.txt")
+            last_names = self.load_names_from_file("path_to_last_names.txt")
+
+        firstname = random.choice(male_first_names if self.gender == 1 else female_first_names)
+        lastname = random.choice(last_names)
+        return firstname, lastname
+
     def generate_user_details(self, password=None):
-        """Generate random user details."""
-        firstname = "John"
-        lastname = "Doe"
+        """Generate user details including names, birth date, and phone number."""
+        firstname, lastname = self.get_names()
         year = random.randint(1978, 2001)
         date = random.randint(1, 28)
         month = random.randint(1, 12)
@@ -110,6 +128,7 @@ class FacebookAccountHandler:
         except requests.RequestException as e:
             print(f"Error submitting the registration form: {e}")
             return
+
         time.sleep(5)
         if "c_user" not in self.session.cookies:
             print("\033[1;91m⚠️ Create Account Failed.\033[0m")
@@ -128,7 +147,6 @@ class FacebookAccountHandler:
         except Exception as e:
             print(f"\033[1;91m⚠️ Failed to save cookie: {e}\033[0m")
 
-        # Check for checkpoint
         if "checkpoint" in resp.text:
             print("\033[1;91m⚠️ Created account is blocked (checkpoint required).\033[0m")
             return
