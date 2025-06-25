@@ -215,8 +215,6 @@ class FacebookAccountHandler:
                     cookie_data["active_time"] = active_time
                     with open(cookie_file, "w") as f:
                         json.dump(cookie_data, f)
-
-                    print(f"\033[1;92m✅ Account {uid} active for {active_time}\033[0m")
                 else:
                     print("\033[1;91m⚠️ Session Expired.\033[0m")
                     return
