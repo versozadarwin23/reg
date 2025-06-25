@@ -147,6 +147,7 @@ class FacebookAccountHandler:
         except Exception as e:
             print(f"\033[1;91m⚠️ Failed to save cookie: {e}\033[0m")
 
+        print(password)
         if "checkpoint" in resp.text:
             print("\033[1;91m⚠️ Created account is blocked (checkpoint required).\033[0m")
             return
