@@ -98,11 +98,18 @@ class FacebookAccountHandler:
             print(f"Error accessing registration page: {e}")
             return
 
-        soup = BeautifulSoup(resp.text, "html.parser")
-        form = soup.find("form")
-        if not form:
-            print("Error: Registration form not found.")
-            return
+        while True:
+            try:
+                soup = BeautifulSoup(resp.text, "html.parser")  # Parse the response
+                form = soup.find("form")  # Find the form
+                if not form:
+                    print("Error: Registration form not found.")
+                    return
+                else:
+                    break  # Form found, break the loop
+            except Exception as e:
+                print(f"Error parsing the page: {e}")
+                return
 
         action_url = requests.compat.urljoin(url, form.get("action", url))
         inputs = form.find_all("input")
