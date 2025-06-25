@@ -7,6 +7,7 @@ import random
 from bs4 import BeautifulSoup
 from requests.utils import dict_from_cookiejar, cookiejar_from_dict
 from openpyxl import Workbook, load_workbook
+os.system("clear")
 
 class FacebookAccountHandler:
     """Handler for creating and keeping Facebook unconfirmed accounts alive."""
@@ -81,13 +82,16 @@ class FacebookAccountHandler:
         year = random.randint(1978, 2001)
         date = random.randint(1, 28)
         month = random.randint(1, 12)
-        password = password or f"{self.BASE_PASSWORD}{random.randint(100000, 999999)}"
-        phone_number = f"9{random.randint(0, 4)}{random.randint(1,7)}{random.randint(1000000, 9999999)}"
+
+        if password is None:
+            password = f"{self.BASE_PASSWORD}{random.randint(100000, 999999)}"
+
+        phone_number = f"9{random.randint(0, 4)}{random.randint(1, 7)}{random.randint(1000000, 9999999)}"
         return firstname, lastname, date, year, month, phone_number, password
 
-    def create_account(self, email_or_phone):
+    def create_account(self, email_or_phone, password=None):
         """Create an unconfirmed Facebook account."""
-        firstname, lastname, date, year, month, phone_number, password = self.generate_user_details()
+        firstname, lastname, date, year, month, phone_number, password = self.generate_user_details(password)
         url = "https://m.facebook.com/reg"
 
         # Get Registration Page
@@ -136,13 +140,12 @@ class FacebookAccountHandler:
             print(f"Error submitting the registration form: {e}")
             return
 
-        time.sleep(5)
+        uid = self.session.cookies.get("c_user")
+        profile_id = f'https://www.facebook.com/profile.php?id={uid}'
+
         if "c_user" not in self.session.cookies:
             print("\033[1;91m⚠️ Create Account Failed.\033[0m")
             return
-
-        uid = self.session.cookies.get("c_user")
-        profile_id = f'https://www.facebook.com/profile.php?id={uid}'
 
         cookie_file = f'{self.save_dir}/cookie/{uid}.json'
         cookie_data = dict_from_cookiejar(self.session.cookies)
@@ -150,17 +153,16 @@ class FacebookAccountHandler:
         try:
             with open(cookie_file, "w") as f:
                 json.dump(cookie_data, f)
-            print(f"\033[1;92m✅ Account cookie saved: {cookie_file}\033[0m")
         except Exception as e:
             print(f"\033[1;91m⚠️ Failed to save cookie: {e}\033[0m")
 
-        print(password)
+        print(f"\033[1;92mAccount | Pass: {password}\033[0m")
 
-        if "checkpoint" in resp.text:
-            print(
-                "\033[1;91m⚠️ Created account is blocked (checkpoint required). Trying phone number instead...\033[0m")
-            phone_only = phone_number
-            return self.create_account(phone_only)
+        # if "checkpoint" in resp.text:
+        #     print(
+        #         "\033[1;91m⚠️ Created account is blocked (checkpoint required). Trying phone number instead...\033[0m")
+        #     phone_only = phone_number
+        #     return self.create_account(phone_only)
 
             # Save Account Details
         filename = f"{self.save_dir}/Acc_Created.xlsx"
@@ -212,14 +214,22 @@ class FacebookAccountHandler:
                 time.sleep(5)
 
 def main():
-    """Main entry point."""
+    os.system("clear")
     handler = FacebookAccountHandler()
     account_email = input("\033[1;92mEnter email for account: \033[0m").strip()
-    result = handler.create_account(account_email)
+    custom_password = input("\033[1;93mType Your Password: \033[0m").strip()
+
+    if custom_password:
+        password = custom_password
+    else:
+        password = None  # Will trigger the BASE_PASSWORD + random suffix in generate_user_details
+
+    result = handler.create_account(account_email, password=password)
 
     if result:
-        uid, profile_link, password = result
-        handler.keep_alive(uid, password)
+        uid, profile_link, account_password = result
+        handler.keep_alive(uid, account_password)
+
 
 if __name__ == "__main__":
     main()
