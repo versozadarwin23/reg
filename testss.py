@@ -187,7 +187,7 @@ class FacebookAccountHandler:
         full_name = f"{firstname} {lastname}"
         self.save_to_xlsx(filename, [full_name, email_or_phone, password, profile_id])
 
-        print(f"\033[1;92m✅ Account saved: {firstname} {lastname} | Pass: {password}\033[0m")
+        print(f"\033[1;92m✅ Account saved: {email_or_phone}\033[0m")
         return uid, profile_id, password
 
     def keep_alive(self, uid, password, interval=60, max_retries=3):
@@ -235,6 +235,28 @@ def main():
     custom_password = input("\033[1;93mType Your Password: \033[0m").strip()
     password = custom_password if custom_password else None
 
+    # ✅ Mag-update ng HEADERS sa handler
+    handler.HEADERS = {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Referer": "https://m.facebook.com/reg",
+        "Connection": "keep-alive",
+        "X-FB-Connection-Type": "MOBILE.LTE",
+        "X-FB-Connection-Quality": "EXCELLENT",
+        "X-FB-Net-HNI": "51502",
+        "X-FB-SIM-HNI": "51502",
+        "X-FB-HTTP-Engine": "Liger",
+        "x-fb-connection-type": "Unknown",
+        "accept-encoding": "gzip, deflate",
+        "content-type": "application/x-www-form-urlencoded",
+        "x-fb-http-engine": "Liger",
+        "User-Agent": (
+            "Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 "
+            "Chrome/70.0.3538.110 Mobile Safari/537.36 "
+            "[FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]"
+        ),
+    }
+
     account_email_count = 1
     threads = []
     try:
@@ -259,7 +281,6 @@ def main():
     except KeyboardInterrupt:
         print("\n\033[1;93mExiting account creation.\033[0m")
 
-    # Optional: Maghintay sa lahat ng threads kung gusto
     for t in threads:
         t.join()
 
