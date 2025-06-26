@@ -235,7 +235,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                 print(f"❗ Error sa request: {e}")
 
             time.sleep(5)
-        print(f"\033[1;92m✅ Email: {email_address} | Pass: {password} | {jbkj}\033[0m")
+        print(f"\033[1;92m✅{email_address} | {password} | {jbkj}\033[0m")
 
         while True:
             try:
