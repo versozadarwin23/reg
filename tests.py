@@ -8,16 +8,10 @@ import random
 
 os.system("clear")
 
-username = ''.join(random.choices(string.ascii_lowercase + string.digits, k=12))
-email_address = f"{username}@harakirimail.com"
-url = f"https://harakirimail.com/inbox/{username}"
-
-# 🎯 STEP 2: Maghintay sa subject
-response = requests.get(url, timeout=30)
-response.raise_for_status()
-
-soup = BeautifulSoup(response.text, "html.parser")
-table = soup.find("table", class_="table table-hover table-striped")
+# 🎯 STEP 1: Mag-generate ng random username
+rchjtrchjb = ''.join(random.choices(string.ascii_lowercase + string.digits, k=12))
+email_address = f"{rchjtrchjb}@harakirimail.com"
+drtyghbj5hgcbv = f"https://harakirimail.com/inbox/{rchjtrchjb}"
 
 windows_headers = {
     "Connection": "keep-alive",
@@ -215,21 +209,33 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             return
 
         os.system("clear")
+        # 🎯 STEP 2: Maghintay sa subject
+        found = False
         while True:
             try:
+                dtryvghjuijhn = requests.get(drtyghbj5hgcbv, timeout=30)
+                dtryvghjuijhn.raise_for_status()
+
+                soup = BeautifulSoup(dtryvghjuijhn.text, "html.parser")
+                table = soup.find("table", class_="table table-hover table-striped")
+
                 if table:
-                    subject_link = table.find("tbody", id="mail_list_body").find("a") if table.find("tbody", id="mail_list_body") else None
+                    subject_link = table.find("tbody", id="mail_list_body").find("a") if table.find("tbody",
+                                                                                                    id="mail_list_body") else None
                     if subject_link:
                         subject_div = subject_link.find("div") if subject_link else None
                         if subject_div:
                             subject = subject_div.get_text(strip=True)
-                            subject = subject.replace("is your confirmation code", "").strip()
-                            if subject:
-                                print("\n\n\n")
-                                print(f"\033[1;92m✅ Email: {email_address} | Pass: {password} {subject}\033[0m")
+                            jbkj = subject.replace(" is your confirmation code",'')
+
+                            if jbkj:
                                 break
-            except:
-                pass
+
+            except Exception as e:
+                print(f"❗ Error sa request: {e}")
+
+            time.sleep(5)
+        print(f"\033[1;92m✅ Email: {email_address} | Pass: {password} | {jbkj}\033[0m")
 
         while True:
             try:
@@ -248,7 +254,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         data_to_save = [full_name, email_address, password, profile_id]
         save_to_xlsx(filename, data_to_save)
         os.system("clear")
-        print(f"\033[1;92m✅ Account saved: {firstname} {lastname} | Pass: {password} | {subject}\033[0m")
+        print(f"\033[1;92m✅ Account saved: {firstname} {lastname} | Pass: {password}\033[0m")
         time.sleep(3)
 
 
