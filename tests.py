@@ -281,11 +281,9 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
         print(f"\033[1;91m{FAILURE} Failed to get confirmation code for account #{account_num} after multiple attempts. Account might be unconfirmed.\033[0m")
 
     # Removed Use the print_lock for the success output
-    print('\n' * 2)  # Add some spacing
     print(f"\033[1;92m{SUCCESS}     Email: | {email_address} |\033[0m")
     print(f"\033[1;92m{SUCCESS}     Pass: | {password} |\033[0m")
     print(f"\033[1;92m{SUCCESS}     Code: | {jbkj if jbkj else 'N/A (Code not found)'}\033[0m")
-    print('\n')  # Add some spacing
 
     filename = "/storage/emulated/0/Acc_Created.xlsx"
     full_name = f"{firstname} {lastname}"
