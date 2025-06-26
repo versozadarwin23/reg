@@ -304,7 +304,7 @@ def NEMAIN():
 
     global custom_password_base
     if custom_password_base is None:
-        inp = input("Enter custom password base (e.g., 'Promises', leave blank for default 'Promises'): ").strip()
+        inp = 'Promises'
         custom_password_base = inp if inp else "Promises"
 
     while True:
@@ -337,8 +337,7 @@ def NEMAIN():
             try:
                 result = future.result() # Get the return value from the function
                 if result == "SUCCESS":
-                    # Removed Use print_lock
-                    print(f"\033[1;92m{INFO} An account creation task finished successfully.\033[0m")
+                    pass
                 else:
                     # Removed Use print_lock
                     print(f"\033[1;91m{WARNING} An account creation task finished with status: {result}.\033[0m")
