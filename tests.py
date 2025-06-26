@@ -219,7 +219,6 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
         if inp.has_attr("name") and inp["name"] not in data:
             data[inp["name"]] = inp.get("value", "")
 
-    print(f"{LOADING} Submitting registration data for account #{account_num}...")
     try:
         response = session.post(action_url, headers=headers, data=data, timeout=30)
         response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
@@ -301,9 +300,6 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
     full_name = f"{firstname} {lastname}"
     data_to_save = [full_name, email_address, password, profile_id]
     save_to_xlsx(filename, data_to_save)
-    print("\033[1;36m-----------------------------------------\033[0m")
-    print(f"\033[1;36m      Account #{account_num} completed    \033[0m")
-    print("\033[1;36m-----------------------------------------\033[0m")
 
     return "SUCCESS" # Indicate success
 
@@ -341,7 +337,6 @@ def NEMAIN():
         futures = []
         for i in range(max_create):
             # Removed Indicate that a task is being submitted
-            print(f"\n\033[1;33m--- Submitting Account #{i + 1} for creation ---\033[0m")
             # Each thread needs its own requests.Session() to prevent issues with shared state
             future = executor.submit(create_fbunconfirmed, i + 1, account_type, gender, None, requests.Session())
             futures.append(future)
