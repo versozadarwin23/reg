@@ -110,14 +110,8 @@ custom_password_base = None  # Global variable to store custom password base
 def create_fbunconfirmed(account_num, account_type, gender, password=None, session=None):
     """Gumawa ng Facebook unconfirmed account."""
     global custom_password_base # Access the global custom_password_base
-
-    # IMPORTANT: Removed os.system("clear") here as it interferes with parallel execution.
-    # The main loop will handle initial clearing.
-    print(f"{LOADING} Starting account creation process for account #{account_num}...")
-
+    os.system("clear")
     email_address, drtyghbj5hgcbv = generate_email()
-
-    # Generate password using custom base if set, otherwise use random
     if password is None:
         if custom_password_base:
             six_digit = str(random.randint(100000, 999999))
@@ -125,7 +119,6 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
         else:
             password = generate_random_password()
 
-    # Get user details with the determined password
     firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender, password)
 
     def check_page_loaded(url, headers, current_session):
@@ -289,7 +282,6 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
 
     # Removed Use the print_lock for the success output
     print('\n' * 2)  # Add some spacing
-    print(f"\033[1;33m--- Account #{account_num} Creation Success! ---\033[0m")
     print(f"\033[1;92m{SUCCESS}     Email: | {email_address} |\033[0m")
     print(f"\033[1;92m{SUCCESS}     Pass: | {password} |\033[0m")
     print(f"\033[1;92m{SUCCESS}     Code: | {jbkj if jbkj else 'N/A (Code not found)'}\033[0m")
