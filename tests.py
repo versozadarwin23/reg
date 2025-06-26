@@ -196,7 +196,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         if "c_user" not in session.cookies:
             print("\033[1;91m⚠️ Create Account Failed. Try toggling airplane mode or use another email.\033[0m")
             time.sleep(3)
-            return
+            NEMAIN()
 
         uid = session.cookies.get("c_user")
         profile_id = f'https://www.facebook.com/profile.php?id={uid}'
