@@ -293,8 +293,7 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
     print(f"\033[1;92m{SUCCESS}     Email: | {email_address} |\033[0m")
     print(f"\033[1;92m{SUCCESS}     Pass: | {password} |\033[0m")
     print(f"\033[1;92m{SUCCESS}     Code: | {jbkj if jbkj else 'N/A (Code not found)'}\033[0m")
-    print(f"\033[1;92m{SUCCESS}     Link: | {profile_id} |\033[0m")
-    print('\n' * 2)  # Add some spacing
+    print('\n')  # Add some spacing
 
     filename = "/storage/emulated/0/Acc_Created.xlsx"
     full_name = f"{firstname} {lastname}"
