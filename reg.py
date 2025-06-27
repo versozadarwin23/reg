@@ -11,6 +11,9 @@ import random
 
 os.system("clear")
 
+# ✅ Path where your cookie JSON files are stored
+COOKIE_DIR = "cookie"
+
 windows_headers = {
     "Connection": "keep-alive",
     "X-FB-Connection-Type": "MOBILE.LTE",
@@ -103,6 +106,30 @@ def generate_user_details(account_type, gender, password=None):
 
 custom_password_base = None
 
+# ✅✅✅ ADD: Cookie Saving Utilities
+def ensure_cookie_dir():
+    if not os.path.exists(COOKIE_DIR):
+        os.makedirs(COOKIE_DIR)
+
+def save_cookie_json(cookie_dict):
+    ensure_cookie_dir()
+    c_user = cookie_dict.get("c_user")
+    if not c_user:
+        print("❌ ERROR: No 'c_user' in cookie_dict. Cannot save.")
+        return
+
+    file_path = os.path.join(COOKIE_DIR, f"{c_user}.json")
+
+    try:
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(cookie_dict, f, indent=2)
+    except Exception as e:
+        print(f"❌ Failed to save cookie: {e}")
+
+def save_session_cookie(session):
+    cookie_dict = dict_from_cookiejar(session.cookies)
+    save_cookie_json(cookie_dict)
+
 def create_fbunconfirmed(account_type, usern, gender, password=None, session=None):
     global custom_password_base, profile_id
 
@@ -186,6 +213,9 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             print("\033[1;91m⚠️ Create Account Failed. Try toggling airplane mode or use another email.\033[0m")
             time.sleep(3)
             return
+
+        # ✅✅✅ SAVE COOKIE HERE
+        save_session_cookie(session)
 
         uid = session.cookies.get("c_user")
         profile_id = f'https://www.facebook.com/profile.php?id={uid}'
