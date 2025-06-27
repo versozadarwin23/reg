@@ -6,9 +6,8 @@ import os
 import time
 import random
 import datetime
-
+os.system("clear")
 COOKIE_DIR = "/storage/emulated/0/cookie"
-
 def load_cookie_dict(json_file):
     with open(json_file, 'r') as f:
         return json.load(f)
@@ -32,7 +31,6 @@ def fetch_facebook(cookie_file):
 
         response = session.get("https://m.facebook.com/", timeout=30)
 
-        # ✅ Add login / checkpoint check
         if "login" in response.url:
             print(f"[{username}] Login Error (redirected to login page)")
             return
@@ -40,9 +38,7 @@ def fetch_facebook(cookie_file):
             print(f"[{username}] Checkpoint detected")
             return
 
-        soup = BeautifulSoup(response.text, 'html.parser')
         print(f"\033[95m✅ [{username}] Login Success\033[0m")
-        # ✅ Track active time
         start_time = datetime.datetime.now()
 
         while True:
@@ -51,8 +47,6 @@ def fetch_facebook(cookie_file):
 
             try:
                 resp = session.get("https://mbasic.facebook.com/", timeout=30)
-
-                # Compute active time
                 elapsed = datetime.datetime.now() - start_time
                 hours, remainder = divmod(elapsed.seconds, 3600)
                 minutes, seconds = divmod(remainder, 60)
@@ -69,25 +63,22 @@ def fetch_facebook(cookie_file):
 def main():
     processed_files = set()
 
-    while True:
-        cookie_files = [
-            os.path.join(COOKIE_DIR, fname)
-            for fname in os.listdir(COOKIE_DIR)
-            if fname.endswith(".json")
-        ]
+    with ThreadPoolExecutor(max_workers=50) as executor:
+        while True:
+            cookie_files = [
+                os.path.join(COOKIE_DIR, fname)
+                for fname in os.listdir(COOKIE_DIR)
+                if fname.endswith(".json")
+            ]
 
-        new_files = [f for f in cookie_files if f not in processed_files]
+            new_files = [f for f in cookie_files if f not in processed_files]
 
-        if new_files:
-            num_workers = len(new_files)
-            print(f"\033[93m⏳ Total Account Loaded={num_workers}\033[0m")
+            for new_file in new_files:
+                print(f"\033[94m✅ New Account Added: {os.path.basename(new_file)}\033[0m")
+                executor.submit(fetch_facebook, new_file)
+                processed_files.add(new_file)
 
-            with ThreadPoolExecutor(max_workers=num_workers) as executor:
-                executor.map(fetch_facebook, new_files)
-
-            processed_files.update(new_files)
-        else:
-            time.sleep(3)  # Check every 5 seconds
+            time.sleep(3)
 
 
 if __name__ == "__main__":
