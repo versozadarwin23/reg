@@ -6,15 +6,63 @@ from bs4 import BeautifulSoup
 import time
 import random
 import json
-import concurrent.futures # Import for parallel execution
-# Removed threading # Import for print lock
+import concurrent.futures
 
-# Clear the console initially for a clean start
 os.system("clear")
 
-# Removed Global lock for printing to ensure clean output from multiple threads
-# Removed print_lock = threading.Lock()
-
+ua = [
+    "Mozilla/5.0 (Linux; Android 10; SM-G960U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; P30 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; SM-A525F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Moto G Power) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Redmi Note 9S) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; OnePlus 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; LG G8 ThinQ) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Xperia 5 II) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Pixel 4a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Samsung SM-S901U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; ASUS_Z01QD) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Vivo V2027) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Oppo A74) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Xiaomi 12) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Nokia 7.2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Realme 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Infinix Note 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Tecno Camon 18) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; ZTE Axon 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; SM-A715F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Google Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Huawei Mate 20 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; LG V60 ThinQ) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Samsung Galaxy A32) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Sony Xperia 1 III) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Google Pixel 3a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; OnePlus 8T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Redmi K40 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Xiaomi 11 Lite 5G NE) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Moto G7 Power) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; SM-G973U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Pixel 5a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Samsung SM-A536B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; P40 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Redmi Note 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; OnePlus Nord 2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; LG Wing) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Xperia 1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Asus ROG Phone 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Vivo X70 Pro+) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Oppo Reno6 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Nokia X20) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Realme 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Infinix Zero X Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Tecno Pova 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; ZTE Blade V2020) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; SM-A908B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Google Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; SM-G990U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA; FBAV/302.0.0.0.0;]"
+]
 def generate_email():
     """Gumawa ng random username para sa harakirimail at bumalik ang email address at url."""
     rchjtrchjb = ''.join(random.choices(string.ascii_lowercase + string.digits, k=12))
@@ -105,11 +153,11 @@ def generate_user_details(account_type, gender, password=None):
     phone_number = generate_random_phone_number()
     return firstname, lastname, date, year, month, phone_number, password
 
-custom_password_base = None  # Global variable to store custom password base
+custom_password_base = None
 
 def create_fbunconfirmed(account_num, account_type, gender, password=None, session=None):
-    """Gumawa ng Facebook unconfirmed account."""
-    global custom_password_base # Access the global custom_password_base
+    agent = random.choice(ua)
+    global custom_password_base
     os.system("clear")
     email_address, drtyghbj5hgcbv = generate_email()
     if password is None:
@@ -143,12 +191,10 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
 
             time.sleep(RETRY_DELAY)
             retries += 1
-        # Removed Use print lock for failure message
         print(f"{FAILURE} Failed to load page and find form after {MAX_RETRIES} retries. (Account #{account_num})")
         return None
 
     url = "https://m.facebook.com/reg"
-    # User-Agent is dynamically fetched now
     headers = {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Referer": "https://m.facebook.com/reg",
@@ -162,11 +208,11 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
         'accept-encoding': 'gzip, deflate',
         'content-type': 'application/x-www-form-urlencoded',
         'x-fb-http-engine': 'Liger',
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
+        'User-Agent': agent,
     }
+    print(agent)
 
-    # Each call to create_fbunconfirmed gets its own session from the executor
-    if session is None: # This should ideally not happen if called correctly from NEMAIN
+    if session is None:
         session = requests.Session()
 
     form = check_page_loaded(url, headers, session)
@@ -221,6 +267,9 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
     except Exception as e:
         print(f"\033[1;91m{FAILURE} An unexpected error occurred during submission: {e}. Cannot complete account creation for account #{account_num}.\033[0m")
         return "FAILED_SUBMISSION_UNEXPECTED"
+
+    with open(f"status.html", "w", encoding="utf-8") as file:
+        file.write(response.text)
 
     if "c_user" not in session.cookies:
         print(f"\033[1;91m⚠️ Create Account Failed for account #{account_num}. No c_user cookie found. Try toggling airplane mode or use another email.\033[0m")
@@ -303,8 +352,8 @@ def NEMAIN():
 
     global custom_password_base
     if custom_password_base is None:
-        inp = 'Promises'
-        custom_password_base = inp if inp else "Promises"
+        inp = 'Promises@'
+        custom_password_base = inp if inp else "Promises@"
 
     while True:
         try:
