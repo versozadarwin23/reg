@@ -12,6 +12,22 @@ xlsx_lock = threading.Lock()
 console_lock = threading.Lock()
 os.system("clear")
 
+import uuid
+
+def random_device_model():
+    models = [
+        "Samsung-SM-S918B",
+        "Xiaomi-2210132G",
+        "OnePlus-CPH2451",
+        "OPPO-CPH2207",
+        "vivo-V2203",
+        "realme-RMX3085"
+    ]
+    return random.choice(models)
+
+def random_device_id():
+    return str(uuid.uuid4())
+
 ua = [
     "Mozilla/5.0 (Linux; Android 10; SM-G960U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
     "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
@@ -192,7 +208,10 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Referer": "https://m.facebook.com/reg",
         "Connection": "keep-alive",
-        "X-FB-Connection-Type": "MOBILE.LTE",
+        "Accept-Language": "en-US,en;q=0.9",
+        "X-FB-Connection-Type": "mobile.LTE",
+        "X-FB-Device": random_device_model(),
+        "X-FB-Device-ID": random_device_id(),
         "X-FB-Connection-Quality": "EXCELLENT",
         "X-FB-Net-HNI": "51502",
         "X-FB-SIM-HNI": "51502",
