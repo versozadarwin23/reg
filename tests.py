@@ -8,9 +8,8 @@ import random
 import json
 import concurrent.futures
 import threading
-
 xlsx_lock = threading.Lock()
-
+console_lock = threading.Lock()
 os.system("clear")
 
 ua = [
@@ -264,7 +263,7 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
 
     if "c_user" not in session.cookies:
         print(f"\033[1;91m⚠️ Create Account Failed for account #{account_num}. No c_user cookie found. Try toggling airplane mode or use another email.\033[0m")
-        time.sleep(3) # Small pause
+        time.sleep(3)
         return "FAILED_NO_C_USER"
 
     uid = session.cookies.get("c_user")
@@ -317,22 +316,34 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
     if not jbkj:
         print(f"\033[1;91m{FAILURE} Failed to get confirmation code for account #{account_num} after multiple attempts. Account might be unconfirmed.\033[0m")
 
-    print(f"\033[1;92m{SUCCESS}     Email: | {email_address} |\033[0m")
-    print(f"\033[1;92m{SUCCESS}     Pass: | {password} |\033[0m")
-    print(f"\033[1;92m{SUCCESS}     Code: | {jbkj if jbkj else 'N/A (Code not found)'}\033[0m")
     print('\n')
 
-    filename = "/storage/emulated/0/Acc_Created.xlsx"
     full_name = f"{firstname} {lastname}"
     data_to_save = [full_name, email_address, password, profile_id]
-    save_to_xlsx(filename, data_to_save)
 
-    filename_txt = "/storage/emulated/0/Acc_created.txt"
-    full_name = f"{firstname} {lastname}"
-    data_to_save = [full_name, email_address, password, profile_id]
-    save_to_txt(filename_txt, data_to_save)
+    with console_lock:
+        print("\n\033[1;96m======================================\033[0m")
+        print(f"\033[1;92m✅     Email: | {email_address} |\033[0m")
+        print(f"\033[1;92m✅     Pass:  | {password} |\033[0m")
+        print(f"\033[1;92m✅     Code:  | {jbkj if jbkj else 'N/A (Code not found)'}\033[0m")
+        print("\033[1;96m======================================\033[0m\n")
+
+        while True:
+            choice = input("💾 Do you want to save this account? (y/n): ").strip().lower()
+            if choice in ["y", "n"]:
+                break
+            print("❗ Please enter y or n.")
+
+        if choice == "y":
+            filename_xlsx = "/storage/emulated/0/Acc_Created.xlsx"
+            filename_txt = "/storage/emulated/0/Acc_created.txt"
+            save_to_xlsx(filename_xlsx, data_to_save)
+            save_to_txt(filename_txt, data_to_save)
+        else:
+            print("\033[1;93m⚠️  Account not saved.\033[0m")
 
     return "SUCCESS"
+
 
 def NEMAIN():
     os.system("clear")
@@ -363,6 +374,7 @@ def NEMAIN():
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         futures = []
         for i in range(max_create):
+            time.sleep(3)
             future = executor.submit(create_fbunconfirmed, i + 1, account_type, gender, None, requests.Session())
             futures.append(future)
 
