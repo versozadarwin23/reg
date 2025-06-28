@@ -1,3 +1,4 @@
+
 import string
 from openpyxl import Workbook, load_workbook
 import os
@@ -488,8 +489,10 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
 
     with console_lock:
         print("\n\033[1;96m======================================\033[0m")
+        print(f"\033[1;92m✅     Full Name: | {full_name} |\033[0m")
         print(f"\033[1;92m✅     Email: | {email_address} |\033[0m")
         print(f"\033[1;92m✅     Pass:  | {password} |\033[0m")
+        print(f"\033[1;92m✅     Profile ID:  | {uid} |\033[0m")
         print(f"\033[1;92m✅     Code:  | {jbkj if jbkj else 'N/A (Code not found)'}\033[0m")
         print("\033[1;96m======================================\033[0m\n")
 
