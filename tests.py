@@ -7,6 +7,9 @@ import time
 import random
 import json
 import concurrent.futures
+import threading
+
+xlsx_lock = threading.Lock()
 
 os.system("clear")
 
@@ -71,24 +74,24 @@ def generate_email():
     return email_address, drtyghbj5hgcbv
 
 def save_to_xlsx(filename, data):
-    """I-save ang data sa Excel file."""
+    """I-save ang data sa Excel file safely with a thread lock."""
     while True:
-        try:
-            if os.path.exists(filename):
-                wb = load_workbook(filename)
-                ws = wb.active
-            else:
-                wb = Workbook()
-                ws = wb.active
-                # Add headers if it's a new file
-                ws.append(["NAME", "USERNAME", "PASSWORD", "ACCOUNT LINK"])
-            ws.append(data)
-            wb.save(filename)
-            break
-        except Exception as e:
-            # Removed Use print_lock for error messages as well to prevent interleaving
-            print(f"\033[1;91m❗ Error saving to {filename}: {e}. Retrying...\033[0m")
-            time.sleep(RETRY_DELAY)  # Wait before retrying
+        with xlsx_lock:  # Ensure only one thread writes at a time
+            try:
+                if os.path.exists(filename):
+                    wb = load_workbook(filename)
+                    ws = wb.active
+                else:
+                    wb = Workbook()
+                    ws = wb.active
+                    # Add headers if it's a new file
+                    ws.append(["NAME", "USERNAME", "PASSWORD", "ACCOUNT LINK"])
+                ws.append(data)
+                wb.save(filename)
+                break
+            except Exception as e:
+                print(f"\033[1;91m❗ Error saving to {filename}: {e}. Retrying...\033[0m")
+                time.sleep(RETRY_DELAY)
 
 MAX_RETRIES = 3
 RETRY_DELAY = 2
