@@ -316,8 +316,6 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
     if not jbkj:
         print(f"\033[1;91m{FAILURE} Failed to get confirmation code for account #{account_num} after multiple attempts. Account might be unconfirmed.\033[0m")
 
-    print('\n')
-
     full_name = f"{firstname} {lastname}"
     data_to_save = [full_name, email_address, password, profile_id]
 
