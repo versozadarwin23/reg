@@ -33,7 +33,7 @@ def fetch_facebook(cookie_file):
         if "login" in response.url:
             print(f"[{username}] Login Error (redirected to login page)")
             try:
-                os.remove(f"/storage/emulated/0/cookie{username}.json")
+                os.remove(f"/storage/emulated/0/cookie/{username}.json")
                 print(f"[{username}] Cookie file deleted")
             except Exception as e:
                 print(f"[{username}] Failed to delete cookie file: {e}")
@@ -42,7 +42,7 @@ def fetch_facebook(cookie_file):
             print(f"[{username}] Checkpoint detected")
             try:
                 os.remove(cookie_file)
-                os.remove(f"/storage/emulated/0/cookie{username}.json")
+                os.remove(f"/storage/emulated/0/cookie/{username}.json")
             except Exception as e:
                 print(f"[{username}] Failed to delete cookie file: {e}")
             return
