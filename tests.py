@@ -73,10 +73,16 @@ def generate_email():
     drtyghbj5hgcbv = f"https://harakirimail.com/inbox/{rchjtrchjb}"
     return email_address, drtyghbj5hgcbv
 
+def save_to_txt(filename, data):
+    try:
+        with open(filename, "a", encoding="utf-8") as f:
+            f.write("|".join(data) + "\n")
+    except Exception as e:
+        print(f"\033[1;91m❗ Error saving to {filename}: {e}\033[0m")
+
 def save_to_xlsx(filename, data):
-    """I-save ang data sa Excel file safely with a thread lock."""
     while True:
-        with xlsx_lock:  # Ensure only one thread writes at a time
+        with xlsx_lock:
             try:
                 if os.path.exists(filename):
                     wb = load_workbook(filename)
@@ -84,7 +90,6 @@ def save_to_xlsx(filename, data):
                 else:
                     wb = Workbook()
                     ws = wb.active
-                    # Add headers if it's a new file
                     ws.append(["NAME", "USERNAME", "PASSWORD", "ACCOUNT LINK"])
                 ws.append(data)
                 wb.save(filename)
@@ -102,27 +107,20 @@ WARNING = "⚠️"
 LOADING = "⏳"
 
 def load_names_from_file(file_path):
-    """I-load ang mga pangalan mula sa file."""
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             return [line.strip() for line in file.readlines() if line.strip()]
     except FileNotFoundError:
-        # Removed Use print lock for this message
         print(f"\033[1;91m❗ Error: Name file not found at {file_path}. Please create it.\033[0m")
-        # Provide more generic default names as a fallback if files are completely missing
         return ["John", "Jane", "Doe", "Smith"]
 
 def get_names(account_type, gender):
-    """Kumuha ng random firstname at lastname mula sa files.
-    account_type is currently not fully utilized, selection is based on gender.
-    """
     male_first_names_file = "first_name.txt"
     last_names_file = "last_name.txt"
 
     male_first_names = load_names_from_file(male_first_names_file)
     last_names = load_names_from_file(last_names_file)
 
-    # Ensure there are names to choose from, even if files are empty
     if not male_first_names:
         male_first_names = ["Juan", "Pedro"]
     if not last_names:
@@ -133,20 +131,17 @@ def get_names(account_type, gender):
     return firstname, lastname
 
 def generate_random_phone_number():
-    """Gumawa ng random phone number."""
     random_number = str(random.randint(1000000, 9999999))
     third = random.randint(0, 4)
     forth = random.randint(1, 7)
     return f"9{third}{forth}{random_number}"
 
 def generate_random_password():
-    """Gumawa ng random password."""
     base = "Promises"
     six_digit = str(random.randint(100000, 999999))
     return base + six_digit
 
 def generate_user_details(account_type, gender, password=None):
-    """Kumuha ng user details kasama ang pangalan, kaarawan, password at phone number."""
     firstname, lastname = get_names(account_type, gender)
     year = random.randint(1978, 2001)
     date = random.randint(1, 28)
@@ -173,7 +168,6 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
     firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender, password)
 
     def check_page_loaded(url, headers, current_session):
-        """Hintayin ang page na magkaroon ng form."""
         retries = 0
         while retries < MAX_RETRIES:
             try:
@@ -183,13 +177,10 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
                 if form:
                     return form
                 else:
-                    # Removed Use print lock for status messages
                     print(f"{WARNING} Form not found on {url}, retrying... (Account #{account_num})")
             except requests.exceptions.RequestException as e:
-                # Removed Use print lock for error messages
                 print(f"{FAILURE} No internet or connection issue: {e}. Retrying in {RETRY_DELAY} seconds... (Account #{account_num})")
             except Exception as e:
-                # Removed Use print lock for error messages
                 print(f"{FAILURE} An unexpected error occurred: {e}. Retrying in {RETRY_DELAY} seconds... (Account #{account_num})")
 
             time.sleep(RETRY_DELAY)
@@ -219,9 +210,8 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
     form = check_page_loaded(url, headers, session)
     if not form:
         print(f"\033[1;91m{FAILURE} Could not load registration page or find form. Aborting attempt for account #{account_num}.\033[0m")
-        return "FAILED_PAGE_LOAD" # Return a status for the main thread
+        return "FAILED_PAGE_LOAD"
 
-    # Re-fetch the page to get the form with all current inputs, important for dynamic fields
     retries = 0
     while retries < MAX_RETRIES:
         try:
@@ -261,7 +251,7 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
 
     try:
         response = session.post(action_url, headers=headers, data=data, timeout=30)
-        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+        response.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(f"\033[1;91m{FAILURE} Network error during submission: {e}. Cannot complete account creation for account #{account_num}.\033[0m")
         return "FAILED_SUBMISSION_NETWORK"
@@ -280,8 +270,7 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
     uid = session.cookies.get("c_user")
     profile_id = f'https://www.facebook.com/profile.php?id={uid}'
 
-    # Save cookies
-    cookie_dir = "/storage/emulated/0/cookie"  # This path is specific to Android environments (e.g., Termux)
+    cookie_dir = "/storage/emulated/0/cookie"
     os.makedirs(cookie_dir, exist_ok=True)
     cookie_file = os.path.join(cookie_dir, f"{uid}.json")
     cookie_names = ["c_user", "datr", "fr", "noscript", "sb", "xs"]
@@ -292,21 +281,19 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
     except IOError as e:
         print(f"\033[1;91m{FAILURE} Error saving cookies for account #{account_num}: {e}\033[0m")
 
-    # Check for checkpoint (blocked account)
-    soup = BeautifulSoup(response.text, "html.parser")  # Use the soup from the post response
+    soup = BeautifulSoup(response.text, "html.parser")
     form_checkpoint = soup.find('form', action=lambda x: x and 'checkpoint' in x)
     if form_checkpoint:
         print(f"\033[1;91m⚠️ Created account #{account_num} blocked. Try toggling airplane mode or clearing Facebook Lite data.\033[0m")
         time.sleep(3)
-        return "BLOCKED" # Return a status indicating it was blocked
+        return "BLOCKED"
 
-    # Attempt to get confirmation code from Harakirimail
     jbkj = None
     retries = 0
-    while retries < MAX_RETRIES * 5:  # Give more time for email
+    while retries < MAX_RETRIES * 5:
         try:
             dtryvghjuijhn = requests.get(drtyghbj5hgcbv, timeout=30)
-            dtryvghjuijhn.raise_for_status()  # Check for HTTP errors
+            dtryvghjuijhn.raise_for_status()
             soup_mail = BeautifulSoup(dtryvghjuijhn.text, "html.parser")
             table = soup_mail.find("table", class_="table table-hover table-striped")
             if table:
@@ -330,7 +317,6 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
     if not jbkj:
         print(f"\033[1;91m{FAILURE} Failed to get confirmation code for account #{account_num} after multiple attempts. Account might be unconfirmed.\033[0m")
 
-    # Removed Use the print_lock for the success output
     print(f"\033[1;92m{SUCCESS}     Email: | {email_address} |\033[0m")
     print(f"\033[1;92m{SUCCESS}     Pass: | {password} |\033[0m")
     print(f"\033[1;92m{SUCCESS}     Code: | {jbkj if jbkj else 'N/A (Code not found)'}\033[0m")
@@ -341,11 +327,15 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
     data_to_save = [full_name, email_address, password, profile_id]
     save_to_xlsx(filename, data_to_save)
 
-    return "SUCCESS" # Indicate success
+    filename_txt = "/storage/emulated/0/Acc_created.txt"
+    full_name = f"{firstname} {lastname}"
+    data_to_save = [full_name, email_address, password, profile_id]
+    save_to_txt(filename_txt, data_to_save)
+
+    return "SUCCESS"
 
 def NEMAIN():
-    os.system("clear")  # Clear screen at the start of NEMAIN
-    # Removed Ensure this initial print is not interleaved
+    os.system("clear")
     print("\033[1;36m======================================\033[0m")
     print("\033[1;36m  Facebook By: Dars Account Creator\033[0m")
     print("\033[1;36m        (Parallel Edition)            \033[0m")
@@ -367,34 +357,25 @@ def NEMAIN():
         except ValueError:
             print("\033[1;91m❗ Invalid input. Please enter a number.\033[0m")
 
-    # Fixed account type and gender for now, as per original code
-    account_type = 1  # 1 for male, check get_names logic for others
-    gender = 1  # 1 for male, 2 for female (if female_first_names.txt is used)
+    account_type = 1
+    gender = 1
 
-    # Use ThreadPoolExecutor for parallel execution
-    # max_workers is set to 5 as requested
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         futures = []
         for i in range(max_create):
-            # Removed Indicate that a task is being submitted
-            # Each thread needs its own requests.Session() to prevent issues with shared state
             future = executor.submit(create_fbunconfirmed, i + 1, account_type, gender, None, requests.Session())
             futures.append(future)
 
-        # Wait for all futures to complete and process results
         for future in concurrent.futures.as_completed(futures):
             try:
-                result = future.result() # Get the return value from the function
+                result = future.result()
                 if result == "SUCCESS":
                     pass
                 else:
-                    # Removed Use print_lock
                     print(f"\033[1;91m{WARNING} An account creation task finished with status: {result}.\033[0m")
             except Exception as exc:
-                # Removed Use print_lock
                 print(f"\033[1;91m{FAILURE} An account generation task generated an exception: {exc}\033[0m")
 
-    # Removed Ensure final print is not interleaved
     print("\n\033[1;92m======================================\033[0m")
     print("\033[1;92m        Account Creation Finished!      \033[0m")
     print("\033[1;92m======================================\033[0m")
