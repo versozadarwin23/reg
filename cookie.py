@@ -1,6 +1,5 @@
 import json
 import requests
-from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 import os
 import time
@@ -33,12 +32,22 @@ def fetch_facebook(cookie_file):
 
         if "login" in response.url:
             print(f"[{username}] Login Error (redirected to login page)")
+            try:
+                os.remove(f"/storage/emulated/0/cookie{username}.json")
+                print(f"[{username}] Cookie file deleted")
+            except Exception as e:
+                print(f"[{username}] Failed to delete cookie file: {e}")
             return
         elif "checkpoint" in response.url:
             print(f"[{username}] Checkpoint detected")
+            try:
+                os.remove(cookie_file)
+                os.remove(f"/storage/emulated/0/cookie{username}.json")
+            except Exception as e:
+                print(f"[{username}] Failed to delete cookie file: {e}")
             return
 
-        print(f"\033[95m✅ [{username}] Login Success\033[0m")
+        print(f"\033[95m✅ [{username}] Processing\033[0m")
         start_time = datetime.datetime.now()
 
         while True:
