@@ -8,6 +8,7 @@ import json
 import concurrent.futures
 import threading
 import re # Import re for regular expressions
+from urllib.parse import urljoin # Import urljoin for correctly handling relative URLs
 
 xlsx_lock = threading.Lock()
 console_lock = threading.Lock()
@@ -199,7 +200,7 @@ ua = [
     "Mozilla/5.0 (Linux; Android 9; ZTE Axon 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
     "Mozilla/5.0 (Linux; Android 10; SM-A715F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
     "Mozilla/5.0 (Linux; Android 11; Google Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
-    "Mozilla/5.0 (Linux; Android 12; Samsung SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
     "Mozilla/5.0 (Linux; Android 9; Huawei Mate 20 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
     "Mozilla/5.0 (Linux; Android 10; LG V60 ThinQ) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
     "Mozilla/5.0 (Linux; Android 11; Samsung Galaxy A32) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
@@ -316,21 +317,26 @@ def generate_user_details(account_type, gender, password=None):
 
 custom_password_base = None
 
-def extract_form_details(html_content):
+def extract_form_details(html_content, base_url):
     """
     Extracts form action and input fields from HTML content using regex.
     This is a simplified approach and might need adjustment based on
     Facebook's actual HTML structure.
     """
     form_action_match = re.search(r'<form[^>]+action=["\']([^"\']+)["\']', html_content)
-    action_url = form_action_match.group(1) if form_action_match else None
+    raw_action_url = form_action_match.group(1) if form_action_match else None
+
+    # Crucially, join the relative URL with the base URL
+    action_url = urljoin(base_url, raw_action_url) if raw_action_url else None
+
 
     inputs = {}
     # Regex to find input tags and extract name and value attributes
-    input_matches = re.finditer(r'<input[^>]+name=["\']([^"\']+)["\'][^>]+value=["\']([^"\']*)["\']', html_content)
+    # Updated regex to also capture type attribute for better input identification (optional but good practice)
+    input_matches = re.finditer(r'<input[^>]+name=["\']([^"\']+)["\'](?:[^>]+value=["\']([^"\']*)["\'])?', html_content)
     for match in input_matches:
         name = match.group(1)
-        value = match.group(2)
+        value = match.group(2) if match.group(2) is not None else "" # Handle cases where value attribute might be missing
         inputs[name] = value
 
     return action_url, inputs
@@ -366,7 +372,7 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
         print(f"{FAILURE} Failed to load page after {MAX_RETRIES} retries. (Account #{account_num})")
         return None
 
-    url = "https://m.facebook.com/reg"
+    url = "https://m.facebook.com/reg" # Base URL for registration
     headers = {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Referer": "https://m.facebook.com/reg",
@@ -394,7 +400,8 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
         print(f"\033[1;91m{FAILURE} Could not load registration page. Aborting attempt for account #{account_num}.\033[0m")
         return "FAILED_PAGE_LOAD"
 
-    action_url, form_inputs = extract_form_details(html_content)
+    # Pass the base URL to extract_form_details
+    action_url, form_inputs = extract_form_details(html_content, url)
 
     if not action_url:
         print(f"\033[1;91m{FAILURE} Could not find form action URL. Aborting attempt for account #{account_num}.\033[0m")
