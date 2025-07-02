@@ -539,7 +539,7 @@ def NEMAIN():
     account_type = 1
     gender = 1
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         futures = []
         for i in range(max_create):
             time.sleep(3)
