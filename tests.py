@@ -11,7 +11,6 @@ import concurrent.futures
 import threading
 xlsx_lock = threading.Lock()
 console_lock = threading.Lock()
-os.system("clear")
 
 def random_device_model():
     models = [
@@ -451,7 +450,7 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
     soup = BeautifulSoup(response.text, "html.parser")
     form_checkpoint = soup.find('form', action=lambda x: x and 'checkpoint' in x)
     if form_checkpoint:
-        print(f"\033[1;91m⚠️ Created account #{account_num} blocked. Try toggling airplane mode or clearing Facebook Lite data.\033[0m")
+        # print(f"\033[1;91m⚠️ Created account #{account_num} blocked. Try toggling airplane mode or clearing Facebook Lite data.\033[0m")
         time.sleep(3)
         return "BLOCKED"
 
@@ -552,10 +551,9 @@ def NEMAIN():
                 if result == "SUCCESS":
                     pass
                 else:
-                    print(f"\033[1;91m{WARNING} An account creation task finished with status: {result}.\033[0m")
+                    pass
             except Exception as exc:
-                print(f"\033[1;91m{FAILURE} An account generation task generated an exception: {exc}\033[0m")
-
+                pass
     print("\n\033[1;92m======================================\033[0m")
     print("\033[1;92m        Account Creation Finished!      \033[0m")
     print("\033[1;92m======================================\033[0m")
