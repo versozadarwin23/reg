@@ -427,10 +427,10 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
         response = session.post(action_url, headers=headers, data=data, timeout=30)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        print(f"\033[1;91m{FAILURE} Network error during submission: {e}. Cannot complete account creation for account #{account_num}.\033[0m")
+        # print(f"\033[1;91m{FAILURE} Network error during submission: {e}. Cannot complete account creation for account #{account_num}.\033[0m")
         return "FAILED_SUBMISSION_NETWORK"
     except Exception as e:
-        print(f"\033[1;91m{FAILURE} An unexpected error occurred during submission: {e}. Cannot complete account creation for account #{account_num}.\033[0m")
+        # print(f"\033[1;91m{FAILURE} An unexpected error occurred during submission: {e}. Cannot complete account creation for account #{account_num}.\033[0m")
         return "FAILED_SUBMISSION_UNEXPECTED"
 
     with open(f"status.html", "w", encoding="utf-8") as file:
@@ -553,9 +553,10 @@ def NEMAIN():
                 if result == "SUCCESS":
                     pass
                 else:
-                    print(f"\033[1;91m{WARNING} An account creation task finished with status: {result}.\033[0m")
+                    pass
+                    # print(f"\033[1;91m{WARNING} An account creation task finished with status: {result}.\033[0m")
             except Exception as exc:
-                print(f"\033[1;91m{FAILURE} An account generation task generated an exception: {exc}\033[0m")
+                pass
 
     print("\n\033[1;92m======================================\033[0m")
     print("\033[1;92m        Account Creation Finished!      \033[0m")
