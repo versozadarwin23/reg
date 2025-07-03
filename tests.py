@@ -318,7 +318,6 @@ custom_password_base = None
 def create_fbunconfirmed(account_num, account_type, gender, password=None, session=None):
     agent = random.choice(ua)
     global custom_password_base
-    os.system("clear")
     email_address, drtyghbj5hgcbv = generate_email()
     if password is None:
         if custom_password_base:
@@ -513,7 +512,6 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
 
 
 def NEMAIN():
-    os.system("clear")
     print("\033[1;36m======================================\033[0m")
     print("\033[1;36m  Facebook By: Dars Account Creator\033[0m")
     print("\033[1;36m        (Parallel Edition)            \033[0m")
