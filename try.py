@@ -12,7 +12,6 @@ from urllib.parse import urljoin # Import urljoin for correctly handling relativ
 
 xlsx_lock = threading.Lock()
 console_lock = threading.Lock()
-os.system("clear")
 
 def random_device_model():
     models = [
@@ -344,7 +343,6 @@ def extract_form_details(html_content, base_url):
 def create_fbunconfirmed(account_num, account_type, gender, password=None, session=None):
     agent = random.choice(ua)
     global custom_password_base
-    os.system("clear")
     email_address, drtyghbj5hgcbv = generate_email()
     if password is None:
         if custom_password_base:
@@ -439,7 +437,7 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
         file.write(response.text)
 
     if "c_user" not in session.cookies:
-        print(f"\033[1;91m⚠️ Create Account Failed for account #{account_num}. No c_user cookie found. Try toggling airplane mode or use another email.\033[0m")
+        # print(f"\033[1;91m⚠️ Create Account Failed for account #{account_num}. No c_user cookie found. Try toggling airplane mode or use another email.\033[0m")
         time.sleep(3)
         return "FAILED_NO_C_USER"
 
@@ -518,7 +516,6 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
 
 
 def NEMAIN():
-    os.system("clear")
     print("\033[1;36m======================================\033[0m")
     print("\033[1;36m  Facebook By: Dars Account Creator\033[0m")
     print("\033[1;36m        (Parallel Edition)            \033[0m")
