@@ -11,6 +11,7 @@ import concurrent.futures
 import threading
 xlsx_lock = threading.Lock()
 console_lock = threading.Lock()
+os.system("clear")
 
 def random_device_model():
     models = [
@@ -318,6 +319,7 @@ custom_password_base = None
 def create_fbunconfirmed(account_num, account_type, gender, password=None, session=None):
     agent = random.choice(ua)
     global custom_password_base
+    os.system("clear")
     email_address, drtyghbj5hgcbv = generate_email()
     if password is None:
         if custom_password_base:
@@ -449,7 +451,7 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
     soup = BeautifulSoup(response.text, "html.parser")
     form_checkpoint = soup.find('form', action=lambda x: x and 'checkpoint' in x)
     if form_checkpoint:
-        # print(f"\033[1;91m⚠️ Created account #{account_num} blocked. Try toggling airplane mode or clearing Facebook Lite data.\033[0m")
+        print(f"\033[1;91m⚠️ Created account #{account_num} blocked. Try toggling airplane mode or clearing Facebook Lite data.\033[0m")
         time.sleep(3)
         return "BLOCKED"
 
@@ -480,8 +482,7 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
         retries += 1
 
     if not jbkj:
-        return "BLOCKED"
-        # print(f"\033[1;91m{FAILURE} Failed to get confirmation code for account #{account_num} after multiple attempts. Account might be unconfirmed.\033[0m")
+        print(f"\033[1;91m{FAILURE} Failed to get confirmation code for account #{account_num} after multiple attempts. Account might be unconfirmed.\033[0m")
 
     full_name = f"{firstname} {lastname}"
     data_to_save = [full_name, email_address, password, profile_id]
@@ -513,6 +514,7 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
 
 
 def NEMAIN():
+    os.system("clear")
     print("\033[1;36m======================================\033[0m")
     print("\033[1;36m  Facebook By: Dars Account Creator\033[0m")
     print("\033[1;36m        (Parallel Edition)            \033[0m")
@@ -537,7 +539,7 @@ def NEMAIN():
     account_type = 1
     gender = 1
 
-    with concurrent.futures.ThreadPoolExecutor(max_create) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         futures = []
         for i in range(max_create):
             time.sleep(3)
@@ -550,9 +552,10 @@ def NEMAIN():
                 if result == "SUCCESS":
                     pass
                 else:
-                    pass
+                    print(f"\033[1;91m{WARNING} An account creation task finished with status: {result}.\033[0m")
             except Exception as exc:
-                pass
+                print(f"\033[1;91m{FAILURE} An account generation task generated an exception: {exc}\033[0m")
+
     print("\n\033[1;92m======================================\033[0m")
     print("\033[1;92m        Account Creation Finished!      \033[0m")
     print("\033[1;92m======================================\033[0m")
