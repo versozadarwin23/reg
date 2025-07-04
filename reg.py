@@ -305,7 +305,5 @@ def NEMAIN():
         create_fbunconfirmed(account_type, usern, gender, session=session)
 
 if __name__ == "__main__":
-    try:
+    while True:
         NEMAIN()
-    except:
-        pass
