@@ -8,6 +8,25 @@ from bs4 import BeautifulSoup
 import time
 import random
 
+def print_logo():
+    print(r"""
+\033[1;96m
+  ██████  █████  ██      ██      ███    ███     ███    ███ ███████      █████  ███████ 
+ ██      ██   ██ ██      ██      ████  ████     ████  ████ ██          ██   ██ ██      
+ ██      ███████ ██      ██      ██ ████ ██     ██ ████ ██ █████       ███████ ███████ 
+ ██      ██   ██ ██      ██      ██  ██  ██     ██  ██  ██ ██          ██   ██       ██ 
+  ██████ ██   ██ ███████ ███████ ██      ██     ██      ██ ███████     ██   ██ ███████ 
+
+       ██████   █████  ██████  ███████ 
+      ██       ██   ██ ██   ██ ██      
+      ██   ███ ███████ ██████  █████   
+      ██    ██ ██   ██ ██   ██ ██      
+       ██████  ██   ██ ██   ██ ███████ 
+
+\033[0m
+""")
+
+
 COOKIE_DIR = "cookie"
 
 def save_to_xlsx(filename, data):
@@ -143,6 +162,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
 
     form = get_registration_form()
 
+    os.system("clear")
     email_or_phone = input("\033[92mEnter your email:\033[0m ").strip()
 
     data = {
@@ -172,6 +192,8 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     if "c_user" not in session.cookies:
         print("\033[1;91m⚠️ Create Account Failed. Try again later.\033[0m")
         return
+
+    print(f"\n\033[92m✅ Email: {email_or_phone} | Pass: {password}\033[0m")
 
     while True:
         try:
@@ -243,8 +265,11 @@ def NEMAIN():
         usern = "ali"
         create_fbunconfirmed(account_type, usern, gender, session=session)
 
+
 if __name__ == "__main__":
-    try:
-        NEMAIN()
-    except:
-        pass
+    print_logo()
+    while True:
+        try:
+            NEMAIN()
+        except:
+            pass
