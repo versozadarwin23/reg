@@ -8,16 +8,6 @@ from bs4 import BeautifulSoup
 import time
 import random
 
-def print_logo():
-    print(r"""
-\033[1;96m
-╔════════════════════════════════╗
-║\033[1;93m       C A L L  M E  D A R S      \033[1;96m║
-╚════════════════════════════════╝
-\033[0m
-""")
-
-
 COOKIE_DIR = "cookie"
 
 def save_to_xlsx(filename, data):
@@ -259,8 +249,6 @@ def NEMAIN():
 
 if __name__ == "__main__":
     os.system("clear")
-    print_logo()
-    time.sleep(3)
     while True:
         try:
             NEMAIN()
