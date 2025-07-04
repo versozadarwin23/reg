@@ -174,7 +174,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         print("\033[1;91m⚠️ Create Account Failed. Try again later.\033[0m")
         return
 
-    print(f"\n\033[92m✅ Email: {email_or_phone} | Pass: {password}\033[0m")
+    print(f"\n\033[92m  ✅ Account | Pass: {password}\033[0m")
 
     while True:
         try:
