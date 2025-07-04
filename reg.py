@@ -268,6 +268,7 @@ def NEMAIN():
 
 if __name__ == "__main__":
     print_logo()
+    time.sleep(3)
     while True:
         try:
             NEMAIN()
