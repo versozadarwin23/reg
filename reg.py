@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 import time
 import random
 
-COOKIE_DIR = "cookie"
+COOKIE_DIR = "/storage/emulated/0/cookie"
 
 def save_to_xlsx(filename, data):
     header_columns = ['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'ACCESS TOKEN']
@@ -35,7 +35,6 @@ def save_to_xlsx(filename, data):
         except Exception as e:
             print(f"Error saving to {filename}: {e}. Retrying...")
             time.sleep(1)
-
 
 def load_names_from_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -73,7 +72,6 @@ def generate_user_details(account_type, gender, password=None):
         password = generate_random_password()
     phone_number = generate_random_phone_number()
     return firstname, lastname, date, year, month, phone_number, password
-
 
 custom_password_base = None
 
@@ -119,10 +117,8 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         "X-FB-Net-HNI": "51502",
         "X-FB-SIM-HNI": "51502",
         "X-FB-HTTP-Engine": "Liger",
-        'x-fb-connection-type': 'Unknown',
         'accept-encoding': 'gzip, deflate',
         'content-type': 'application/x-www-form-urlencoded',
-        'x-fb-http-engine': 'Liger',
         'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1903 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/444.0.0.0.110;]',
     }
 
@@ -143,9 +139,26 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
 
     form = get_registration_form()
 
-    os.system("clear")
-    email_or_phone = input("\033[92mEnter your email:\033[0m ").strip()
+    # Choice input
+    while True:
+        print("\n\033[94mChoose account identifier:\033[0m")
+        print(" [1] Enter Email")
+        print(" [2] Use Random Phone Number")
+        choice = input("\033[92mYour choice (1 or 2): \033[0m").strip()
+        os.system("clear")
+        if choice == '1':
+            email_or_phone = input("\033[92mEnter your email:\033[0m ").strip()
+            is_phone_choice = False
+            break
+        elif choice == '2':
+            email_or_phone = phone_number
+            print(f"\033[92mUsing generated phone number:\033[0m {email_or_phone}")
+            is_phone_choice = True
+            break
+        else:
+            print("\033[91m❌ Invalid choice. Please enter 1 or 2.\033[0m")
 
+    # Build form data
     data = {
         "firstname": firstname,
         "lastname": lastname,
@@ -174,11 +187,55 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         print("\033[1;91m⚠️ Create Account Failed. Try again later.\033[0m")
         return
 
-    print(f"\n\033[92m  ✅ Account | Pass: {password}\033[0m")
+    # ✅ NEW LOGIC: If choice 2, change email in-session
+    if is_phone_choice:
+        print("\n\033[93m✅ Account created with phone number. Now let's change it to an email.\033[0m")
+        while True:
+            try:
+                change_email_url = "https://m.facebook.com/changeemail/"
+                change_headers = {
+                    "User-Agent": headers["User-Agent"],
+                    "Accept": "*/*",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Accept-Encoding": "gzip, deflate",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "Connection": "keep-alive"
+                }
 
+                response = session.get(change_email_url, headers=change_headers, timeout=10)
+                soup = BeautifulSoup(response.text, "html.parser")
+                form = soup.find("form")
+
+                if not form:
+                    print("\033[91m❌ Could not load email change form. Skipping.\033[0m")
+                    break
+
+                action_url = requests.compat.urljoin(change_email_url, form.get("action", change_email_url))
+                data = {}
+                for inp in form.find_all("input"):
+                    if inp.has_attr("name"):
+                        data[inp["name"]] = inp.get("value", "")
+
+                new_email = input("\033[92mPlease enter your new email:\033[0m ").strip()
+                data["new"] = new_email
+                data["submit"] = "Add"
+
+                response = session.post(action_url, headers=change_headers, data=data, timeout=10)
+                if "email" in response.text.lower():
+                    print("\033[92m✅ Email change submitted successfully!\033[0m")
+                else:
+                    print("\033[91m⚠️ Email change may not have succeeded. Check your account manually.\033[0m")
+
+                email_or_phone = new_email
+                break
+            except Exception as e:
+                print(f"\033[91m❌ Error changing email: {e}\033[0m")
+                time.sleep(2)
+
+    print(f"\n\033[92m ✅ | Account | Pass: {password}\033[0m")
     while True:
         try:
-            user_input = input("Type 'b' if blocked, or press Enter to continue: ")
+            user_input = input("\033[93mType 'b' if blocked, or press Enter to continue:\033[0m ")
             if user_input.lower() == 'b':
                 print("\033[1;91m⚠️ Creating another account because the last one was blocked.\033[0m")
                 time.sleep(3)
@@ -188,16 +245,18 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         except:
             pass
 
+    # Save cookies
     save_session_cookie(session)
     uid = session.cookies.get("c_user")
     profile_id = f'https://www.facebook.com/profile.php?id={uid}'
 
+    # Try to get access token ONLY if email-like identifier is available
+    access_token = ""
     api_key = "882a8490361da98702bf97a021ddc14d"
     secret = "62f8ce9f74b12f84c123cc23437a4a32"
-
     params = {
         "api_key": api_key,
-        "email": email_or_phone,
+        "email": uid,
         "format": "JSON",
         "generate_session_cookies": 1,
         "locale": "en_US",
@@ -210,20 +269,19 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     sig_str = "".join(f"{key}={params[key]}" for key in sorted(params)) + secret
     params["sig"] = hashlib.md5(sig_str.encode()).hexdigest()
 
-    access_token = ""
     try:
         resp = requests.get("https://api.facebook.com/restserver.php", params=params, headers=headers, timeout=60)
         data = resp.json()
         access_token = data.get("access_token", "")
-        if "error_msg" in data:
+        if "error_title" in data:
             print("⚠️ FB API error:", data["error_msg"])
-    except Exception as e:
-        print("⚠️ Error getting access_token:", e)
-
+    except:
+        pass
+    # Log success
     full_name = f"{firstname} {lastname}"
     print(f"\n\033[92m✅ Created Account: {full_name} | Pass: {password}\033[0m")
 
-    filename = "Acc_Created.xlsx"
+    filename = "/storage/emulated/0/Acc_Created.xlsx"
     data_to_save = [full_name, email_or_phone, password, profile_id, access_token]
     save_to_xlsx(filename, data_to_save)
     print("\n\033[92m✅ Account info saved.\033[0m\n")
@@ -246,11 +304,8 @@ def NEMAIN():
         usern = "ali"
         create_fbunconfirmed(account_type, usern, gender, session=session)
 
-
 if __name__ == "__main__":
-    os.system("clear")
-    while True:
-        try:
-            NEMAIN()
-        except:
-            pass
+    try:
+        NEMAIN()
+    except:
+        pass
