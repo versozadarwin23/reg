@@ -1,73 +1,45 @@
+import hashlib
 import json
-from requests.utils import dict_from_cookiejar, cookiejar_from_dict
+from requests.utils import dict_from_cookiejar
 from openpyxl import Workbook, load_workbook
-from openpyxl.utils import get_column_letter
 import os
 import requests
 from bs4 import BeautifulSoup
 import time
-import sys
 import random
 
-os.system("clear")
-
-# ✅ Path where your cookie JSON files are stored
 COOKIE_DIR = "cookie"
 
-windows_headers = {
-    "Connection": "keep-alive",
-    "X-FB-Connection-Type": "MOBILE.LTE",
-    "X-FB-Connection-Quality": "EXCELLENT",
-    "X-FB-Net-HNI": "51502",
-    "X-FB-SIM-HNI": "51502",
-    "X-FB-HTTP-Engine": "Liger",
-    'x-fb-connection-type': 'Unknown',
-    'accept-encoding': 'gzip, deflate',
-    'content-type': 'application/x-www-form-urlencoded',
-    'x-fb-http-engine': 'Liger',
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-    'Referer': 'https://m.facebook.com/',
-    'Content-Type': 'application/x-www-form-urlencoded'
-}
-
 def save_to_xlsx(filename, data):
+    header_columns = ['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'ACCESS TOKEN']
     while True:
         try:
             if os.path.exists(filename):
                 wb = load_workbook(filename)
                 ws = wb.active
+                if ws.max_row == 0:
+                    ws.append(header_columns)
+                else:
+                    header = [cell.value for cell in ws[1]]
+                    if header != header_columns:
+                        ws.insert_rows(1)
+                        ws.append(header_columns)
             else:
                 wb = Workbook()
                 ws = wb.active
-                ws.append(['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK'])
+                ws.append(header_columns)
+
             ws.append(data)
             wb.save(filename)
             break
         except Exception as e:
             print(f"Error saving to {filename}: {e}. Retrying...")
+            time.sleep(1)
 
-def load_user_agents(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file:
-        user_agents = [line.strip() for line in file if line.strip()]
-    return user_agents
-
-def get_random_user_agent(file_path):
-    user_agents = load_user_agents(file_path)
-    return random.choice(user_agents)
-
-MAX_RETRIES = 3
-RETRY_DELAY = 2
-
-SUCCESS = "✅"
-FAILURE = "✅"
-INFO = "✅"
-WARNING = "⚠️"
-LOADING = "⏳"
 
 def load_names_from_file(file_path):
-    with open(file_path, 'r') as file:
-        return [line.strip() for line in file.readlines()]
+    with open(file_path, 'r', encoding='utf-8') as file:
+        return [line.strip() for line in file if line.strip()]
 
 def get_names(account_type, gender):
     if account_type == 1:
@@ -78,6 +50,7 @@ def get_names(account_type, gender):
         male_first_names = []
         female_first_names = load_names_from_file('path_to_female_first_names.txt')
         last_names = load_names_from_file('path_to_last_names.txt')
+
     firstname = random.choice(male_first_names if gender == 1 else female_first_names)
     lastname = random.choice(last_names)
     return firstname, lastname
@@ -86,13 +59,10 @@ def generate_random_phone_number():
     random_number = str(random.randint(1000000, 9999999))
     third = random.randint(0, 4)
     forth = random.randint(1, 7)
-    number = f"9{third}{forth}{random_number}"
-    return number
+    return f"9{third}{forth}{random_number}"
 
 def generate_random_password():
-    base = 'Promises'
-    six_digit = str(random.randint(100000, 999999))
-    return base + six_digit
+    return 'Promises' + str(random.randint(100000, 999999))
 
 def generate_user_details(account_type, gender, password=None):
     firstname, lastname = get_names(account_type, gender)
@@ -104,9 +74,9 @@ def generate_user_details(account_type, gender, password=None):
     phone_number = generate_random_phone_number()
     return firstname, lastname, date, year, month, phone_number, password
 
+
 custom_password_base = None
 
-# ✅✅✅ ADD: Cookie Saving Utilities
 def ensure_cookie_dir():
     if not os.path.exists(COOKIE_DIR):
         os.makedirs(COOKIE_DIR)
@@ -117,9 +87,7 @@ def save_cookie_json(cookie_dict):
     if not c_user:
         print("❌ ERROR: No 'c_user' in cookie_dict. Cannot save.")
         return
-
     file_path = os.path.join(COOKIE_DIR, f"{c_user}.json")
-
     try:
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(cookie_dict, f, indent=2)
@@ -131,27 +99,15 @@ def save_session_cookie(session):
     save_cookie_json(cookie_dict)
 
 def create_fbunconfirmed(account_type, usern, gender, password=None, session=None):
-    global custom_password_base, profile_id
+    global custom_password_base
 
     if password is None:
         if custom_password_base:
-            six_digit = str(random.randint(100000, 999999))
-            password = custom_password_base + six_digit
+            password = custom_password_base + str(random.randint(100000, 999999))
         else:
             password = generate_random_password()
 
     firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender, password)
-
-    def check_page_loaded(url, headers):
-        while True:
-            try:
-                response = requests.get(url, headers=headers)
-                soup = BeautifulSoup(response.text, 'html.parser')
-                form = soup.find("form")
-                os.system("clear")
-                return form
-            except:
-                print('😢 No internet. Check data or toggle airplane mode.')
 
     url = "https://m.facebook.com/reg"
     headers = {
@@ -173,84 +129,103 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     if session is None:
         session = requests.Session()
 
-    while True:
-        form = check_page_loaded(url, headers)
-        if form:
-            break
+    def get_registration_form():
+        while True:
+            try:
+                response = session.get(url, headers=headers, timeout=10)
+                soup = BeautifulSoup(response.text, "html.parser")
+                form = soup.find("form")
+                if form:
+                    return form
+            except:
+                print('😢 No internet. Retrying...')
+                time.sleep(3)
+
+    form = get_registration_form()
+
+    email_or_phone = input("\033[92mEnter your email:\033[0m ").strip()
+
+    data = {
+        "firstname": firstname,
+        "lastname": lastname,
+        "birthday_day": str(date),
+        "birthday_month": str(month),
+        "birthday_year": str(year),
+        "reg_email__": email_or_phone,
+        "sex": str(gender),
+        "encpass": used_password,
+        "submit": "Sign Up"
+    }
+
+    if form:
+        action_url = requests.compat.urljoin(url, form.get("action", url))
+        for inp in form.find_all("input"):
+            if inp.has_attr("name") and inp["name"] not in data:
+                data[inp["name"]] = inp.get("value", "")
+
+        try:
+            response = session.post(action_url, headers=headers, data=data, timeout=15)
+        except:
+            print("❌ Failed to submit form.")
+            return
+
+    if "c_user" not in session.cookies:
+        print("\033[1;91m⚠️ Create Account Failed. Try again later.\033[0m")
+        return
 
     while True:
         try:
-            response = session.get(url, headers=headers, timeout=10)
-            soup = BeautifulSoup(response.text, "html.parser")
-            form = soup.find("form")
+            user_input = input("Type 'b' if blocked, or press Enter to continue: ")
+            if user_input.lower() == 'b':
+                print("\033[1;91m⚠️ Creating another account because the last one was blocked.\033[0m")
+                time.sleep(3)
+                os.system("clear")
+                return
             break
         except:
             pass
 
-    if form:
-        action_url = requests.compat.urljoin(url, form["action"]) if form.has_attr("action") else url
-        inputs = form.find_all("input")
-        email_or_phone = input("\033[92mEnter your email:\033[0m ")
-        data = {
-            "firstname": firstname,
-            "lastname": lastname,
-            "birthday_day": str(date),
-            "birthday_month": str(month),
-            "birthday_year": str(year),
-            "reg_email__": email_or_phone,
-            "sex": str(gender),
-            "encpass": used_password,
-            "submit": "Sign Up"
-        }
+    save_session_cookie(session)
+    uid = session.cookies.get("c_user")
+    profile_id = f'https://www.facebook.com/profile.php?id={uid}'
 
-        for inp in inputs:
-            if inp.has_attr("name") and inp["name"] not in data:
-                data[inp["name"]] = inp["value"] if inp.has_attr("value") else ""
+    api_key = "882a8490361da98702bf97a021ddc14d"
+    secret = "62f8ce9f74b12f84c123cc23437a4a32"
 
-        response = session.post(action_url, headers=headers, data=data)
+    params = {
+        "api_key": api_key,
+        "email": email_or_phone,
+        "format": "JSON",
+        "generate_session_cookies": 1,
+        "locale": "en_US",
+        "method": "auth.login",
+        "password": password,
+        "return_ssl_resources": 1,
+        "v": "1.0"
+    }
 
-        if "c_user" not in session.cookies:
-            print("\033[1;91m⚠️ Create Account Failed. Try toggling airplane mode or use another email.\033[0m")
-            time.sleep(3)
-            return
+    sig_str = "".join(f"{key}={params[key]}" for key in sorted(params)) + secret
+    params["sig"] = hashlib.md5(sig_str.encode()).hexdigest()
 
-        # ✅✅✅ SAVE COOKIE HERE
-        save_session_cookie(session)
+    access_token = ""
+    try:
+        resp = requests.get("https://api.facebook.com/restserver.php", params=params, headers=headers, timeout=60)
+        data = resp.json()
+        access_token = data.get("access_token", "")
+        if "error_msg" in data:
+            print("⚠️ FB API error:", data["error_msg"])
+    except Exception as e:
+        print("⚠️ Error getting access_token:", e)
 
-        uid = session.cookies.get("c_user")
-        profile_id = f'https://www.facebook.com/profile.php?id={uid}'
+    full_name = f"{firstname} {lastname}"
+    print(f"\n\033[92m✅ Created Account: {full_name} | Pass: {password}\033[0m")
 
-        form = soup.find('form', action=lambda x: x and 'checkpoint' in x)
-        if form:
-            print("\033[1;91m⚠️ Created account blocked. Try toggling airplane mode or clearing Facebook Lite data.\033[0m")
-            time.sleep(3)
-            os.system("clear")
-            return
-
-        os.system("clear")
-        print("\n\n\n")
-        print(f"\033[1;92m✅ Account      | Pass: {password}\033[0m")
-
-        while True:
-            try:
-                user_input = input("Type 'b' if blocked, or press Enter to continue: ")
-                if user_input.lower() == 'b':
-                    print("\033[1;91m⚠️ Creating another account because the last one was blocked.\033[0m")
-                    time.sleep(3)
-                    os.system("clear")
-                    return
-                break
-            except:
-                pass
-
-        filename = "/storage/emulated/0/Acc_Created.xlsx"
-        full_name = f"{firstname} {lastname}"
-        data_to_save = [full_name, email_or_phone, password, profile_id]
-        save_to_xlsx(filename, data_to_save)
-        os.system("clear")
-        print(f"\033[1;92m✅ Account saved: {firstname} {lastname} | Pass: {password}\033[0m")
-        time.sleep(3)
-
+    filename = "Acc_Created.xlsx"
+    data_to_save = [full_name, email_or_phone, password, profile_id, access_token]
+    save_to_xlsx(filename, data_to_save)
+    print("\n\033[92m✅ Account info saved.\033[0m\n")
+    time.sleep(2)
+    os.system("clear")
 
 def NEMAIN():
     os.system("clear")
@@ -261,13 +236,15 @@ def NEMAIN():
 
     global custom_password_base
     if custom_password_base is None:
-        inp = input("\033[1;92m😊 Type your password to continue: \033[0m").strip()
-        custom_password_base = inp if inp else "promises"
+        inp = input("\033[1;92m😊 Type your password: \033[0m").strip()
+        custom_password_base = inp if inp else "Promises"
 
-    for i in range(max_create):
+    for _ in range(max_create):
         usern = "ali"
         create_fbunconfirmed(account_type, usern, gender, session=session)
 
 if __name__ == "__main__":
-    while True:
+    try:
         NEMAIN()
+    except:
+        pass
