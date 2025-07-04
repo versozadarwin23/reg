@@ -572,7 +572,6 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
         filename_txt = "/storage/emulated/0/Acc_created.txt"
         save_to_xlsx(filename_xlsx, data_to_save)
         save_to_txt(filename_txt, data_to_save)
-        print(f"\033[1;92m{SUCCESS} Account #{account_num} saved successfully!\033[0m")
 
 def main():
     try:
