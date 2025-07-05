@@ -551,37 +551,56 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
             if choice == "n":
                 break
             elif choice == "y":
-                api_key = "882a8490361da98702bf97a021ddc14d"
-                secret = "62f8ce9f74b12f84c123cc23437a4a32"
+                max_attempts = 3
+                attempt = 0
+                access_token = ""
 
-                params = {
-                    "api_key": api_key,
-                    "email": uid,
-                    "format": "JSON",
-                    "generate_session_cookies": 1,
-                    "locale": "en_US",
-                    "method": "auth.login",
-                    "password": used_password,
-                    "return_ssl_resources": 1,
-                    "v": "1.0"
-                }
+                while attempt < max_attempts:
+                    attempt += 1
+                    print(f"🔄 Attempt {attempt} to get access token...")
+                    api_key = "882a8490361da98702bf97a021ddc14d"
+                    secret = "62f8ce9f74b12f84c123cc23437a4a32"
 
-                sig_str = "".join(f"{key}={params[key]}" for key in sorted(params)) + secret
-                params["sig"] = hashlib.md5(sig_str.encode()).hexdigest()
+                    params = {
+                        "api_key": api_key,
+                        "email": uid,
+                        "format": "JSON",
+                        "generate_session_cookies": 1,
+                        "locale": "en_US",
+                        "method": "auth.login",
+                        "password": used_password,
+                        "return_ssl_resources": 1,
+                        "v": "1.0"
+                    }
 
-                try:
-                    resp = requests.get("https://api.facebook.com/restserver.php", params=params, headers=headers,
-                                        timeout=60)
-                    data = resp.json()
-                    access_token = data.get("access_token", "")
-                    if "error_title" in data:
-                        print(f"⚠️  {account_num}:", data["error_title"])
-                except Exception as error_title:
-                    print(f"⚠️  account #{account_num}:", error_title)
+                    sig_str = "".join(f"{key}={params[key]}" for key in sorted(params)) + secret
+                    params["sig"] = hashlib.md5(sig_str.encode()).hexdigest()
 
-                data_to_save = [full_name, email_address, password, profile_id, access_token]
-                save_to_xlsx(filename_xlsx, data_to_save)
-                save_to_txt(filename_txt, data_to_save)
+                    try:
+                        resp = requests.get("https://api.facebook.com/restserver.php", params=params, headers=headers,timeout=60)
+                        data = resp.json()
+                        access_token = data.get("access_token", "")
+                        if "error_title" in data:
+                            print(f"⚠️  {account_num}:", data["error_title"])
+                    except Exception as error_title:
+                        print(f"⚠️  account #{account_num}:", error_title)
+
+                    if access_token.strip():
+                        # Success!
+                        print("✅ Access token acquired.")
+                        data_to_save = [full_name, email_address, password, profile_id, access_token]
+                        save_to_xlsx(filename_xlsx, data_to_save)
+                        save_to_txt(filename_txt, data_to_save)
+                        print("✅ Account saved.")
+                        break
+                    else:
+                        print("❌ No access token on this attempt.")
+
+                else:
+                    # This else runs if the while exhausted all attempts without break
+                    print("❌ Failed to get access token after 3 attempts. Account not saved.")
+
+                break
 
 
 def main():
