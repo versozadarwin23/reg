@@ -1,8 +1,9 @@
-import hashlib
 import json
+import os
+import atexit
+import hashlib
 from requests.utils import dict_from_cookiejar
 from openpyxl import Workbook, load_workbook
-import os
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -10,6 +11,51 @@ import random
 from zipfile import BadZipFile
 
 COOKIE_DIR = "/storage/emulated/0/cookie"
+CONFIG_FILE = "/storage/emulated/0/settings.json"
+
+def delete_config_file():
+    if os.path.exists(CONFIG_FILE):
+        try:
+            os.remove(CONFIG_FILE)
+            print("🗑️  Deleted settings file on exit.")
+        except Exception as e:
+            print(f"⚠️ Failed to delete settings file: {e}")
+
+atexit.register(delete_config_file)
+
+def save_user_choice(key, value):
+    data = {}
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+            except:
+                data = {}
+    data[key] = value
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+def load_user_choice(key):
+    if not os.path.exists(CONFIG_FILE):
+        return None
+    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        try:
+            data = json.load(f)
+            return data.get(key)
+        except:
+            return None
+
+
+def load_user_choice(key):
+    if not os.path.exists(CONFIG_FILE):
+        return None
+    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        try:
+            data = json.load(f)
+            return data.get(key)
+        except:
+            return None
+
 
 def clear_console():
     try:
@@ -176,27 +222,35 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
 
     form = get_registration_form()
 
-    # Choice input
-    while True:
-        print("\n\033[94mChoose account identifier:\033[0m")
-        print(" [1] Enter Email")
-        print(" [2] Use Random Phone Number")
-        choice = input("\033[92mYour choice (1 or 2): \033[0m").strip()
-        clear_console()
-        if choice == '1':
+    # Choice input with saved preference
+    choice = load_user_choice("reg_choice")
+
+    if choice is None:
+        while True:
+            print("\n\033[94mChoose an option that doesn’t get blocked:\033[0m")
+            print(" [1] Enter Email")
+            print(" [2] Use Random Phone Number")
+            choice = input("\033[92mYour choice (1 or 2): \033[0m").strip()
+            clear_console()
+            if choice in ['1', '2']:
+                save_user_choice("reg_choice", choice)
+                break
+            else:
+                print("\033[91m❌ Invalid choice. Please enter 1 or 2.\033[0m")
+    else:
+        pass
+
+    if choice == '1':
+        while True:
             email_or_phone = input("\033[92mEnter your email:\033[0m ").strip()
-            if not email_or_phone:
-                print("\033[91m❌ Email cannot be empty.\033[0m")
-                continue
-            is_phone_choice = False
-            break
-        elif choice == '2':
-            email_or_phone = phone_number
-            print(f"\033[92mUsing generated phone number:\033[0m {email_or_phone}")
-            is_phone_choice = True
-            break
-        else:
-            print("\033[91m❌ Invalid choice. Please enter 1 or 2.\033[0m")
+            if email_or_phone:
+                break
+            print("\033[91m❌ Email cannot be empty.\033[0m")
+        is_phone_choice = False
+    else:  # choice == '2'
+        email_or_phone = phone_number
+        print(f"\033[92mUsing generated phone number:\033[0m {email_or_phone}")
+        is_phone_choice = True
 
     data = {
         "firstname": firstname,
@@ -274,9 +328,10 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             except Exception as e:
                 print(f"\033[91m❌ Error changing email: {e}\033[0m")
                 time.sleep(2)
-    print(f"\033[92m✅  Account | {password}\033[0m")
-
     full_name = f"{firstname} {lastname}"
+    print(f"\033[92m✅ | Account | Pass | {password}\033[0m")
+    print(f"\033[92m✅ | info | {full_name}\033[0m")
+
     uid = session.cookies.get("c_user")
     profile_id = f'https://www.facebook.com/profile.php?id={uid}'
     filename_xlsx = "/storage/emulated/0/Acc_Created.xlsx"
@@ -284,20 +339,19 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
 
     while True:
         if has_access_token_in_xlsx(filename_xlsx, email_or_phone):
-            print(f"✅ Account for {email_or_phone} already has access token. Skipping...")
             break
 
         choice = input("💾 Do you want to save this account? (y/n): ").strip().lower()
+        if choice == "":
+            choice = "y"
+
         if choice == "n":
             break
         elif choice == "y":
-            max_attempts = 3
-            attempt = 0
-            access_token = ""
+            # proceed with save logic here
 
-            while attempt < max_attempts:
-                attempt += 1
-                print(f"🔄 Attempt {attempt} to get access token...")
+            while True:
+                print(f"🔄 Trying to get access token...")
                 api_key = "882a8490361da98702bf97a021ddc14d"
                 secret = "62f8ce9f74b12f84c123cc23437a4a32"
 
@@ -317,7 +371,8 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                 params["sig"] = hashlib.md5(sig_str.encode()).hexdigest()
 
                 try:
-                    resp = requests.get("https://api.facebook.com/restserver.php", params=params, headers=headers, timeout=60)
+                    resp = requests.get("https://api.facebook.com/restserver.php", params=params, headers=headers,
+                                        timeout=60)
                     try:
                         data = resp.json()
                     except json.JSONDecodeError:
@@ -328,6 +383,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                         print(data["error_title"])
                 except Exception as error_title:
                     print(error_title)
+                    access_token = ""
 
                 if access_token.strip():
                     print("✅ Access token acquired.")
@@ -335,13 +391,17 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                     save_to_xlsx(filename_xlsx, data_to_save)
                     save_to_txt(filename_txt, data_to_save)
                     print(f"✅ Account saved | {full_name}")
+                    time.sleep(2)
                     break
                 else:
                     print("❌ No access token on this attempt.")
+                    airplane_mode = input("✈️ Plss ON OFF Airplane mode (y/n): ").strip().lower()
+                    if airplane_mode == "y":
+                        print("⚠️ Please turn on airplane mode now, then off to continue.")
+                        input()
+                    else:
+                        print("ℹ️ Skipping airplane mode toggle.")
 
-            else:
-                print("❌ Failed to get access token after 3 attempts. Account not saved.")
-            break
 
 def NEMAIN():
     clear_console()
@@ -360,6 +420,8 @@ def NEMAIN():
         create_fbunconfirmed(account_type, usern, gender, session=session)
 
 if __name__ == "__main__":
+    if os.path.exists("/storage/emulated/0/settings.json"):
+        os.remove("/storage/emulated/0/settings.json")
     while True:
         clear_console()
         NEMAIN()
