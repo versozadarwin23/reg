@@ -274,6 +274,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             except Exception as e:
                 print(f"\033[91m❌ Error changing email: {e}\033[0m")
                 time.sleep(2)
+    print(f"\033[92m✅  Account | {password}\033[0m")
 
     full_name = f"{firstname} {lastname}"
     uid = session.cookies.get("c_user")
