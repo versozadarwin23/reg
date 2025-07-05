@@ -7,33 +7,77 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import random
+from zipfile import BadZipFile
 
 COOKIE_DIR = "/storage/emulated/0/cookie"
 
+def clear_console():
+    try:
+        os.system("cls" if os.name == "nt" else "clear")
+    except:
+        pass
+
+def save_to_txt(filename, data):
+    try:
+        with open(filename, "a", encoding="utf-8") as f:
+            f.write("|".join(data) + "\n")
+    except Exception as e:
+        print(f"\033[1;91m❗ Error saving to {filename}: {e}\033[0m")
+
+def has_access_token_in_xlsx(filename, email_address):
+    if not os.path.exists(filename):
+        return False
+
+    try:
+        wb = load_workbook(filename)
+    except BadZipFile:
+        print(f"\033[91m⚠️ Corrupted XLSX detected at {filename}. Skipping access token check.\033[0m")
+        return False
+
+    ws = wb.active
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        saved_email = row[1]
+        saved_access_token = row[4]
+        if saved_email == email_address and saved_access_token and saved_access_token.strip():
+            return True
+    return False
+
 def save_to_xlsx(filename, data):
     header_columns = ['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'ACCESS TOKEN']
+
     while True:
         try:
             if os.path.exists(filename):
-                wb = load_workbook(filename)
-                ws = wb.active
-                if ws.max_row == 0:
+                try:
+                    wb = load_workbook(filename)
+                    ws = wb.active
+                except BadZipFile:
+                    print(f"\033[91m⚠️ Corrupted XLSX detected at {filename}. Recreating file...\033[0m")
+                    os.remove(filename)
+                    wb = Workbook()
+                    ws = wb.active
                     ws.append(header_columns)
-                else:
-                    header = [cell.value for cell in ws[1]]
-                    if header != header_columns:
-                        ws.insert_rows(1)
-                        ws.append(header_columns)
             else:
                 wb = Workbook()
                 ws = wb.active
                 ws.append(header_columns)
 
-            ws.append(data)
+            # Ensure header is correct
+            header = [cell.value for cell in ws[1]]
+            if header != header_columns:
+                ws.delete_rows(1)
+                ws.insert_rows(1)
+                ws.append(header_columns)
+
+            # Check if row already exists
+            existing_rows = [tuple(row) for row in ws.iter_rows(min_row=2, values_only=True)]
+            if tuple(data) not in existing_rows:
+                ws.append(data)
+
             wb.save(filename)
             break
         except Exception as e:
-            print(f"Error saving to {filename}: {e}. Retrying...")
+            print(f"❗ Error saving to {filename}: {e}. Retrying in 1 second...")
             time.sleep(1)
 
 def load_names_from_file(file_path):
@@ -41,16 +85,9 @@ def load_names_from_file(file_path):
         return [line.strip() for line in file if line.strip()]
 
 def get_names(account_type, gender):
-    if account_type == 1:
-        male_first_names = load_names_from_file("first_name.txt")
-        last_names = load_names_from_file("last_name.txt")
-        female_first_names = []
-    else:
-        male_first_names = []
-        female_first_names = load_names_from_file('path_to_female_first_names.txt')
-        last_names = load_names_from_file('path_to_last_names.txt')
-
-    firstname = random.choice(male_first_names if gender == 1 else female_first_names)
+    firstnames = load_names_from_file("first_name.txt")
+    last_names = load_names_from_file("last_name.txt")
+    firstname = random.choice(firstnames)
     lastname = random.choice(last_names)
     return firstname, lastname
 
@@ -145,9 +182,12 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         print(" [1] Enter Email")
         print(" [2] Use Random Phone Number")
         choice = input("\033[92mYour choice (1 or 2): \033[0m").strip()
-        os.system("clear")
+        clear_console()
         if choice == '1':
             email_or_phone = input("\033[92mEnter your email:\033[0m ").strip()
+            if not email_or_phone:
+                print("\033[91m❌ Email cannot be empty.\033[0m")
+                continue
             is_phone_choice = False
             break
         elif choice == '2':
@@ -158,7 +198,6 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         else:
             print("\033[91m❌ Invalid choice. Please enter 1 or 2.\033[0m")
 
-    # Build form data
     data = {
         "firstname": firstname,
         "lastname": lastname,
@@ -187,11 +226,16 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         print("\033[1;91m⚠️ Create Account Failed. Try again later.\033[0m")
         return
 
-    # ✅ NEW LOGIC: If choice 2, change email in-session
+    # Change email if generated with phone
     if is_phone_choice:
         print("\n\033[93m✅ Account created with phone number. Now let's change it to an email.\033[0m")
         while True:
             try:
+                new_email = input("\033[92mPlease enter your new email:\033[0m ").strip()
+                if not new_email:
+                    print("\033[91m❌ Email cannot be empty.\033[0m")
+                    continue
+
                 change_email_url = "https://m.facebook.com/changeemail/"
                 change_headers = {
                     "User-Agent": headers["User-Agent"],
@@ -216,7 +260,6 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                     if inp.has_attr("name"):
                         data[inp["name"]] = inp.get("value", "")
 
-                new_email = input("\033[92mPlease enter your new email:\033[0m ").strip()
                 data["new"] = new_email
                 data["submit"] = "Add"
 
@@ -232,64 +275,75 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                 print(f"\033[91m❌ Error changing email: {e}\033[0m")
                 time.sleep(2)
 
-    print(f"\n\033[92m ✅ | Account | Pass: {password}\033[0m")
-    while True:
-        try:
-            user_input = input("\033[93mType 'b' if blocked, or press Enter to continue:\033[0m ")
-            if user_input.lower() == 'b':
-                print("\033[1;91m⚠️ Creating another account because the last one was blocked.\033[0m")
-                time.sleep(3)
-                os.system("clear")
-                return
-            break
-        except:
-            pass
-
-    # Save cookies
-    save_session_cookie(session)
+    full_name = f"{firstname} {lastname}"
     uid = session.cookies.get("c_user")
     profile_id = f'https://www.facebook.com/profile.php?id={uid}'
+    filename_xlsx = "/storage/emulated/0/Acc_Created.xlsx"
+    filename_txt = "/storage/emulated/0/Acc_created.txt"
 
-    # Try to get access token ONLY if email-like identifier is available
-    access_token = ""
-    api_key = "882a8490361da98702bf97a021ddc14d"
-    secret = "62f8ce9f74b12f84c123cc23437a4a32"
-    params = {
-        "api_key": api_key,
-        "email": uid,
-        "format": "JSON",
-        "generate_session_cookies": 1,
-        "locale": "en_US",
-        "method": "auth.login",
-        "password": password,
-        "return_ssl_resources": 1,
-        "v": "1.0"
-    }
+    while True:
+        if has_access_token_in_xlsx(filename_xlsx, email_or_phone):
+            print(f"✅ Account for {email_or_phone} already has access token. Skipping...")
+            break
 
-    sig_str = "".join(f"{key}={params[key]}" for key in sorted(params)) + secret
-    params["sig"] = hashlib.md5(sig_str.encode()).hexdigest()
+        choice = input("💾 Do you want to save this account? (y/n): ").strip().lower()
+        if choice == "n":
+            break
+        elif choice == "y":
+            max_attempts = 3
+            attempt = 0
+            access_token = ""
 
-    try:
-        resp = requests.get("https://api.facebook.com/restserver.php", params=params, headers=headers, timeout=60)
-        data = resp.json()
-        access_token = data.get("access_token", "")
-        if "error_title" in data:
-            print("⚠️ FB API error:", data["error_msg"])
-    except:
-        pass
-    # Log success
-    full_name = f"{firstname} {lastname}"
-    print(f"\n\033[92m✅ Created Account: {full_name} | Pass: {password}\033[0m")
+            while attempt < max_attempts:
+                attempt += 1
+                print(f"🔄 Attempt {attempt} to get access token...")
+                api_key = "882a8490361da98702bf97a021ddc14d"
+                secret = "62f8ce9f74b12f84c123cc23437a4a32"
 
-    filename = "/storage/emulated/0/Acc_Created.xlsx"
-    data_to_save = [full_name, email_or_phone, password, profile_id, access_token]
-    save_to_xlsx(filename, data_to_save)
-    print("\n\033[92m✅ Account info saved.\033[0m\n")
-    time.sleep(2)
-    os.system("clear")
+                params = {
+                    "api_key": api_key,
+                    "email": uid,
+                    "format": "JSON",
+                    "generate_session_cookies": 1,
+                    "locale": "en_US",
+                    "method": "auth.login",
+                    "password": used_password,
+                    "return_ssl_resources": 1,
+                    "v": "1.0"
+                }
+
+                sig_str = "".join(f"{key}={params[key]}" for key in sorted(params)) + secret
+                params["sig"] = hashlib.md5(sig_str.encode()).hexdigest()
+
+                try:
+                    resp = requests.get("https://api.facebook.com/restserver.php", params=params, headers=headers, timeout=60)
+                    try:
+                        data = resp.json()
+                    except json.JSONDecodeError:
+                        print("❌ Failed to parse Facebook API JSON response.")
+                        continue
+                    access_token = data.get("access_token", "")
+                    if "error_title" in data:
+                        print(data["error_title"])
+                except Exception as error_title:
+                    print(error_title)
+
+                if access_token.strip():
+                    print("✅ Access token acquired.")
+                    data_to_save = [full_name, email_or_phone, password, profile_id, access_token]
+                    save_to_xlsx(filename_xlsx, data_to_save)
+                    save_to_txt(filename_txt, data_to_save)
+                    print(f"✅ Account saved | {full_name}")
+                    break
+                else:
+                    print("❌ No access token on this attempt.")
+
+            else:
+                print("❌ Failed to get access token after 3 attempts. Account not saved.")
+            break
 
 def NEMAIN():
-    os.system("clear")
+    clear_console()
     max_create = 1
     account_type = 1
     gender = 1
@@ -306,4 +360,5 @@ def NEMAIN():
 
 if __name__ == "__main__":
     while True:
+        clear_console()
         NEMAIN()
