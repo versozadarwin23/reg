@@ -326,7 +326,7 @@ def generate_random_phone_number():
 
 
 def generate_random_password():
-    base = "Promises"
+    base = "Promises@"
     six_digit = str(random.randint(100000, 999999))
     return base + six_digit
 
