@@ -10,6 +10,18 @@ import concurrent.futures
 import threading
 import hashlib  # Import the hashlib library
 
+def has_access_token_in_xlsx(filename, email_address):
+    if not os.path.exists(filename):
+        return False  # file does not exist yet
+    wb = load_workbook(filename)
+    ws = wb.active
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        saved_email = row[1]
+        saved_access_token = row[4]
+        if saved_email == email_address and saved_access_token and saved_access_token.strip():
+            return True
+    return False
+
 xlsx_lock = threading.Lock()
 console_lock = threading.Lock()
 os.system("clear")
@@ -526,12 +538,19 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
         print(f"\033[1;92m✅     Code:  | {jbkj if jbkj else 'N/A (Code not found)'}\033[0m")
         print("\033[1;96m======================================\033[0m\n")
 
+        filename_xlsx = "/storage/emulated/0/Acc_Created.xlsx"
+        filename_txt = "/storage/emulated/0/Acc_created.txt"
+
         while True:
+            # Check muna kung may access token na para sa account na ito
+            if has_access_token_in_xlsx(filename_xlsx, email_address):
+                print(f"✅ Account for {email_address} already has access token. Skipping...")
+                break
+
             choice = input("💾 Do you want to save this account? (y/n): ").strip().lower()
             if choice == "n":
                 break
             elif choice == "y":
-                # email_or_phone = email_address  # Using email_address as the identifier
                 api_key = "882a8490361da98702bf97a021ddc14d"
                 secret = "62f8ce9f74b12f84c123cc23437a4a32"
 
@@ -559,11 +578,11 @@ def create_fbunconfirmed(account_num, account_type, gender, password=None, sessi
                         print(f"⚠️  {account_num}:", data["error_title"])
                 except Exception as error_title:
                     print(f"⚠️  account #{account_num}:", error_title)
-                data_to_save = [full_name, email_address, password, profile_id, access_token]  # Added access_token here
-                filename_xlsx = "/storage/emulated/0/Acc_Created.xlsx"
-                filename_txt = "/storage/emulated/0/Acc_created.txt"
+
+                data_to_save = [full_name, email_address, password, profile_id, access_token]
                 save_to_xlsx(filename_xlsx, data_to_save)
                 save_to_txt(filename_txt, data_to_save)
+
 
 def main():
     try:
