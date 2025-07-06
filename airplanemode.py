@@ -1,5 +1,4 @@
-import time
-
+from selenium.webdriver.chrome.service import Service
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -14,7 +13,11 @@ chrome_options.add_argument("--disable-gpu") # Recommended for headless mode on 
 chrome_options.add_argument("--window-size=1920x1080") # Set a window size, as headless might default to a small one
 chrome_options.add_argument("--no-sandbox") # Required if running as root in some environments (e.g., Docker)
 chrome_options.add_argument("--disable-dev-shm-usage") # Overcomes limited resource problems in some environments
-driver = webdriver.Chrome(options=chrome_options)
+CHROMEDRIVER_PATH = 'chromedriver'
+
+service = Service(executable_path=CHROMEDRIVER_PATH)
+
+driver = webdriver.Chrome(service=service, options=chrome_options)
 try:
     driver.get(url)
 except:
