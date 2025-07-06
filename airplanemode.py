@@ -18,8 +18,8 @@ firefox_options.add_argument("--disable-dev-shm-usage") # Overcomes limited reso
 # Initialize Firefox WebDriver
 # Make sure geckodriver is in your PATH or specify its path if necessary
 # If geckodriver is installed via pkg, it should be in PATH by default.
-driver = webdriver.Firefox(options=firefox_options)
-
+service = Service(executable_path='/storage/emulated/0/chromedriver.exe') # Adjust path if different
+driver = webdriver.Firefox(service=service, options=firefox_options)
 try:
     driver.get(url)
 except Exception as e:
