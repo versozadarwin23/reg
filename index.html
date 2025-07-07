@@ -1,175 +1,391 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facebook Reaction and Comment Bot</title>
+    <title>Facebook Reaction & Comment Tool By: Dars</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 900px; margin: auto; }
-        h1, h2 { color: #333; }
-        form { margin-bottom: 20px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], input[type="file"], select {
-            width: calc(100% - 22px);
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f0f2f5;
+            font-family: Arial, sans-serif;
+        }
+        h2 {
+            color: #1877f2;
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .nav {
+            display: flex;
+            justify-content: center;
+            background: #1877f2;
             padding: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .nav button {
+            background: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #1877f2;
+            transition: background-color 0.3s ease;
+        }
+        .nav button.active {
+            background: #145dbf;
+            color: white;
+        }
+        .container {
+            max-width: 900px;
+            width: 90%;
+            background: white;
+            padding: 20px 30px;
+            margin: 20px auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin-top: 18px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input[type="text"],
+        input[type="file"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 5px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+        input[type="text"]:focus,
+        input[type="file"]:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #1877f2;
+            outline: none;
         }
         button {
-            background-color: #007bff;
+            background-color: #1877f2;
             color: white;
-            padding: 10px 15px;
             border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover { background-color: #0056b3; }
-        .log-box {
-            background-color: #e9e9e9;
-            border: 1px solid #ccc;
-            padding: 10px;
-            height: 200px;
-            overflow-y: scroll;
-            margin-top: 15px;
-            border-radius: 4px;
-            white-space: pre-wrap; /* Preserve whitespace and wrap text */
-        }
-        .flash-message {
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            background-color: #ffdddd;
-            color: #d8000c;
-            border: 1px solid #d8000c;
-        }
-        .success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
-        .error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
-        .info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
-        .reaction-entry, .comment-entry {
-            border: 1px solid #eee;
-            padding: 10px;
-            margin-bottom: 10px;
+            padding: 12px 20px;
             border-radius: 5px;
-            background-color: #f9f9f9;
+            cursor: pointer;
+            margin-top: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
         }
-        .add-button { background-color: #28a745; margin-right: 10px; }
-        .remove-button { background-color: #dc3545; }
+        button:hover {
+            background-color: #145dbf;
+        }
+        .clear-log-btn { /* Changed ID to class for multiple buttons */
+            background-color: #888;
+            margin-top: 15px;
+        }
+        .clear-log-btn:hover {
+            background-color: #666;
+        }
+        .log-box { /* Renamed from #result to .log-box */
+            background: #f6f6f6;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 30px;
+            font-size: 14px;
+            min-height: 50px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #eee;
+        }
+        .log-box strong { /* Renamed from #result strong to .log-box strong */
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px dashed #eee;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        .log-entry.success { color: green; }
+        .log-entry.error { color: red; }
+        .log-entry.info { color: gray; }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        /* Styles for dynamic link/file path rows */
+        .dynamic-entry-row { /* Renamed from .link-path-row */
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            margin-top: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .dynamic-entry-row:last-of-type {
+            border-bottom: none;
+        }
+        .dynamic-entry-column { /* Renamed from .link-path-column */
+            flex: 1;
+        }
+        .dynamic-entry-column label {
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+        .remove-button { /* Renamed from .remove-row-btn */
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 0;
+            width: auto;
+            white-space: nowrap;
+            align-self: center;
+            height: 40px;
+            line-height: 24px;
+        }
+        .remove-button:hover {
+            background-color: #c82333;
+        }
+        .add-button { /* Changed ID to class for multiple buttons */
+            background-color: #28a745;
+            margin-top: 30px;
+        }
+        .add-button:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Facebook Engagement Bot</h1>
+    <h2>📣 Facebook Engagement Bot V1</h2>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <ul class="flash-messages">
-                    {% for category, message in messages %}
-                        <li class="{{ category }}">{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
+    <div class="nav">
+        <button id="navReaction" class="active">❤️ Reaction Tool</button>
+        <button id="navComment">💬 Comment Tool</button>
+    </div>
 
-        <h2 id="reactionPage">Send Reactions</h2>
-        <form action="{{ url_for('send_reaction') }}" method="post" enctype="multipart/form-data">
-            <label for="token_file">Access Tokens (One per line):</label>
-            <input type="file" id="token_file" name="token_file" accept=".txt"><br><br>
+    <div id="reactionPage" class="page active">
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <ul class="flash-messages">
+                        {% for category, message in messages %}
+                            <li class="{{ category }}">{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}
 
-            <div id="reaction_entries">
-                <div class="reaction-entry">
-                    <label>Facebook Post ID or URL:</label>
-                    <input type="text" name="reaction_link_input[]" placeholder="e.g., 1234567890 or https://www.facebook.com/..." required>
-                    <label>Reaction Type:</label>
-                    <select name="reaction_type[]">
-                        <option value="LIKE">LIKE</option>
-                        <option value="LOVE">LOVE</option>
-                        <option value="HAHA">HAHA</option>
-                        <option value="WOW">WOW</option>
-                        <option value="SAD">SAD</option>
-                        <option value="ANGRY">ANGRY</option>
-                        <option value="CARE">CARE</option>
-                    </select>
-                    <button type="button" class="remove-button" onclick="removeEntry(this)">Remove</button>
+            <form action="{{ url_for('send_reaction') }}" method="post" enctype="multipart/form-data">
+                <label for="token_file">📄 Load Access Tokens from File (one per line)</label>
+                <input type="file" id="token_file" name="token_file" accept=".txt" />
+
+                <label for="current_reaction_token">🔑 Access Token (currently used)</label>
+                <input type="text" id="current_reaction_token" placeholder="Loaded access token" readonly>
+
+                <div id="reaction_entries_container">
+                    </div>
+
+                <button type="button" class="add-button" onclick="addReactionEntry()">➕ Add Another Post</button>
+                <button type="submit">✅ Send Reactions</button>
+                <button type="button" class="clear-log-btn" onclick="clearLog('reaction')">🗑️ Clear Reaction History</button>
+
+                <div class="log-box" id="reaction_log_box">
+                    <strong>🗂️ Reaction History:</strong>
+                    <div id="reaction_log_content">
+                        {% for log in reaction_logs %}
+                            {{ log }}<br>
+                        {% endfor %}
+                    </div>
                 </div>
-            </div>
-            <button type="button" class="add-button" onclick="addReactionEntry()">Add Another Post</button>
-            <button type="submit">Send Reactions</button>
+            </form>
+        </div>
+    </div>
 
-            <div class="log-box">
-                {% for log in reaction_logs %}
-                    {{ log }}<br>
-                {% endfor %}
-            </div>
-        </form>
+    <div id="commentPage" class="page">
+        <div class="container">
+            <form action="{{ url_for('send_comment') }}" method="post" enctype="multipart/form-data">
+                <label for="comment_token_file">📄 Load Access Tokens from File (one per line)</label>
+                <input type="file" id="comment_token_file" name="comment_token_file" accept=".txt" />
 
-        <h2 id="commentPage">Send Comments</h2>
-        <form action="{{ url_for('send_comment') }}" method="post" enctype="multipart/form-data">
-            <label for="comment_token_file">Access Tokens (One per line):</label>
-            <input type="file" id="comment_token_file" name="comment_token_file" accept=".txt"><br><br>
+                <label for="current_comment_token">🔑 Access Token (currently used)</label>
+                <input type="text" id="current_comment_token" placeholder="Loaded access token" readonly>
 
-            <div id="comment_entries">
-                <div class="comment-entry">
-                    <label>Facebook Post ID or URL:</label>
-                    <input type="text" name="comment_link_input[]" placeholder="e.g., 1234567890 or https://www.facebook.com/..." required>
-                    <label>Comment File (One comment per line):</label>
-                    <input type="file" name="comment_path_file[]" accept=".txt" required>
-                    <button type="button" class="remove-button" onclick="removeEntry(this)">Remove</button>
+                <div id="comment_entries_container">
+                    </div>
+
+                <button type="button" class="add-button" onclick="addCommentEntry()">➕ Add Another Post & Comment File</button>
+                <button type="submit">✅ Send Comments</button>
+                <button type="button" class="clear-log-btn" onclick="clearLog('comment')">🗑️ Clear Comment History</button>
+
+                <div class="log-box" id="comment_log_box">
+                    <strong>🗂️ Comment History:</strong>
+                    <div id="comment_log_content">
+                        {% for log in comment_logs %}
+                            {{ log }}<br>
+                        {% endfor %}
+                    </div>
                 </div>
-            </div>
-            <button type="button" class="add-button" onclick="addCommentEntry()">Add Another Post & Comment File</button>
-            <button type="submit">Send Comments</button>
-
-            <div class="log-box">
-                {% for log in comment_logs %}
-                    {{ log }}<br>
-                {% endfor %}
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 
     <script>
+        // --- Navigation Logic ---
+        document.getElementById('navReaction').addEventListener('click', () => switchPage('reaction'));
+        document.getElementById('navComment').addEventListener('click', () => switchPage('comment'));
+
+        function switchPage(page) {
+            document.getElementById('reactionPage').classList.remove('active');
+            document.getElementById('commentPage').classList.remove('active');
+            document.getElementById('navReaction').classList.remove('active');
+            document.getElementById('navComment').classList.remove('active');
+
+            if (page === 'reaction') {
+                document.getElementById('reactionPage').classList.add('active');
+                document.getElementById('navReaction').classList.add('active');
+            } else {
+                document.getElementById('commentPage').classList.add('active');
+                document.getElementById('navComment').classList.add('active');
+            }
+        }
+
+        // --- Shared Log Function ---
+        function addLog(message, type, logType) {
+            const logContainer = logType === 'reaction' ? document.getElementById('reaction_log_content') : document.getElementById('comment_log_content');
+            const entry = document.createElement('div');
+            entry.classList.add('log-entry');
+            if (type) entry.classList.add(type);
+            entry.textContent = message;
+            logContainer.appendChild(entry);
+            // Scroll to bottom
+            const parentBox = logType === 'reaction' ? document.getElementById('reaction_log_box') : document.getElementById('comment_log_box');
+            parentBox.scrollTop = parentBox.scrollHeight;
+        }
+
+        function clearLog(logType) {
+            const logContainer = logType === 'reaction' ? document.getElementById('reaction_log_content') : document.getElementById('comment_log_content');
+            logContainer.innerHTML = '';
+            addLog(`Log cleared for ${logType} tool.`, 'info', logType);
+        }
+
+        // --- Access Token Loading Logic ---
+        let reactionAccessTokens = [];
+        let commentAccessTokens = [];
+
+        document.getElementById('token_file').addEventListener('change', function () {
+            loadAccessTokens(this, 'reaction');
+        });
+
+        document.getElementById('comment_token_file').addEventListener('change', function () {
+            loadAccessTokens(this, 'comment');
+        });
+
+        function loadAccessTokens(fileInput, type) {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const tokens = e.target.result.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+                if (type === 'reaction') {
+                    reactionAccessTokens = tokens;
+                    if (reactionAccessTokens.length > 0) {
+                        document.getElementById('current_reaction_token').value = reactionAccessTokens[0];
+                        addLog(`Loaded ${reactionAccessTokens.length} access tokens for Reaction Tool.`, 'info', 'reaction');
+                    } else {
+                        addLog('No access tokens found in the file for Reaction Tool.', 'error', 'reaction');
+                    }
+                } else {
+                    commentAccessTokens = tokens;
+                    if (commentAccessTokens.length > 0) {
+                        document.getElementById('current_comment_token').value = commentAccessTokens[0];
+                        addLog(`Loaded ${commentAccessTokens.length} access tokens for Comment Tool.`, 'info', 'comment');
+                    } else {
+                        addLog('No access tokens found in the file for Comment Tool.', 'error', 'comment');
+                    }
+                }
+            };
+            reader.readAsText(file);
+        }
+
+
+        // --- Dynamic Entry Management (Reaction) ---
         function addReactionEntry() {
-            const container = document.getElementById('reaction_entries');
+            const container = document.getElementById('reaction_entries_container');
             const newEntry = document.createElement('div');
-            newEntry.className = 'reaction-entry';
+            newEntry.className = 'dynamic-entry-row';
             newEntry.innerHTML = `
-                <label>Facebook Post ID or URL:</label>
-                <input type="text" name="reaction_link_input[]" placeholder="e.g., 1234567890 or https://www.facebook.com/..." required>
-                <label>Reaction Type:</label>
-                <select name="reaction_type[]">
-                    <option value="LIKE">LIKE</option>
-                    <option value="LOVE">LOVE</option>
-                    <option value="HAHA">HAHA</option>
-                    <option value="WOW">WOW</option>
-                    <option value="SAD">SAD</option>
-                    <option value="ANGRY">ANGRY</option>
-                    <option value="CARE">CARE</option>
-                </select>
-                <button type="button" class="remove-button" onclick="removeEntry(this)">Remove</button>
+                <div class="dynamic-entry-column">
+                    <label>Facebook Post ID or URL:</label>
+                    <input type="text" name="reaction_link_input[]" placeholder="e.g., 1234567890 or https://www.facebook.com/..." required>
+                </div>
+                <div class="dynamic-entry-column">
+                    <label>Reaction Type:</label>
+                    <select name="reaction_type[]">
+                        <option value="LIKE">👍 Like</option>
+                        <option value="LOVE">❤️ Love</option>
+                        <option value="HAHA">😂 Haha</option>
+                        <option value="WOW">😮 Wow</option>
+                        <option value="SAD">😢 Sad</option>
+                        <option value="ANGRY">😡 Angry</option>
+                        <option value="CARE">🤗 Care</option>
+                    </select>
+                </div>
+                <button type="button" class="remove-button" onclick="removeEntry(this)">➖ Remove</button>
             `;
             container.appendChild(newEntry);
         }
 
+        // --- Dynamic Entry Management (Comment) ---
         function addCommentEntry() {
-            const container = document.getElementById('comment_entries');
+            const container = document.getElementById('comment_entries_container');
             const newEntry = document.createElement('div');
-            newEntry.className = 'comment-entry';
+            newEntry.className = 'dynamic-entry-row';
             newEntry.innerHTML = `
-                <label>Facebook Post ID or URL:</label>
-                <input type="text" name="comment_link_input[]" placeholder="e.g., 1234567890 or https://www.facebook.com/..." required>
-                <label>Comment File (One comment per line):</label>
-                <input type="file" name="comment_path_file[]" accept=".txt" required>
-                <button type="button" class="remove-button" onclick="removeEntry(this)">Remove</button>
+                <div class="dynamic-entry-column">
+                    <label>Facebook Post ID or URL:</label>
+                    <input type="text" name="comment_link_input[]" placeholder="e.g., 1234567890 or https://www.facebook.com/..." required>
+                </div>
+                <div class="dynamic-entry-column">
+                    <label>Comment File (One comment per line):</label>
+                    <input type="file" name="comment_path_file[]" accept=".txt" required>
+                </div>
+                <button type="button" class="remove-button" onclick="removeEntry(this)">➖ Remove</button>
             `;
             container.appendChild(newEntry);
         }
 
         function removeEntry(button) {
-            button.closest('.reaction-entry, .comment-entry').remove();
+            button.closest('.dynamic-entry-row').remove();
         }
+
+        // Add initial rows on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            addReactionEntry();
+            addCommentEntry();
+        });
     </script>
 </body>
 </html>
