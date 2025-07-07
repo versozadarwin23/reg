@@ -536,4 +536,4 @@ if __name__ == '__main__':
     # You might want to change host='0.0.0.0' to make it accessible from other devices on your local network
     # For local testing on the same device, host='127.0.0.1' or no host argument is fine.
     # Set debug=False for production.
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
