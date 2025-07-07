@@ -1,130 +1,62 @@
-from selenium.webdriver.firefox.service import Service
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.firefox.options import Options # Import Options for Firefox
+import os
 
-url = "http://192.168.254.254/index.html#index_status"
+# --- Configuration para sa Chromium ---
+# Mahalaga ang mga options na ito para sa headless execution sa Termux
+chrome_options = Options()
+chrome_options.add_argument("--headless=new") # Modern headless mode
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.add_argument("--disable-gpu") # Kadalasan ay kailangan ito sa headless environments
+chrome_options.add_argument("--window-size=1920,1080") # Set window size for consistent screenshots
 
-# Set up Firefox options for headless mode
-firefox_options = Options()
-firefox_options.add_argument("--headless")  # Enable headless mode
-firefox_options.add_argument("--disable-gpu") # Recommended for headless mode
-firefox_options.add_argument("--window-size=1920x1080") # Set a window size
-firefox_options.add_argument("--no-sandbox") # Required if running as root in some environments
-firefox_options.add_argument("--disable-dev-shm-usage") # Overcomes limited resource problems
+# Kung hindi auto-detected ang chromedriver, maaaring kailanganin mong tukuyin ang path
+# Halimbawa: chrome_driver_path = '/data/data/com.termux/files/usr/bin/chromedriver'
+# driver = webdriver.Chrome(executable_path=chrome_driver_path, options=chrome_options)
+driver = webdriver.Chrome(options=chrome_options)
 
-# Initialize Firefox WebDriver
-# Make sure geckodriver is in your PATH or specify its path if necessary
-# If geckodriver is installed via pkg, it should be in PATH by default.
-service = Service(executable_path='/storage/emulated/0/chromedriver.exe') # Adjust path if different
-driver = webdriver.Firefox(service=service, options=firefox_options)
+print("Nagsisimula ang Selenium script...")
+
 try:
+    # --- Magbukas ng website ---
+    url = "https://www.google.com"
+    print(f"Bumibisita sa: {url}")
     driver.get(url)
-except Exception as e:
-    print(f"Error accessing URL: {e}")
-    driver.quit()
-    exit()
 
-print("Navigated to URL. Looking for login link...")
-while True:
-    try:
-        login_link = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "loginlink")))
-        print("Login link found.")
-        break
-    except:
-        print("Login link not found, retrying...")
-        # You might want to add a small sleep here to avoid busy-waiting
-        # import time
-        # time.sleep(1)
-        pass # Keep trying until found or timeout
+    print(f"Ang pamagat ng pahina ay: {driver.title}")
 
-try:
-    login_link.click()
-    print("Clicked login link.")
-except Exception as e:
-    print(f"Error clicking login link: {e}")
-    driver.quit()
-    exit()
+    # --- Maghanap ng element at mag-interact (hal. search bar) ---
+    search_box = driver.find_element(By.NAME, "q")
+    search_term = "Selenium Termux Python"
+    print(f"Naghahanap ng: '{search_term}'")
+    search_box.send_keys(search_term)
+    search_box.submit()
 
-try:
-    # Wait for the username field to be present after clicking login
-    username_field = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.ID, "txtUsr"))
-    )
-    print("Username field found.")
-except Exception as e:
-    print(f"Error finding username field: {e}")
-    driver.quit()
-    exit()
+    # Maghintay nang kaunti para mag-load ang resulta (opsyonal, para sa mas reliable na output)
+    driver.implicitly_wait(5) # Maghihintay hanggang 5 segundo
 
-try:
-    password_field = driver.find_element(By.ID, "txtPwd") # Assuming txtPwd appears with txtUsr
-    print("Password field found.")
-except Exception as e:
-    print(f"Error finding password field: {e}")
-    driver.quit()
-    exit()
+    # --- Kumuha ng screenshot ---
+    screenshot_path = "/sdcard/Download/selenium_termux_screenshot.png"
+    # Siguraduhin na mayroon kang permission sa storage sa Termux (termux-setup-storage)
+    # Maaari kang lumikha ng direktoryo kung wala pa:
+    os.makedirs(os.path.dirname(screenshot_path), exist_ok=True)
 
-try:
-    username_field.send_keys("user")
-    print("Entered username.")
-except Exception as e:
-    print(f"Error entering username: {e}")
-    driver.quit()
-    exit()
+    driver.save_screenshot(screenshot_path)
+    print(f"Screenshot saved to: {screenshot_path}")
 
-try:
-    password_field.send_keys("@l03e1t3")
-    print("Entered password.")
-except Exception as e:
-    print(f"Error entering password: {e}")
-    driver.quit()
-    exit()
+    # --- Kumuha ng ilang text mula sa pahina ng resulta ---
+    print("\nIlang resulta mula sa search page:")
+    search_results = driver.find_elements(By.CSS_SELECTOR, "h3")
+    for i, result in enumerate(search_results[:5]): # Kumuha ng top 5 results
+        print(f"{i+1}. {result.text}")
 
-try:
-    # Click the login button
-    driver.find_element(By.ID, "btnLogin").click()
-    print("Clicked login button.")
 except Exception as e:
-    print(f"Error clicking login button: {e}")
-    driver.quit()
-    exit()
+    print(f"May error na nangyari: {e}")
 
-try:
-    # Wait for the restart button to be clickable after successful login
-    restart_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//input[@value='Restart Device' and @type='button']")))
-    print("Restart device button found.")
-except Exception as e:
-    print(f"Error finding restart device button: {e}")
-    driver.quit()
-    exit()
-
-try:
-    restart_button.click()
-    print("Clicked restart device button.")
-except Exception as e:
-    print(f"Error clicking restart device button: {e}")
-    driver.quit()
-    exit()
-
-try:
-    restart_buttons = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "yesbtn")))
-    print("Confirmation 'yes' button found.")
-except Exception as e:
-    print(f"Error finding confirmation 'yes' button: {e}")
-    driver.quit()
-    exit()
-
-try:
-    restart_buttons.click()
-    print("Clicked confirmation 'yes' button.")
-except Exception as e:
-    print(f"Error clicking confirmation 'yes' button: {e}")
-    # Continue to finally block even if this fails
-    pass
 finally:
-    print("Airplane Mode Done (or restart process initiated).")
+    # --- Isara ang browser ---
+    print("\nIsinasara ang browser...")
     driver.quit()
-    print("WebDriver closed.")
+    print("Tapos na ang script.")
