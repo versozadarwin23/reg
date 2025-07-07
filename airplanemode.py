@@ -1,30 +1,130 @@
+from selenium.webdriver.firefox.service import Service
 from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-import os
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.firefox.options import Options # Import Options for Firefox
+
+url = "http://192.168.254.254/index.html#index_status"
 
 # Set up Firefox options for headless mode
-options = Options()
-options.add_argument("--headless")
+firefox_options = Options()
+firefox_options.add_argument("--headless")  # Enable headless mode
+firefox_options.add_argument("--disable-gpu") # Recommended for headless mode
+firefox_options.add_argument("--window-size=1920x1080") # Set a window size
+firefox_options.add_argument("--no-sandbox") # Required if running as root in some environments
+firefox_options.add_argument("--disable-dev-shm-usage") # Overcomes limited resource problems
 
-# Specify the path to geckodriver (kung hindi nasa PATH)
-# DRIVER_PATH = "/data/data/com.termux/files/usr/bin/geckodriver" # Example path
-# service = webdriver.FirefoxService(executable_path=DRIVER_PATH)
-# driver = webdriver.Firefox(service=service, options=options)
-
-# Initialize the WebDriver
-driver = webdriver.Firefox(options=options)
-
-# Example automation
-driver.get("https://www.bing.com")
-print(f"Page title: {driver.title}")
-
-# Take a screenshot (opsyonal)
-screenshot_path = "/sdcard/Download/termux_firefox_screenshot.png"
+# Initialize Firefox WebDriver
+# Make sure geckodriver is in your PATH or specify its path if necessary
+# If geckodriver is installed via pkg, it should be in PATH by default.
+service = Service(executable_path='/storage/emulated/0/chromedriver.exe') # Adjust path if different
+driver = webdriver.Firefox(service=service, options=firefox_options)
 try:
-    driver.save_screenshot(screenshot_path)
-    print(f"Screenshot saved to: {screenshot_path}")
+    driver.get(url)
 except Exception as e:
-    print(f"Error saving screenshot: {e}")
+    print(f"Error accessing URL: {e}")
+    driver.quit()
+    exit()
 
-driver.quit()
-print("Browser closed.")
+print("Navigated to URL. Looking for login link...")
+while True:
+    try:
+        login_link = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "loginlink")))
+        print("Login link found.")
+        break
+    except:
+        print("Login link not found, retrying...")
+        # You might want to add a small sleep here to avoid busy-waiting
+        # import time
+        # time.sleep(1)
+        pass # Keep trying until found or timeout
+
+try:
+    login_link.click()
+    print("Clicked login link.")
+except Exception as e:
+    print(f"Error clicking login link: {e}")
+    driver.quit()
+    exit()
+
+try:
+    # Wait for the username field to be present after clicking login
+    username_field = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.ID, "txtUsr"))
+    )
+    print("Username field found.")
+except Exception as e:
+    print(f"Error finding username field: {e}")
+    driver.quit()
+    exit()
+
+try:
+    password_field = driver.find_element(By.ID, "txtPwd") # Assuming txtPwd appears with txtUsr
+    print("Password field found.")
+except Exception as e:
+    print(f"Error finding password field: {e}")
+    driver.quit()
+    exit()
+
+try:
+    username_field.send_keys("user")
+    print("Entered username.")
+except Exception as e:
+    print(f"Error entering username: {e}")
+    driver.quit()
+    exit()
+
+try:
+    password_field.send_keys("@l03e1t3")
+    print("Entered password.")
+except Exception as e:
+    print(f"Error entering password: {e}")
+    driver.quit()
+    exit()
+
+try:
+    # Click the login button
+    driver.find_element(By.ID, "btnLogin").click()
+    print("Clicked login button.")
+except Exception as e:
+    print(f"Error clicking login button: {e}")
+    driver.quit()
+    exit()
+
+try:
+    # Wait for the restart button to be clickable after successful login
+    restart_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//input[@value='Restart Device' and @type='button']")))
+    print("Restart device button found.")
+except Exception as e:
+    print(f"Error finding restart device button: {e}")
+    driver.quit()
+    exit()
+
+try:
+    restart_button.click()
+    print("Clicked restart device button.")
+except Exception as e:
+    print(f"Error clicking restart device button: {e}")
+    driver.quit()
+    exit()
+
+try:
+    restart_buttons = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "yesbtn")))
+    print("Confirmation 'yes' button found.")
+except Exception as e:
+    print(f"Error finding confirmation 'yes' button: {e}")
+    driver.quit()
+    exit()
+
+try:
+    restart_buttons.click()
+    print("Clicked confirmation 'yes' button.")
+except Exception as e:
+    print(f"Error clicking confirmation 'yes' button: {e}")
+    # Continue to finally block even if this fails
+    pass
+finally:
+    print("Airplane Mode Done (or restart process initiated).")
+    driver.quit()
+    print("WebDriver closed.")
