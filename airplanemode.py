@@ -2,18 +2,22 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 import os
+import chromedriver_autoinstaller # Add this import
 
 # --- Configuration para sa Chromium ---
-# Mahalaga ang mga options na ito para sa headless execution sa Termux
 chrome_options = Options()
-chrome_options.add_argument("--headless=new") # Modern headless mode
+chrome_options.add_argument("--headless=new")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument("--disable-gpu") # Kadalasan ay kailangan ito sa headless environments
-chrome_options.add_argument("--window-size=1920,1080") # Set window size for consistent screenshots
+chrome_options.add_argument("--disable-gpu")
+chrome_options.add_argument("--window-size=1920,1080")
 
-chrome_driver_path = '/data/data/com.termux/files/usr/bin/chromedriver'
-driver = webdriver.Chrome(executable_path=chrome_driver_path, options=chrome_options)
+# Automatically install chromedriver
+print("Checking for and installing compatible chromedriver...")
+chromedriver_autoinstaller.install() # This line will handle the download and setup
+
+# No need to specify executable_path anymore
+driver = webdriver.Chrome(options=chrome_options)
 
 print("Nagsisimula ang Selenium script...")
 
@@ -37,10 +41,7 @@ try:
 
     # --- Kumuha ng screenshot ---
     screenshot_path = "/sdcard/Download/selenium_termux_screenshot.png"
-    # Siguraduhin na mayroon kang permission sa storage sa Termux (termux-setup-storage)
-    # Maaari kang lumikha ng direktoryo kung wala pa:
     os.makedirs(os.path.dirname(screenshot_path), exist_ok=True)
-
     driver.save_screenshot(screenshot_path)
     print(f"Screenshot saved to: {screenshot_path}")
 
