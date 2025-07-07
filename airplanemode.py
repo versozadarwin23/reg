@@ -12,8 +12,7 @@ chrome_options.add_argument("--disable-dev-shm-usage")
 chrome_options.add_argument("--disable-gpu") # Kadalasan ay kailangan ito sa headless environments
 chrome_options.add_argument("--window-size=1920,1080") # Set window size for consistent screenshots
 
-# Kung hindi auto-detected ang chromedriver, maaaring kailanganin mong tukuyin ang path
-chrome_driver_path = '/storage/emulated/0/chromedriver'
+chrome_driver_path = '/data/data/com.termux/files/usr/bin/chromedriver'
 driver = webdriver.Chrome(executable_path=chrome_driver_path, options=chrome_options)
 
 print("Nagsisimula ang Selenium script...")
