@@ -64,6 +64,7 @@
             color: #333;
         }
         input[type="text"],
+        input[type="number"], /* Added for max reacts/comments */
         input[type="file"],
         select,
         textarea {
@@ -76,6 +77,7 @@
             transition: border-color 0.3s ease;
         }
         input[type="text"]:focus,
+        input[type="number"]:focus, /* Added for max reacts/comments */
         input[type="file"]:focus,
         select:focus,
         textarea:focus {
@@ -285,7 +287,7 @@
             {% endwith %}
 
             <form action="{{ url_for('send_reaction') }}" method="post" enctype="multipart/form-data">
-                <label for="token_file">📄 Load Access Tokens from File (one per line)</label>
+                <label for="token_file">📄 Load Access Tokens from File</label>
                 <input type="file" id="token_file" name="token_file" accept=".txt" />
 
                 <label for="current_reaction_token">🔑 Access Token (currently used)</label>
@@ -313,7 +315,7 @@
     <div id="commentPage" class="page">
         <div class="container">
             <form action="{{ url_for('send_comment') }}" method="post" enctype="multipart/form-data">
-                <label for="comment_token_file">📄 Load Access Tokens from File (one per line)</label>
+                <label for="comment_token_file">📄 Load Access Tokens from File</label>
                 <input type="file" id="comment_token_file" name="comment_token_file" accept=".txt" />
 
                 <label for="current_comment_token">🔑 Access Token (currently used)</label>
@@ -440,6 +442,10 @@
                         <option value="CARE">🤗 Care</option>
                     </select>
                 </div>
+                <div class="dynamic-entry-column">
+                    <label>Max Reactions:</label>
+                    <input type="number" name="max_reactions[] min="1" required>
+                </div>
                 <button type="button" class="remove-button" onclick="removeEntry(this)">➖ Remove</button>
             `;
             container.appendChild(newEntry);
@@ -456,8 +462,12 @@
                     <input type="text" name="comment_link_input[]" placeholder="e.g., 1234567890 or https://www.facebook.com/..." required>
                 </div>
                 <div class="dynamic-entry-column">
-                    <label>Comment File (One comment per line):</label>
+                    <label>Comment File:</label>
                     <input type="file" name="comment_path_file[]" accept=".txt" required>
+                </div>
+                <div class="dynamic-entry-column">
+                    <label>Max Comments:</label>
+                    <input type="number" name="max_comments[] min="1" required>
                 </div>
                 <button type="button" class="remove-button" onclick="removeEntry(this)">➖ Remove</button>
             `;
