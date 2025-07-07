@@ -1,130 +1,106 @@
-from selenium.webdriver.firefox.service import Service
+from flask import Flask, jsonify
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.firefox.options import Options # Import Options for Firefox
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager # Ito ang bagong import
+import threading
 
-url = "http://192.168.254.254/index.html#index_status"
+app = Flask(__name__)
 
-# Set up Firefox options for headless mode
-firefox_options = Options()
-firefox_options.add_argument("--headless")  # Enable headless mode
-firefox_options.add_argument("--disable-gpu") # Recommended for headless mode
-firefox_options.add_argument("--window-size=1920x1080") # Set a window size
-firefox_options.add_argument("--no-sandbox") # Required if running as root in some environments
-firefox_options.add_argument("--disable-dev-shm-usage") # Overcomes limited resource problems
+def run_selenium_task():
+    url = "http://192.168.254.254/index.html#index_status"
 
-# Initialize Firefox WebDriver
-# Make sure geckodriver is in your PATH or specify its path if necessary
-# If geckodriver is installed via pkg, it should be in PATH by default.
-service = Service(executable_path='/storage/emulated/0/chromedriver.exe') # Adjust path if different
-driver = webdriver.Firefox(service=service, options=firefox_options)
-try:
-    driver.get(url)
-except Exception as e:
-    print(f"Error accessing URL: {e}")
-    driver.quit()
-    exit()
+    # Set up Chrome options for headless mode
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--window-size=1920x1080")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    
+    # Optional: Ito ay para maiwasan ang ilang common issues sa headless mode
+    # chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
-print("Navigated to URL. Looking for login link...")
-while True:
+    driver = None
+
     try:
-        login_link = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "loginlink")))
-        print("Login link found.")
-        break
-    except:
-        print("Login link not found, retrying...")
-        # You might want to add a small sleep here to avoid busy-waiting
-        # import time
-        # time.sleep(1)
-        pass # Keep trying until found or timeout
+        # Initialize Chrome WebDriver using ChromeDriverManager
+        # Ito ang papalitan ang 'Service(executable_path=...)'
+        driver = webdriver.Chrome(service=webdriver.ChromeService(ChromeDriverManager().install()), options=chrome_options)
+        driver.get(url)
 
-try:
-    login_link.click()
-    print("Clicked login link.")
-except Exception as e:
-    print(f"Error clicking login link: {e}")
-    driver.quit()
-    exit()
+        print("Navigated to URL. Looking for login link...")
+        while True:
+            try:
+                login_link = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "loginlink")))
+                print("Login link found.")
+                break
+            except:
+                print("Login link not found, retrying...")
+                pass
 
-try:
-    # Wait for the username field to be present after clicking login
-    username_field = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.ID, "txtUsr"))
-    )
-    print("Username field found.")
-except Exception as e:
-    print(f"Error finding username field: {e}")
-    driver.quit()
-    exit()
+        login_link.click()
+        print("Clicked login link.")
 
-try:
-    password_field = driver.find_element(By.ID, "txtPwd") # Assuming txtPwd appears with txtUsr
-    print("Password field found.")
-except Exception as e:
-    print(f"Error finding password field: {e}")
-    driver.quit()
-    exit()
+        username_field = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "txtUsr"))
+        )
+        print("Username field found.")
 
-try:
-    username_field.send_keys("user")
-    print("Entered username.")
-except Exception as e:
-    print(f"Error entering username: {e}")
-    driver.quit()
-    exit()
+        password_field = driver.find_element(By.ID, "txtPwd")
+        print("Password field found.")
 
-try:
-    password_field.send_keys("@l03e1t3")
-    print("Entered password.")
-except Exception as e:
-    print(f"Error entering password: {e}")
-    driver.quit()
-    exit()
+        username_field.send_keys("user")
+        print("Entered username.")
 
-try:
-    # Click the login button
-    driver.find_element(By.ID, "btnLogin").click()
-    print("Clicked login button.")
-except Exception as e:
-    print(f"Error clicking login button: {e}")
-    driver.quit()
-    exit()
+        password_field.send_keys("@l03e1t3")
+        print("Entered password.")
 
-try:
-    # Wait for the restart button to be clickable after successful login
-    restart_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//input[@value='Restart Device' and @type='button']")))
-    print("Restart device button found.")
-except Exception as e:
-    print(f"Error finding restart device button: {e}")
-    driver.quit()
-    exit()
+        driver.find_element(By.ID, "btnLogin").click()
+        print("Clicked login button.")
 
-try:
-    restart_button.click()
-    print("Clicked restart device button.")
-except Exception as e:
-    print(f"Error clicking restart device button: {e}")
-    driver.quit()
-    exit()
+        restart_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@value='Restart Device' and @type='button']"))
+        )
+        print("Restart device button found.")
 
-try:
-    restart_buttons = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "yesbtn")))
-    print("Confirmation 'yes' button found.")
-except Exception as e:
-    print(f"Error finding confirmation 'yes' button: {e}")
-    driver.quit()
-    exit()
+        restart_button.click()
+        print("Clicked restart device button.")
 
-try:
-    restart_buttons.click()
-    print("Clicked confirmation 'yes' button.")
-except Exception as e:
-    print(f"Error clicking confirmation 'yes' button: {e}")
-    # Continue to finally block even if this fails
-    pass
-finally:
-    print("Airplane Mode Done (or restart process initiated).")
-    driver.quit()
-    print("WebDriver closed.")
+        restart_confirm = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.ID, "yesbtn"))
+        )
+        print("Confirmation 'yes' button found.")
+
+        restart_confirm.click()
+        print("Clicked confirmation 'yes' button.")
+        print("Airplane Mode Done (or restart process initiated).")
+        return {"status": "success", "message": "Selenium task completed successfully."}
+
+    except Exception as e:
+        print(f"An error occurred during Selenium execution: {e}")
+        return {"status": "error", "message": f"Selenium task failed: {e}"}
+    finally:
+        if driver:
+            driver.quit()
+            print("WebDriver closed.")
+
+---
+
+## Basic Flask App Example
+
+```python
+@app.route('/')
+def home():
+    return "Welcome to the Selenium Flask App! Go to /run-selenium to trigger the task."
+
+@app.route('/run-selenium')
+def trigger_selenium():
+    thread = threading.Thread(target=run_selenium_task)
+    thread.start()
+    return jsonify({"message": "Selenium task initiated in the background. Check server console for logs."})
+
+if __name__ == '__main__':
+    app.run(debug=True)
