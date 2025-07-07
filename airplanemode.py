@@ -2,7 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 import os
-import chromedriver_autoinstaller # Add this import
+import chromedriver_autoinstaller # <--- ADD THIS LINE
 
 # --- Configuration para sa Chromium ---
 chrome_options = Options()
@@ -12,11 +12,14 @@ chrome_options.add_argument("--disable-dev-shm-usage")
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--window-size=1920,1080")
 
-# Automatically install chromedriver
+# --- AUTO-INSTALL CHROMEDRIVER ---
 print("Checking for and installing compatible chromedriver...")
-chromedriver_autoinstaller.install() # This line will handle the download and setup
+# This line will download and set up the correct chromedriver executable.
+# Make sure you have an internet connection for this to work.
+chromedriver_autoinstaller.install() 
 
-# No need to specify executable_path anymore
+# Now, initialize the WebDriver without specifying executable_path
+# The autoinstaller takes care of it.
 driver = webdriver.Chrome(options=chrome_options)
 
 print("Nagsisimula ang Selenium script...")
@@ -40,6 +43,7 @@ try:
     driver.implicitly_wait(5) # Maghihintay hanggang 5 segundo
 
     # --- Kumuha ng screenshot ---
+    # Make sure you have storage permissions for Termux (run `termux-setup-storage`)
     screenshot_path = "/sdcard/Download/selenium_termux_screenshot.png"
     os.makedirs(os.path.dirname(screenshot_path), exist_ok=True)
     driver.save_screenshot(screenshot_path)
