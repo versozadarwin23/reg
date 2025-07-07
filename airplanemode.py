@@ -1,65 +1,40 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
 import os
-import chromedriver_autoinstaller # <--- ADD THIS LINE
 
-# --- Configuration para sa Chromium ---
-chrome_options = Options()
-chrome_options.add_argument("--headless=new")
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument("--disable-gpu")
-chrome_options.add_argument("--window-size=1920,1080")
+# Set up Chrome options for headless mode in Termux
+options = Options()
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+# Kailangan ng virtual display kapag hindi --headless ang mode
+# Pero kung gusto mo ng ganap na headless (walang graphical window),
+# gamitin ang --headless=new o --headless.
+options.add_argument("--headless=new") # Mas bagong headless mode
 
-# --- AUTO-INSTALL CHROMEDRIVER ---
-print("Checking for and installing compatible chromedriver...")
-# This line will download and set up the correct chromedriver executable.
-# Make sure you have an internet connection for this to work.
-chromedriver_autoinstaller.install() 
+# Kung may isyu sa --headless, maaaring subukan ito para sa virtual display
+# os.environ['DISPLAY'] = ':1' # Halimbawa lang, depende sa iyong setup
+# options.add_argument("--display=:1")
 
-# Now, initialize the WebDriver without specifying executable_path
-# The autoinstaller takes care of it.
-driver = webdriver.Chrome(options=chrome_options)
+# Specify the path to chromedriver (if not in PATH)
+# Kadalasan, kung ininstall mo ang chromium sa Termux, kasama na ang chromedriver sa PATH.
+# Kung hindi, maaaring kailangan mong i-specify ang path:
+# DRIVER_PATH = "/data/data/com.termux/files/usr/bin/chromedriver" # Example path
+# driver = webdriver.Chrome(executable_path=DRIVER_PATH, options=options)
 
-print("Nagsisimula ang Selenium script...")
+# Initialize the WebDriver
+driver = webdriver.Chrome(options=options)
 
+# Example automation
+driver.get("https://www.google.com")
+print(f"Page title: {driver.title}")
+
+# Take a screenshot (opsyonal)
+screenshot_path = "/sdcard/Download/termux_screenshot.png"
 try:
-    # --- Magbukas ng website ---
-    url = "https://www.google.com"
-    print(f"Bumibisita sa: {url}")
-    driver.get(url)
-
-    print(f"Ang pamagat ng pahina ay: {driver.title}")
-
-    # --- Maghanap ng element at mag-interact (hal. search bar) ---
-    search_box = driver.find_element(By.NAME, "q")
-    search_term = "Selenium Termux Python"
-    print(f"Naghahanap ng: '{search_term}'")
-    search_box.send_keys(search_term)
-    search_box.submit()
-
-    # Maghintay nang kaunti para mag-load ang resulta (opsyonal, para sa mas reliable na output)
-    driver.implicitly_wait(5) # Maghihintay hanggang 5 segundo
-
-    # --- Kumuha ng screenshot ---
-    # Make sure you have storage permissions for Termux (run `termux-setup-storage`)
-    screenshot_path = "/sdcard/Download/selenium_termux_screenshot.png"
-    os.makedirs(os.path.dirname(screenshot_path), exist_ok=True)
     driver.save_screenshot(screenshot_path)
     print(f"Screenshot saved to: {screenshot_path}")
-
-    # --- Kumuha ng ilang text mula sa pahina ng resulta ---
-    print("\nIlang resulta mula sa search page:")
-    search_results = driver.find_elements(By.CSS_SELECTOR, "h3")
-    for i, result in enumerate(search_results[:5]): # Kumuha ng top 5 results
-        print(f"{i+1}. {result.text}")
-
 except Exception as e:
-    print(f"May error na nangyari: {e}")
+    print(f"Error saving screenshot: {e}")
 
-finally:
-    # --- Isara ang browser ---
-    print("\nIsinasara ang browser...")
-    driver.quit()
-    print("Tapos na ang script.")
+driver.quit()
+print("Browser closed.")
