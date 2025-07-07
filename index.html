@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facebook Reaction & Comment Tool By: Dars</title>
     <style>
+        /* Base styles - apply to all screen sizes */
         html, body {
             margin: 0;
             padding: 0;
@@ -12,6 +13,7 @@
             height: 100%;
             background-color: #f0f2f5;
             font-family: Arial, sans-serif;
+            box-sizing: border-box; /* Ensures padding and border are included in the element's total width and height */
         }
         h2 {
             color: #1877f2;
@@ -25,17 +27,20 @@
             background: #1877f2;
             padding: 10px;
             margin-bottom: 20px;
+            flex-wrap: wrap; /* Allow buttons to wrap to the next line on smaller screens */
         }
         .nav button {
             background: white;
             border: none;
             padding: 10px 20px;
-            margin: 0 5px;
+            margin: 5px; /* Adjust margin for wrapped buttons */
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
             color: #1877f2;
             transition: background-color 0.3s ease;
+            flex-grow: 1; /* Allow buttons to grow and fill space */
+            max-width: 200px; /* Limit button width on larger screens */
         }
         .nav button.active {
             background: #145dbf;
@@ -43,12 +48,13 @@
         }
         .container {
             max-width: 900px;
-            width: 90%;
+            width: 90%; /* Use percentage for fluid width */
             background: white;
             padding: 20px 30px;
             margin: 20px auto;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-sizing: border-box;
         }
         label {
             display: block;
@@ -87,18 +93,24 @@
             font-size: 16px;
             font-weight: bold;
             transition: background-color 0.3s ease;
+            width: auto; /* Allow buttons to size based on content */
+            display: inline-block; /* For proper spacing with other buttons */
+            margin-right: 10px; /* Space between buttons */
+        }
+        button:last-of-type {
+            margin-right: 0; /* No margin on the last button */
         }
         button:hover {
             background-color: #145dbf;
         }
-        .clear-log-btn { /* Changed ID to class for multiple buttons */
+        .clear-log-btn {
             background-color: #888;
             margin-top: 15px;
         }
         .clear-log-btn:hover {
             background-color: #666;
         }
-        .log-box { /* Renamed from #result to .log-box */
+        .log-box {
             background: #f6f6f6;
             padding: 15px;
             border-radius: 5px;
@@ -109,8 +121,9 @@
             overflow-y: auto;
             white-space: pre-wrap;
             border: 1px solid #eee;
+            box-sizing: border-box;
         }
-        .log-box strong { /* Renamed from #result strong to .log-box strong */
+        .log-box strong {
             display: block;
             margin-bottom: 10px;
             color: #555;
@@ -132,25 +145,28 @@
             display: block;
         }
         /* Styles for dynamic link/file path rows */
-        .dynamic-entry-row { /* Renamed from .link-path-row */
+        .dynamic-entry-row {
             display: flex;
             gap: 15px;
             align-items: flex-end;
             margin-top: 20px;
             padding-bottom: 15px;
             border-bottom: 1px solid #f0f0f0;
+            flex-wrap: wrap; /* Allow columns to wrap on smaller screens */
         }
         .dynamic-entry-row:last-of-type {
             border-bottom: none;
         }
-        .dynamic-entry-column { /* Renamed from .link-path-column */
+        .dynamic-entry-column {
             flex: 1;
+            min-width: 250px; /* Ensure columns don't get too small before wrapping */
+            box-sizing: border-box;
         }
         .dynamic-entry-column label {
             margin-top: 0;
             margin-bottom: 8px;
         }
-        .remove-button { /* Renamed from .remove-row-btn */
+        .remove-button {
             background-color: #dc3545;
             color: white;
             border: none;
@@ -164,17 +180,88 @@
             align-self: center;
             height: 40px;
             line-height: 24px;
+            flex-shrink: 0; /* Prevent button from shrinking */
         }
         .remove-button:hover {
             background-color: #c82333;
         }
-        .add-button { /* Changed ID to class for multiple buttons */
+        .add-button {
             background-color: #28a745;
             margin-top: 30px;
+            margin-right: 10px; /* Ensure spacing if there are multiple action buttons */
         }
         .add-button:hover {
             background-color: #218838;
         }
+
+        /* --- Media Queries for Mobile Responsiveness --- */
+        @media (max-width: 768px) {
+            .container {
+                width: 95%; /* Make container slightly wider on small screens */
+                padding: 15px; /* Reduce padding */
+            }
+            h2 {
+                font-size: 1.5em; /* Slightly smaller heading */
+            }
+            .nav {
+                flex-direction: column; /* Stack navigation buttons vertically */
+                padding: 10px 5px;
+            }
+            .nav button {
+                width: calc(100% - 10px); /* Full width minus margin */
+                margin: 5px auto; /* Center buttons */
+                max-width: unset; /* Remove max-width on mobile */
+            }
+            button {
+                display: block; /* Make action buttons full width */
+                width: 100%;
+                margin: 15px 0 0 0; /* Adjust margins for stacked buttons */
+                padding: 10px 15px;
+                box-sizing: border-box;
+            }
+            .add-button {
+                margin-top: 20px; /* Slightly less margin for add button */
+            }
+            .clear-log-btn {
+                margin-top: 10px; /* Slightly less margin for clear log button */
+            }
+            .dynamic-entry-row {
+                flex-direction: column; /* Stack input fields and remove button vertically */
+                gap: 10px; /* Reduce gap between stacked elements */
+                padding-bottom: 10px;
+            }
+            .dynamic-entry-column {
+                min-width: unset; /* Remove min-width on mobile */
+                width: 100%; /* Make columns full width */
+            }
+            .remove-button {
+                width: 100%; /* Make remove button full width */
+                height: auto; /* Allow height to adjust */
+                padding: 10px;
+                line-height: normal;
+                margin-top: 5px; /* Small margin after the input field */
+            }
+            .log-box {
+                margin-top: 20px; /* Reduce margin */
+            }
+        }
+
+        /* Flash message styling (already present, just ensuring it looks good) */
+        .flash-messages {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0;
+        }
+        .flash-messages li {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
     </style>
 </head>
 <body>
