@@ -1,11 +1,17 @@
 from flask import Flask, render_template_string, request, jsonify
+import requests
+import time # Import time for tracking last usage
+from datetime import datetime, timedelta # Import datetime for date comparison
+import re # Already imported in your code
 
 app = Flask(__name__)
 
-# The HTML content as a Python string
-# We need to escape any backticks (`) in the JavaScript if they are used for template literals,
-# or simply replace them with single/double quotes where appropriate, as they can conflict with Python strings.
-# For simplicity, I'm using a multiline string and assuming the JS doesn't heavily rely on backticks for dynamic content that can't be adapted.
+# --- Server-side storage for token last usage ---
+# Key: access_token, Value: last_used_timestamp (e.g., datetime object)
+token_last_used = {}
+# --- End of new additions for token usage tracking ---
+
+# The HTML content as a Python string (unchanged, will add info to 'about' section below)
 HTML_CONTENT = """
 <!DOCTYPE html>
 <html lang="en">
@@ -101,14 +107,14 @@ HTML_CONTENT = """
         button:hover {
             background-color: #145dbf;
         }
-        #clearLogBtn, #clearCommentLogBtn, #clearShareLogBtn {
+        #clearLogBtn, #clearCommentLogBtn, #clearShareLogBtn, #clearCommentReactionLogBtn {
             background-color: #888;
             margin-top: 15px;
         }
-        #clearLogBtn:hover, #clearCommentLogBtn:hover, #clearShareLogBtn:hover {
+        #clearLogBtn:hover, #clearCommentLogBtn:hover, #clearShareLogBtn:hover, #clearCommentReactionLogBtn:hover {
             background-color: #666;
         }
-        #result, #commentResult, #shareResult {
+        #result, #commentResult, #shareResult, #commentReactionResult {
             background: #f6f6f6;
             padding: 15px;
             border-radius: 5px;
@@ -120,7 +126,7 @@ HTML_CONTENT = """
             white-space: pre-wrap;
             border: 1px solid #eee;
         }
-        #result strong, #commentResult strong, #shareResult strong {
+        #result strong, #commentResult strong, #shareResult strong, #commentReactionResult strong {
             display: block;
             margin-bottom: 10px;
             color: #555;
@@ -177,12 +183,49 @@ HTML_CONTENT = """
         .remove-row-btn:hover {
             background-color: #c82333;
         }
-        #addLinkPathBtn, #addReactionLinkPathBtn, #addShareLinkPathBtn {
+        #addLinkPathBtn, #addReactionLinkPathBtn, #addShareLinkPathBtn, #addCommentReactionLinkPathBtn {
             background-color: #28a745;
             margin-top: 30px;
         }
-        #addLinkPathBtn:hover, #addReactionLinkPathBtn:hover, #addShareLinkPathBtn:hover {
+        #addLinkPathBtn:hover, #addReactionLinkPathBtn:hover, #addShareLinkPathBtn:hover, #addCommentReactionLinkPathBtn:hover {
             background-color: #218838;
+        }
+        /* Styles for About Page */
+        #aboutPage .container {
+            padding: 40px;
+            text-align: center;
+        }
+        #aboutPage h3 {
+            color: #1877f2;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        #aboutPage p {
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        #aboutPage ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 30px;
+            text-align: left;
+        }
+        #aboutPage ul li {
+            background: #e9f2ff;
+            margin-bottom: 10px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            color: #333;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+        #aboutPage ul li::before {
+            content: '✨'; /* Sparkle emoji or other suitable icon */
+            margin-right: 10px;
         }
     </style>
 </head>
@@ -192,12 +235,14 @@ HTML_CONTENT = """
     <div class="nav">
         <button id="navReaction" class="active">❤️ Reaction Tool</button>
         <button id="navComment">💬 Comment Tool</button>
+        <button id="navCommentReaction">👍 Upvotes Tool</button>
         <button id="navShare">↗️ Sharing Tool</button>
+        <button id="navAbout">ℹ️ About</button>
     </div>
 
     <div id="reactionPage" class="page active">
         <div class="container">
-            <label for="tokenFile">📄 Load Access Tokens from File (one per line)</label>
+            <label for="tokenFile">📄 Load Access Tokens from File</label>
             <input type="file" id="tokenFile" accept=".txt" />
 
             <label for="accessToken">🔑 Access Token (currently loaded)</label>
@@ -206,13 +251,13 @@ HTML_CONTENT = """
             <div id="reactionLinkPathContainer">
             </div>
 
-            <button type="button" id="addReactionLinkPathBtn">➕ Add Another Link</button>
+            <button type="button" id="addReactionLinkPathBtn">➕ Add Another Post Link</button>
 
-            <button id="sendReactionBtn">✅ Send Reaction</button>
-            <button id="clearLogBtn" style="background-color: #888; margin-top: 10px;">🗑️ Clear Reaction History</button>
+            <button id="sendReactionBtn">✅ Send Post Reactions</button>
+            <button id="clearLogBtn" style="background-color: #888; margin-top: 10px;">🗑️ Clear Post Reaction History</button>
 
             <div id="result">
-                <strong>🗂️ Reaction History:</strong>
+                <strong>🗂️ Post Reaction History:</strong>
                 <div id="log"></div>
             </div>
         </div>
@@ -220,7 +265,7 @@ HTML_CONTENT = """
 
     <div id="commentPage" class="page">
         <div class="container">
-            <label for="commentTokenFile">📄 Load Access Tokens from File (one per line)</label>
+            <label for="commentTokenFile">📄 Load Access Tokens from File</label>
             <input type="file" id="commentTokenFile" accept=".txt" />
 
             <label for="commentToken">🔑 Access Token (currently loaded)</label>
@@ -229,9 +274,9 @@ HTML_CONTENT = """
             <div id="linkPathContainer">
             </div>
 
-            <button type="button" id="addLinkPathBtn">➕ Add Another Link</button>
+            <button type="button" id="addLinkPathBtn">➕ Add Another Post Link</button>
 
-            <button id="sendCommentBtn">✅ Send Comment</button>
+            <button id="sendCommentBtn">✅ Send Comments</button>
             <button id="clearCommentLogBtn" style="background-color: #888; margin-top: 10px;">🗑️ Clear Comment Log</button>
 
             <div id="commentResult">
@@ -241,9 +286,32 @@ HTML_CONTENT = """
         </div>
     </div>
 
+    <div id="commentReactionPage" class="page">
+        <div class="container">
+            <label for="commentReactionTokenFile">📄 Load Access Tokens from File</label>
+            <input type="file" id="commentReactionTokenFile" accept=".txt" />
+
+            <label for="commentReactionAccessToken">🔑 Access Token (currently loaded)</label>
+            <input type="text" id="commentReactionAccessToken" placeholder="Loaded access token" readonly>
+
+            <div id="commentReactionLinkPathContainer">
+            </div>
+
+            <button type="button" id="addCommentReactionLinkPathBtn">➕ Add Another Comment Link</button>
+
+            <button id="sendCommentReactionBtn">✅ Send Comment Reactions</button>
+            <button id="clearCommentReactionLogBtn" style="background-color: #888; margin-top: 10px;">🗑️ Clear Comment Reaction History</button>
+
+            <div id="commentReactionResult">
+                <strong>🗂️ Comment Reaction History:</strong>
+                <div id="commentReactionLog"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="sharePage" class="page">
         <div class="container">
-            <label for="shareTokenFile">📄 Load Access Tokens from File (one per line)</label>
+            <label for="shareTokenFile">📄 Load Access Tokens from File</label>
             <input type="file" id="shareTokenFile" accept=".txt" />
 
             <label for="shareAccessToken">🔑 Access Token (currently loaded)</label>
@@ -263,31 +331,63 @@ HTML_CONTENT = """
             </div>
         </div>
     </div>
+
+    <div id="aboutPage" class="page">
+        <div class="container">
+            <h3>About This Facebook Tool by Dars</h3>
+            <p>Welcome to the **Facebook Tool by Dars: V1**! This application is designed to streamline your interactions on Facebook by automating reactions, comments, and shares. Built with simplicity and efficiency in mind, it provides a user-friendly interface to manage your engagement activities.</p>
+
+            <p>Our goal is to help you save time and effort by providing a centralized platform for common Facebook tasks. Whether you're managing multiple pages, conducting marketing campaigns, or simply want to interact more efficiently, this tool is here to assist you.</p>
+
+            <h4>Key Features:</h4>
+            <ul>
+                <li><strong>❤️ Reaction Tool:</strong> Easily send various reactions (Like, Love, Wow, Haha, Sad, Angry, Care) to multiple Facebook posts.</li>
+                <li><strong>💬 Comment Tool:</strong> Automate sending comments to specified Facebook posts using pre-defined messages from a file.</li>
+                <li><strong>👍 Upvotes Tool:</strong> Specifically designed to send reactions (upvotes/likes) to individual comments on Facebook.</li>
+                <li><strong>↗️ Sharing Tool:</strong> Facilitate the sharing of Facebook posts to different destinations.</li>
+                <li><strong>Token Management:</strong> Securely load and manage access tokens from text files for streamlined operations.</li>
+                <li><strong>Real-time Logging:</strong> Keep track of all your activities with detailed success and error logs.</li>
+                <li><strong>⏳ Daily Token Usage Limit:</strong> Each access token can only be used once every 24 hours to ensure fair usage and prevent potential abuse.</li>
+            </ul>
+
+            <p>We are continuously working to improve and expand the functionalities of this tool. Your feedback is invaluable as we strive to make it even better.</p>
+
+            <p>Thank you for using the Facebook Tool by Dars!</p>
+        </div>
+    </div>
+
     <script>
+        // --- Page Navigation and Last Visit Storage ---
         // Navigation
         document.getElementById('navReaction').addEventListener('click', () => switchPage('reaction'));
         document.getElementById('navComment').addEventListener('click', () => switchPage('comment'));
+        document.getElementById('navCommentReaction').addEventListener('click', () => switchPage('commentReaction'));
         document.getElementById('navShare').addEventListener('click', () => switchPage('share'));
+        document.getElementById('navAbout').addEventListener('click', () => switchPage('about')); // Added About navigation
 
         function switchPage(page) {
-            document.getElementById('reactionPage').classList.remove('active');
-            document.getElementById('commentPage').classList.remove('active');
-            document.getElementById('sharePage').classList.remove('active');
-            document.getElementById('navReaction').classList.remove('active');
-            document.getElementById('navComment').classList.remove('active');
-            document.getElementById('navShare').classList.remove('active');
+            // Remove 'active' from all pages and nav buttons
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav button').forEach(btn => btn.classList.remove('active'));
 
-            if (page === 'reaction') {
-                document.getElementById('reactionPage').classList.add('active');
-                document.getElementById('navReaction').classList.add('active');
-            } else if (page === 'comment') {
-                document.getElementById('commentPage').classList.add('active');
-                document.getElementById('navComment').classList.add('active');
-            } else if (page === 'share') {
-                document.getElementById('sharePage').classList.add('active');
-                document.getElementById('navShare').classList.add('active');
-            }
+            // Add 'active' to the selected page and nav button
+            document.getElementById(`${page}Page`).classList.add('active');
+            document.getElementById(`nav${page.charAt(0).toUpperCase() + page.slice(1)}`).classList.add('active');
+
+            // Store the last visited page in localStorage
+            localStorage.setItem('lastVisitedPage', page);
         }
+
+        // On page load, retrieve the last visited page and switch to it
+        document.addEventListener('DOMContentLoaded', () => {
+            const lastVisitedPage = localStorage.getItem('lastVisitedPage');
+            if (lastVisitedPage) {
+                switchPage(lastVisitedPage);
+            } else {
+                // If no last visited page is found, default to 'reaction'
+                switchPage('reaction');
+            }
+        });
 
         // --- Core Facebook API Interaction (Client-side via Flask backend) ---
 
@@ -295,8 +395,8 @@ HTML_CONTENT = """
         // The JavaScript will send requests to our Flask app, and Flask will then make the requests to Facebook.
 
         // Shared postId resolver function - this will now call our Flask backend
-        async function resolvePostId(rawInput, token) {
-            const response = await fetch('/resolve-post-id', {
+        async function resolveObjectId(rawInput, token) {
+            const response = await fetch('/resolve-object-id', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -310,7 +410,7 @@ HTML_CONTENT = """
             return data.object_id;
         }
 
-        // --- Reaction Tool ---
+        // --- Post Reaction Tool ---
         let accessTokens = [];
         const reactionLinkPathData = [];
         let reactionLinkCounter = 0;
@@ -405,9 +505,19 @@ HTML_CONTENT = """
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Initialize with one row for each tool
             addReactionLinkPathRow();
             addCommentLinkPathRow();
+            addCommentReactionLinkPathRow();
             addShareLinkPathRow();
+
+            // Set initial active page based on localStorage or default
+            const lastVisitedPage = localStorage.getItem('lastVisitedPage');
+            if (lastVisitedPage) {
+                switchPage(lastVisitedPage);
+            } else {
+                switchPage('reaction'); // Default to reaction page if no last visited page
+            }
         });
 
         document.getElementById('addReactionLinkPathBtn').addEventListener('click', () => {
@@ -422,7 +532,7 @@ HTML_CONTENT = """
                 return;
             }
 
-            reactionLinkPathData.forEach(item => item.successCount = 0); 
+            reactionLinkPathData.forEach(item => item.successCount = 0);
             const activeReactionLinkData = reactionLinkPathData.filter(item => item.link);
 
             if (activeReactionLinkData.length === 0) {
@@ -439,6 +549,21 @@ HTML_CONTENT = """
             for (const token of accessTokens) {
                 document.getElementById('accessToken').value = token;
 
+                // --- Client-side token usage check before sending to backend ---
+                const tokenCheckResponse = await fetch('/check-token-usage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ access_token: token })
+                });
+                const tokenCheckData = await tokenCheckResponse.json();
+
+                if (!tokenCheckData.can_use) {
+                    addLog(`❌ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
+                    overallErrorCount++;
+                    continue; // Skip this token
+                }
+                // --- End of client-side token usage check ---
+
                 for (let j = 0; j < activeReactionLinkData.length; j++) {
                     const entry = activeReactionLinkData[j];
                     const rawInput = entry.link;
@@ -452,7 +577,7 @@ HTML_CONTENT = """
 
                     let objectId;
                     try {
-                        objectId = await resolvePostId(rawInput, token);
+                        objectId = await resolveObjectId(rawInput, token); // Use resolveObjectId
                     } catch (e) {
                         addLog(`❌ Error resolving Post ID/URL for Link ${j + 1} ("${rawInput}"): ${e.message}`, 'error');
                         overallErrorCount++;
@@ -474,35 +599,35 @@ HTML_CONTENT = """
                         const data = await response.json();
 
                         if (data.success === true) {
-                            addLog(`✅ Reaction: ${reactionType} success for Link ${j + 1} (${entry.successCount + 1}${maxReactions > 0 ? '/' + maxReactions : ''})`, "success");
+                            addLog(`✅ Reaction: ${reactionType} success for Post Link ${j + 1} (${entry.successCount + 1}${maxReactions > 0 ? '/' + maxReactions : ''})`, "success");
                             entry.successCount++;
                             overallSuccessCount++;
                         } else {
-                            addLog(`❌ Reaction failed for Link ${j + 1}. Error: ${data.error ? data.error : 'Unknown error'}`, "error");
+                            addLog(`❌ Reaction failed for Post Link ${j + 1}. Error: ${data.error ? data.error : 'Unknown error'}`, "error");
                             overallErrorCount++;
                         }
                     } catch (fetchError) {
-                        addLog(`❌ Network error for Link ${j + 1}: ${fetchError.message}`, "error");
+                        addLog(`❌ Network error for Post Link ${j + 1}: ${fetchError.message}`, "error");
                         overallErrorCount++;
                     }
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
             }
 
-            addLog(`--- Reaction Process Finished ---`, 'info');
+            addLog(`--- Post Reaction Process Finished ---`, 'info');
             activeReactionLinkData.forEach((item, index) => {
                 const targetText = item.maxReactions > 0 ? ` (Target: ${item.maxReactions})` : ` (No max limit)`;
-                addLog(`✅ Total Successful Reactions for Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
+                addLog(`✅ Total Successful Reactions for Post Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
             });
-            addLog(`✅ Overall Total Successful Reactions: ${overallSuccessCount}`, "info");
-            addLog(`❌ Overall Total Failed Reactions: ${overallErrorCount}`, "error");
+            addLog(`✅ Overall Total Successful Post Reactions: ${overallSuccessCount}`, "info");
+            addLog(`❌ Overall Total Failed Post Reactions: ${overallErrorCount}`, "error");
             sendBtn.disabled = false;
-            sendBtn.textContent = "✅ Send Reaction";
+            sendBtn.textContent = "✅ Send Post Reactions";
         });
 
         document.getElementById('clearLogBtn').addEventListener('click', () => {
             document.getElementById('log').innerHTML = '';
-            addLog('Reaction history cleared.', 'info');
+            addLog('Post Reaction history cleared.', 'info');
         });
 
         // --- Comment Tool ---
@@ -556,7 +681,7 @@ HTML_CONTENT = """
                     <input type="text" id="commentLinkInput-${commentLinkCounter}" placeholder="Enter Post ID or URL here" value="${initialLink}">
                 </div>
                 <div class="link-path-column">
-                    <label for="commentPathFile-${commentLinkCounter}">📁 Load Comments from File (one per line)</label>
+                    <label for="commentPathFile-${commentLinkCounter}">📁 Load Comments from File </label>
                     <input type="file" id="commentPathFile-${commentLinkCounter}" accept=".txt">
                 </div>
                 <div class="link-path-column">
@@ -634,6 +759,21 @@ HTML_CONTENT = """
             for (const token of commentTokens) {
                 document.getElementById('commentToken').value = token;
 
+                // --- Client-side token usage check before sending to backend ---
+                const tokenCheckResponse = await fetch('/check-token-usage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ access_token: token })
+                });
+                const tokenCheckData = await tokenCheckResponse.json();
+
+                if (!tokenCheckData.can_use) {
+                    addCommentLog(`❌ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
+                    overallErrorCount++;
+                    continue; // Skip this token
+                }
+                // --- End of client-side token usage check ---
+
                 for (let j = 0; j < activeCommentLinkData.length; j++) {
                     const entry = activeCommentLinkData[j];
                     const rawInput = entry.link;
@@ -641,22 +781,22 @@ HTML_CONTENT = """
                     const maxComments = entry.maxComments;
 
                     if (maxComments > 0 && entry.successCount >= maxComments) {
-                        addCommentLog(`✅ Max comments (${maxComments}) reached for Link ${j + 1} ("${rawInput}"). Skipping further comments for this link.`, "info");
+                        addCommentLog(`✅ Max comments (${maxComments}) reached for Post Link ${j + 1} ("${rawInput}"). Skipping further comments for this link.`, "info");
                         continue;
                     }
 
                     let objectId;
                     try {
-                        objectId = await resolvePostId(rawInput, token);
+                        objectId = await resolveObjectId(rawInput, token); // Use resolveObjectId
                     } catch (e) {
-                        addCommentLog(`❌ Error resolving Post ID/URL for Link ${j + 1} ("${rawInput}"): ${e.message}`, 'error');
+                        addCommentLog(`❌ Error resolving Post ID/URL for Post Link ${j + 1} ("${rawInput}"): ${e.message}`, 'error');
                         overallErrorCount++;
                         continue;
                     }
 
                     for (const comment of commentsToSend) {
                         if (maxComments > 0 && entry.successCount >= maxComments) {
-                            addCommentLog(`✅ Max comments (${maxComments}) reached for Link ${j + 1} ("${rawInput}"). Stopping for this link.`, "info");
+                            addCommentLog(`✅ Max comments (${maxComments}) reached for Post Link ${j + 1} ("${rawInput}"). Stopping for this link.`, "info");
                             break;
                         }
 
@@ -675,36 +815,244 @@ HTML_CONTENT = """
                             const data = await response.json();
 
                             if (data.id) {
-                                addCommentLog(`✅ Comment success on Link ${j + 1} (${entry.successCount + 1}${maxComments > 0 ? '/' + maxComments : ''}) for message: "${comment.substring(0, 30)}..."`, "success");
+                                addCommentLog(`✅ Comment success on Post Link ${j + 1} (${entry.successCount + 1}${maxComments > 0 ? '/' + maxComments : ''}) for message: "${comment.substring(0, 30)}..."`, "success");
                                 entry.successCount++;
                                 overallSuccessCount++;
                             } else {
-                                addCommentLog(`❌ Comment failed on Link ${j + 1} for message "${comment.substring(0, 30)}...". Error: ${data.error ? data.error.message : 'Unknown error'}`, "error");
+                                addCommentLog(`❌ Comment failed on Post Link ${j + 1} for message "${comment.substring(0, 30)}...". Error: ${data.error ? data.error.message : 'Unknown error'}`, "error");
                                 overallErrorCount++;
                             }
                         } catch (fetchError) {
-                            addCommentLog(`❌ Network error on Link ${j + 1} for message "${comment.substring(0, 30)}...": ${fetchError.message}`, "error");
+                            addCommentLog(`❌ Network error on Post Link ${j + 1} for message "${comment.substring(0, 30)}...": ${fetchError.message}`, "error");
                             overallErrorCount++;
                         }
                         await new Promise(resolve => setTimeout(resolve, 500));
                     }
                 }
             }
-
             addCommentLog(`--- Comment Process Finished ---`, 'info');
             activeCommentLinkData.forEach((item, index) => {
                 const targetText = item.maxComments > 0 ? ` (Target: ${item.maxComments})` : ` (No max limit)`;
-                addCommentLog(`✅ Total Successful Comments for Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
+                addCommentLog(`✅ Total Successful Comments for Post Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
             });
             addCommentLog(`✅ Overall Total Successful Comments: ${overallSuccessCount}`, "info");
             addCommentLog(`❌ Overall Total Failed Comments: ${overallErrorCount}`, "error");
             sendBtn.disabled = false;
-            sendBtn.textContent = "✅ Send Comment";
+            sendBtn.textContent = "✅ Send Comments";
         });
 
         document.getElementById('clearCommentLogBtn').addEventListener('click', () => {
             document.getElementById('commentLog').innerHTML = '';
-            addCommentLog('Comment log cleared.', 'info');
+            addCommentLog('Comment history cleared.', 'info');
+        });
+
+        // --- Comment Reaction Tool ---
+        let commentReactionTokens = [];
+        const commentReactionLinkPathData = [];
+        let commentReactionLinkCounter = 0;
+
+        function addCommentReactionLog(message, type) {
+            const logContainer = document.getElementById('commentReactionLog');
+            const entry = document.createElement('div');
+            entry.classList.add('log-entry');
+            if (type) entry.classList.add(type);
+            entry.textContent = message;
+            logContainer.appendChild(entry);
+            document.getElementById('commentReactionResult').scrollTop = document.getElementById('commentReactionResult').scrollHeight;
+        }
+
+        document.getElementById('commentReactionTokenFile').addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                commentReactionTokens = e.target.result
+                    .split(/\\r?\\n/)
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0);
+
+                if (commentReactionTokens.length > 0) {
+                    document.getElementById('commentReactionAccessToken').value = commentReactionTokens[0];
+                    addCommentReactionLog(`Loaded ${commentReactionTokens.length} access tokens.`, 'info');
+                } else {
+                    addCommentReactionLog('No access tokens found in the file.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        function addCommentReactionLinkPathRow(initialLink = '', initialReactionType = 'LIKE', initialMaxReactions = '') {
+            commentReactionLinkCounter++;
+            const rowId = `comment-reaction-link-row-${commentReactionLinkCounter}`;
+            const container = document.getElementById('commentReactionLinkPathContainer');
+
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'link-path-row';
+            rowDiv.id = rowId;
+
+            rowDiv.innerHTML = `
+                <div class="link-path-column">
+                    <label for="commentReactionLinkInput-${commentReactionLinkCounter}">🔗 Facebook Comment ID/URL</label>
+                    <input type="text" id="commentReactionLinkInput-${commentReactionLinkCounter}" placeholder="Enter Comment ID or URL here" value="${initialLink}">
+                </div>
+                <div class="link-path-column">
+                    <label for="commentReactionType-${commentReactionLinkCounter}">❤️ Choose Reaction</label>
+                    <select id="commentReactionType-${commentReactionLinkCounter}">
+                        <option value="LIKE">👍 Like</option>
+                        <option value="LOVE">❤️ Love</option>
+                        <option value="WOW">😮 Wow</option>
+                        <option value="HAHA">😂 Haha</option>
+                        <option value="SAD">😢 Sad</option>
+                        <option value="ANGRY">😡 Angry</option>
+                        <option value="CARE">🤗 Care</option>
+                    </select>
+                </div>
+                <div class="link-path-column">
+                    <label for="maxCommentReactions-${commentReactionLinkCounter}">🎯 Max Reactions</label>
+                    <input type="number" id="maxCommentReactions-${commentReactionLinkCounter}" min="0" value="${initialMaxReactions}" placeholder="Enter max reactions">
+                </div>
+                <button type="button" class="remove-row-btn" data-row-id="${rowId}">➖ Remove</button>
+            `;
+            container.appendChild(rowDiv);
+
+            const reactionTypeSelect = document.getElementById(`commentReactionType-${commentReactionLinkCounter}`);
+            reactionTypeSelect.value = initialReactionType;
+
+            const newRowData = { id: rowId, link: initialLink, reactionType: initialReactionType, successCount: 0, maxReactions: parseInt(initialMaxReactions, 10) || 0 };
+            commentReactionLinkPathData.push(newRowData);
+
+            rowDiv.querySelector('.remove-row-btn').addEventListener('click', function() {
+                const rowIdToRemove = this.dataset.rowId;
+                const indexToRemove = commentReactionLinkPathData.findIndex(item => item.id === rowIdToRemove);
+                if (indexToRemove > -1) {
+                    commentReactionLinkPathData.splice(indexToRemove, 1);
+                }
+                document.getElementById(rowIdToRemove).remove();
+                addCommentReactionLog(`Removed comment reaction link row "${rowIdToRemove}".`, 'info');
+            });
+
+            document.getElementById(`commentReactionLinkInput-${commentReactionLinkCounter}`).addEventListener('input', function() {
+                newRowData.link = this.value.trim();
+            });
+
+            document.getElementById(`commentReactionType-${commentReactionLinkCounter}`).addEventListener('change', function() {
+                newRowData.reactionType = this.value;
+            });
+
+            document.getElementById(`maxCommentReactions-${commentReactionLinkCounter}`).addEventListener('input', function() {
+                newRowData.maxReactions = parseInt(this.value, 10) || 0;
+            });
+        }
+
+        document.getElementById('addCommentReactionLinkPathBtn').addEventListener('click', () => {
+            addCommentReactionLinkPathRow();
+        });
+
+        document.getElementById('sendCommentReactionBtn').addEventListener('click', async () => {
+            const sendBtn = document.getElementById('sendCommentReactionBtn');
+
+            if (commentReactionTokens.length === 0) {
+                addCommentReactionLog('⚠️ Please load Access Tokens from a file first.', 'error');
+                return;
+            }
+
+            commentReactionLinkPathData.forEach(item => item.successCount = 0);
+            const activeCommentReactionLinkData = commentReactionLinkPathData.filter(item => item.link);
+
+            if (activeCommentReactionLinkData.length === 0) {
+                addCommentReactionLog('⚠️ Please add at least one Comment ID/URL for reactions.', 'error');
+                return;
+            }
+
+            sendBtn.disabled = true;
+            sendBtn.textContent = "⏳ Sending comment reactions...";
+
+            let overallSuccessCount = 0;
+            let overallErrorCount = 0;
+
+            for (const token of commentReactionTokens) {
+                document.getElementById('commentReactionAccessToken').value = token;
+
+                // --- Client-side token usage check before sending to backend ---
+                const tokenCheckResponse = await fetch('/check-token-usage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ access_token: token })
+                });
+                const tokenCheckData = await tokenCheckResponse.json();
+
+                if (!tokenCheckData.can_use) {
+                    addCommentReactionLog(`❌ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
+                    overallErrorCount++;
+                    continue; // Skip this token
+                }
+                // --- End of client-side token usage check ---
+
+                for (let j = 0; j < activeCommentReactionLinkData.length; j++) {
+                    const entry = activeCommentReactionLinkData[j];
+                    const rawInput = entry.link;
+                    const reactionType = entry.reactionType;
+                    const maxReactions = entry.maxReactions;
+
+                    if (maxReactions > 0 && entry.successCount >= maxReactions) {
+                        addCommentReactionLog(`✅ Max reactions (${maxReactions}) reached for Comment Link ${j + 1} ("${rawInput}"). Skipping further reactions for this link.`, "info");
+                        continue;
+                    }
+
+                    let objectId;
+                    try {
+                        objectId = await resolveObjectId(rawInput, token); // Use resolveObjectId
+                    } catch (e) {
+                        addCommentReactionLog(`❌ Error resolving Comment ID/URL for Comment Link ${j + 1} ("${rawInput}"): ${e.message}`, 'error');
+                        overallErrorCount++;
+                        continue;
+                    }
+
+                    try {
+                        const response = await fetch('/send-reaction', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                object_id: objectId,
+                                reaction_type: reactionType,
+                                access_token: token
+                            })
+                        });
+                        const data = await response.json();
+
+                        if (data.success === true) {
+                            addCommentReactionLog(`✅ Reaction: ${reactionType} success for Comment Link ${j + 1} (${entry.successCount + 1}${maxReactions > 0 ? '/' + maxReactions : ''})`, "success");
+                            entry.successCount++;
+                            overallSuccessCount++;
+                        } else {
+                            addCommentReactionLog(`❌ Reaction failed for Comment Link ${j + 1}. Error: ${data.error ? data.error : 'Unknown error'}`, "error");
+                            overallErrorCount++;
+                        }
+                    } catch (fetchError) {
+                        addCommentReactionLog(`❌ Network error for Comment Link ${j + 1}: ${fetchError.message}`, "error");
+                        overallErrorCount++;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+
+            addCommentReactionLog(`--- Comment Reaction Process Finished ---`, 'info');
+            activeCommentReactionLinkData.forEach((item, index) => {
+                const targetText = item.maxReactions > 0 ? ` (Target: ${item.maxReactions})` : ` (No max limit)`;
+                addCommentReactionLog(`✅ Total Successful Reactions for Comment Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
+            });
+            addCommentReactionLog(`✅ Overall Total Successful Comment Reactions: ${overallSuccessCount}`, "info");
+            addCommentReactionLog(`❌ Overall Total Failed Comment Reactions: ${overallErrorCount}`, "error");
+            sendBtn.disabled = false;
+            sendBtn.textContent = "✅ Send Comment Reactions";
+        });
+
+        document.getElementById('clearCommentReactionLogBtn').addEventListener('click', () => {
+            document.getElementById('commentReactionLog').innerHTML = '';
+            addCommentReactionLog('Comment Reaction history cleared.', 'info');
         });
 
         // --- Share Tool ---
@@ -758,8 +1106,8 @@ HTML_CONTENT = """
                     <input type="text" id="shareLinkInput-${shareLinkCounter}" placeholder="Enter Post ID or URL here" value="${initialLink}">
                 </div>
                 <div class="link-path-column">
-                    <label for="shareMessage-${shareLinkCounter}">📝 Share Message (Optional)</label>
-                    <input type="text" id="shareMessage-${shareLinkCounter}" placeholder="Enter message for the shared post" value="${initialMessage}">
+                    <label for="shareMessage-${shareLinkCounter}">✍️ Share Message (Optional)</label>
+                    <input type="text" id="shareMessage-${shareLinkCounter}" placeholder="Optional message for the share" value="${initialMessage}">
                 </div>
                 <div class="link-path-column">
                     <label for="maxShares-${shareLinkCounter}">🎯 Max Shares</label>
@@ -816,7 +1164,7 @@ HTML_CONTENT = """
             }
 
             sendBtn.disabled = true;
-            sendBtn.textContent = "⏳ Sharing...";
+            sendBtn.textContent = "⏳ Sharing posts...";
 
             let overallSuccessCount = 0;
             let overallErrorCount = 0;
@@ -824,50 +1172,65 @@ HTML_CONTENT = """
             for (const token of shareTokens) {
                 document.getElementById('shareAccessToken').value = token;
 
+                // --- Client-side token usage check before sending to backend ---
+                const tokenCheckResponse = await fetch('/check-token-usage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ access_token: token })
+                });
+                const tokenCheckData = await tokenCheckResponse.json();
+
+                if (!tokenCheckData.can_use) {
+                    addShareLog(`❌ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
+                    overallErrorCount++;
+                    continue; // Skip this token
+                }
+                // --- End of client-side token usage check ---
+
                 for (let j = 0; j < activeShareLinkData.length; j++) {
                     const entry = activeShareLinkData[j];
                     const rawInput = entry.link;
-                    const shareMessage = entry.message;
+                    const message = entry.message;
                     const maxShares = entry.maxShares;
 
                     if (maxShares > 0 && entry.successCount >= maxShares) {
-                        addShareLog(`✅ Max shares (${maxShares}) reached for Link ${j + 1} ("${rawInput}"). Skipping further shares for this link.`, "info");
+                        addShareLog(`✅ Max shares (${maxShares}) reached for Post Link ${j + 1} ("${rawInput}"). Skipping further shares for this link.`, "info");
                         continue;
                     }
 
                     let objectId;
                     try {
-                        objectId = await resolvePostId(rawInput, token);
+                        objectId = await resolveObjectId(rawInput, token); // Use resolveObjectId
                     } catch (e) {
-                        addShareLog(`❌ Error resolving Post ID/URL for Link ${j + 1} ("${rawInput}"): ${e.message}`, 'error');
+                        addShareLog(`❌ Error resolving Post ID/URL for Post Link ${j + 1} ("${rawInput}"): ${e.message}`, 'error');
                         overallErrorCount++;
                         continue;
                     }
 
                     try {
-                        const response = await fetch('/share-post', {
+                        const response = await fetch('/send-share', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                             },
                             body: JSON.stringify({
                                 object_id: objectId,
-                                message: shareMessage,
+                                message: message,
                                 access_token: token
                             })
                         });
                         const data = await response.json();
 
                         if (data.id) {
-                            addShareLog(`✅ Share success for Link ${j + 1} (${entry.successCount + 1}${maxShares > 0 ? '/' + maxShares : ''})` + (shareMessage ? ` with message: "${shareMessage.substring(0, 30)}..."` : ''), "success");
+                            addShareLog(`✅ Share success for Post Link ${j + 1} (${entry.successCount + 1}${maxShares > 0 ? '/' + maxShares : ''})` + (message ? ` with message: "${message.substring(0, 30)}..."` : ''), "success");
                             entry.successCount++;
                             overallSuccessCount++;
                         } else {
-                            addShareLog(`❌ Share failed for Link ${j + 1}. Error: ${data.error ? data.error.message : 'Unknown error'}`, "error");
+                            addShareLog(`❌ Share failed for Post Link ${j + 1}. Error: ${data.error ? data.error.message : 'Unknown error'}`, "error");
                             overallErrorCount++;
                         }
                     } catch (fetchError) {
-                        addShareLog(`❌ Network error for Link ${j + 1}: ${fetchError.message}`, "error");
+                        addShareLog(`❌ Network error for Post Link ${j + 1}: ${fetchError.message}`, "error");
                         overallErrorCount++;
                     }
                     await new Promise(resolve => setTimeout(resolve, 500));
@@ -877,7 +1240,7 @@ HTML_CONTENT = """
             addShareLog(`--- Share Process Finished ---`, 'info');
             activeShareLinkData.forEach((item, index) => {
                 const targetText = item.maxShares > 0 ? ` (Target: ${item.maxShares})` : ` (No max limit)`;
-                addShareLog(`✅ Total Successful Shares for Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
+                addShareLog(`✅ Total Successful Shares for Post Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
             });
             addShareLog(`✅ Overall Total Successful Shares: ${overallSuccessCount}`, "info");
             addShareLog(`❌ Overall Total Failed Shares: ${overallErrorCount}`, "error");
@@ -887,226 +1250,176 @@ HTML_CONTENT = """
 
         document.getElementById('clearShareLogBtn').addEventListener('click', () => {
             document.getElementById('shareLog').innerHTML = '';
-            addShareLog('Share log cleared.', 'info');
+            addShareLog('Share history cleared.', 'info');
         });
     </script>
 </body>
 </html>
 """
 
-import requests
-import re
-from urllib.parse import urlparse, parse_qs
-
-
 @app.route('/')
 def index():
-    """Renders the main HTML page."""
     return render_template_string(HTML_CONTENT)
 
-
-@app.route('/resolve-post-id', methods=['POST'])
-def resolve_post_id_backend():
-    """
-    Backend endpoint to resolve Facebook post IDs from URLs or direct IDs.
-    This replaces the client-side resolvePostId function's direct API calls.
-    """
-    data = request.get_json()
-    raw_input = data.get('raw_input', '').strip()
+# --- New endpoint to check token usage ---
+@app.route('/check-token-usage', methods=['POST'])
+def check_token_usage():
+    data = request.json
     access_token = data.get('access_token')
 
     if not access_token:
-        return jsonify({'error': 'Access token is required.'}), 400
+        return jsonify({'can_use': False, 'error': 'No access token provided.'}), 400
 
-    object_id = raw_input
+    current_time = datetime.now()
+    last_used_time = token_last_used.get(access_token)
 
-    # NEW: Check for combined Page_ID_Post_ID format (e.g., 100071468800251_3220058891556612)
-    if re.fullmatch(r'\d+_\d+', object_id):
-        return jsonify({'object_id': object_id})
+    if last_used_time:
+        time_since_last_use = current_time - last_used_time
+        # Set the cooldown period (24 hours)
+        cooldown_period = timedelta(hours=24)
 
-    # If it's a direct numerical ID, return it immediately
-    if re.fullmatch(r'\d+', object_id):
-        return jsonify({'object_id': object_id})
+        if time_since_last_use < cooldown_period:
+            time_left = cooldown_period - time_since_last_use
+            # Format the time remaining for user-friendly display
+            hours = int(time_left.total_seconds() // 3600)
+            minutes = int((time_left.total_seconds() % 3600) // 60)
+            seconds = int(time_left.total_seconds() % 60)
+            wait_until_str = f"{hours}h {minutes}m {seconds}s"
+            return jsonify({'can_use': False, 'wait_until': wait_until_str})
 
-    # If it's not a URL, and not a numerical ID, it's likely an invalid input
-    if not object_id.startswith('http'):
-        return jsonify({'error': 'Invalid input: Not a URL and not a direct numerical Post ID.'}), 400
+    # If not used before, or if enough time has passed, mark it as used now
+    token_last_used[access_token] = current_time
+    return jsonify({'can_use': True})
+# --- End of new endpoint ---
 
+@app.route('/resolve-object-id', methods=['POST'])
+def resolve_object_id():
+    data = request.json
+    raw_input = data.get('raw_input')
+    access_token = data.get('access_token')
+
+    if not raw_input or not access_token:
+        return jsonify({'error': 'Missing raw_input or access_token'}), 400
+
+    # If it's already a numeric ID, return it directly
+    if raw_input.isdigit():
+        return jsonify({'object_id': raw_input})
+
+    # Regex to extract post ID from various Facebook URL formats
+    import re
+    match = re.search(r'(?:posts/|videos/|photos/|permalink/|fbid=)(\d+)', raw_input)
+    if match:
+        return jsonify({'object_id': match.group(1)})
+
+    # Fallback to Graph API if it's a full URL and not a simple ID
     try:
-        url_obj = urlparse(object_id)
-        pathname = url_obj.path
-        query_params = parse_qs(url_obj.query)
+        # Use the Graph API to get the object ID from the URL
+        graph_api_url = f"https://graph.facebook.com/v19.0/?id={raw_input}&access_token={access_token}"
+        response = requests.get(graph_api_url)
+        response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+        result = response.json()
 
-        # Check for video watch URL (e.g., facebook.com/watch/?v=12345)
-        if pathname == '/watch/' and 'v' in query_params:
-            return jsonify({'object_id': query_params['v'][0]})
-
-        # Check for traditional /permalink.php?story_fbid=ID&id=USER_ID format
-        if pathname == '/permalink.php' and 'story_fbid' in query_params:
-            story_fbid = query_params['story_fbid'][0]
-            graph_url = f"https://graph.facebook.com/v20.0/{story_fbid}?access_token={access_token}"
-            response = requests.get(graph_url)
-            response.raise_for_status()
-            data = response.json()
-            if 'id' in data:
-                return jsonify({'object_id': data['id']})
-            else:
-                return jsonify(
-                    {'error': data.get('error', {}).get('message', 'Failed to resolve permalink story_fbid.')}), 500
-
-        # New logic for /user/posts/pfbid... or /groups/GROUP_ID/posts/pfbid...
-        pfbid_match = re.search(r'(?:posts|photos|videos)/(pfbid\d+)', pathname, re.IGNORECASE)
-        if pfbid_match:
-            pfbid = pfbid_match.group(1)
-            try:
-                # Try to resolve the pfbid directly
-                graph_url = f"https://graph.facebook.com/v19.0/{pfbid}?access_token={access_token}"
-                response = requests.get(graph_url)
-                response.raise_for_status()
-                data = response.json()
-                if 'id' in data:
-                    return jsonify({'object_id': data['id']})
-                else:
-                    # If direct resolution fails, try fetching the entire URL to get its ID
-                    graph_url_full = f"https://graph.facebook.com/v20.0/?id={object_id}&access_token={access_token}"
-                    response_full = requests.get(graph_url_full)
-                    response_full.raise_for_status()
-                    data_full = response_full.json()
-                    if 'og_object' in data_full and 'id' in data_full['og_object']:
-                        return jsonify({'object_id': data_full['og_object']['id']})
-                    return jsonify({'error': data.get('error', {}).get('message',
-                                                                       'Failed to resolve pfbid post ID from Graph API and full URL resolution.')}), 500
-            except requests.exceptions.RequestException as e:
-                return jsonify({'error': f'API error resolving pfbid: {e}'}), 500
-
-        # Old-style Post URL (e.g., /username/posts/12345 or /page_name/posts/12345)
-        legacy_post_match = re.match(r'^/([^/]+)/posts/(\d+)', pathname)
-        if legacy_post_match:
-            username_or_page_name = legacy_post_match.group(1)
-            post_id_part = legacy_post_match.group(2)
-            try:
-                graph_url = f"https://graph.facebook.com/v20.0/{username_or_page_name}?access_token={access_token}"
-                response = requests.get(graph_url)
-                response.raise_for_status()
-                page_id_data = response.json()
-                if 'id' in page_id_data:
-                    return jsonify({'object_id': f"{page_id_data['id']}_{post_id_part}"})
-                else:
-                    return jsonify({'object_id': post_id_part})
-            except requests.exceptions.RequestException:
-                return jsonify({'object_id': post_id_part})
-
-        # Final fallback: try to query the URL itself for an object ID.
-        graph_url_fallback = f"https://graph.facebook.com/v20.0/?id={object_id}&access_token={access_token}"
-        response_fallback = requests.get(graph_url_fallback)
-        response_fallback.raise_for_status()
-        data_fallback = response_fallback.json()
-        if 'og_object' in data_fallback and 'id' in data_fallback['og_object']:
-            return jsonify({'object_id': data_fallback['og_object']['id']})
-        if 'id' in data_fallback:
-            return jsonify({'object_id': data_fallback['id']})
-
-        return jsonify({'error': 'Unsupported URL format or invalid Post ID/URL.'}), 400
-
+        if 'id' in result:
+            return jsonify({'object_id': result['id']})
+        else:
+            return jsonify({'error': 'Could not resolve object ID from URL.', 'details': result}), 400
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Network error or invalid URL provided to Facebook Graph API: {e}'}), 500
     except Exception as e:
-        return jsonify({'error': f'General error resolving URL: {e}'}), 500
-
+        return jsonify({'error': f'An unexpected error occurred during object ID resolution: {e}'}), 500
 
 @app.route('/send-reaction', methods=['POST'])
 def send_reaction():
-    """Backend endpoint to send a reaction to a Facebook post."""
-    data = request.get_json()
+    data = request.json
     object_id = data.get('object_id')
     reaction_type = data.get('reaction_type')
     access_token = data.get('access_token')
 
-    if not all([object_id, reaction_type, access_token]):
-        return jsonify({'success': False, 'error': 'Missing required parameters.'}), 400
+    if not object_id or not reaction_type or not access_token:
+        return jsonify({'success': False, 'error': 'Missing object_id, reaction_type, or access_token'}), 400
 
-    reaction_url = f"https://graph.facebook.com/v20.0/{object_id}/reactions"
-    params = {'type': reaction_type, 'access_token': access_token}
+    # The token usage check is now handled in /check-token-usage endpoint before this is called
+    # So we can proceed with the reaction.
 
     try:
-        response = requests.post(reaction_url, data=params)
+        api_url = f"https://graph.facebook.com/v19.0/{object_id}/reactions"
+        payload = {'type': reaction_type, 'access_token': access_token}
+        response = requests.post(api_url, data=payload)
         response.raise_for_status()
         result = response.json()
-        result['success'] = True  # Facebook API returns success: true, but sometimes just an ID
-        return jsonify(result)
-    except requests.exceptions.RequestException as e:
-        error_message = str(e)
-        if hasattr(e, 'response') and e.response is not None:
-            try:
-                error_data = e.response.json()
-                error_message = error_data.get('error', {}).get('message', error_message)
-            except ValueError:
-                pass
-        return jsonify({'success': False, 'error': f'Network or API error: {error_message}'}), 500
 
+        if result.get('success') is True:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': result.get('error', {}).get('message', 'Unknown error')})
+
+    except requests.exceptions.HTTPError as e:
+        error_message = e.response.json().get('error', {}).get('message', 'An HTTP error occurred.')
+        return jsonify({'success': False, 'error': error_message}), e.response.status_code
+    except requests.exceptions.RequestException as e:
+        return jsonify({'success': False, 'error': f'Network error: {e}'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'An unexpected error occurred: {e}'}), 500
 
 @app.route('/send-comment', methods=['POST'])
 def send_comment():
-    """Backend endpoint to send a comment to a Facebook post."""
-    data = request.get_json()
+    data = request.json
     object_id = data.get('object_id')
     message = data.get('message')
     access_token = data.get('access_token')
 
-    if not all([object_id, message, access_token]):
-        return jsonify({'success': False, 'error': 'Missing required parameters.'}), 400
+    if not object_id or not message or not access_token:
+        return jsonify({'error': 'Missing object_id, message, or access_token'}), 400
 
-    comment_url = f"https://graph.facebook.com/v20.0/{object_id}/comments"
-    params = {'message': message, 'access_token': access_token}
+    # The token usage check is now handled in /check-token-usage endpoint before this is called
+    # So we can proceed with the comment.
 
     try:
-        response = requests.post(comment_url, data=params)
+        api_url = f"https://graph.facebook.com/v19.0/{object_id}/comments"
+        payload = {'message': message, 'access_token': access_token}
+        response = requests.post(api_url, data=payload)
         response.raise_for_status()
         result = response.json()
-        return jsonify(result)  # Facebook API returns { 'id': '...' } on success for comments
+        return jsonify(result)
+    except requests.exceptions.HTTPError as e:
+        error_details = e.response.json().get('error', {})
+        return jsonify({'error': error_details}), e.response.status_code
     except requests.exceptions.RequestException as e:
-        error_message = str(e)
-        if hasattr(e, 'response') and e.response is not None:
-            try:
-                error_data = e.response.json()
-                error_message = error_data.get('error', {}).get('message', error_message)
-            except ValueError:
-                pass
-        return jsonify({'success': False, 'error': f'Network or API error: {error_message}'}), 500
+        return jsonify({'error': f'Network error: {e}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'An unexpected error occurred: {e}'}), 500
 
-
-@app.route('/share-post', methods=['POST'])
-def share_post():
-    """Backend endpoint to share a Facebook post."""
-    data = request.get_json()
+@app.route('/send-share', methods=['POST'])
+def send_share():
+    data = request.json
     object_id = data.get('object_id')
-    message = data.get('message')  # Optional message for the shared post
+    message = data.get('message')
     access_token = data.get('access_token')
 
-    if not all([object_id, access_token]):
-        return jsonify({'success': False, 'error': 'Missing required parameters.'}), 400
+    if not object_id or not access_token:
+        return jsonify({'error': 'Missing object_id or access_token'}), 400
 
-    share_url = f"https://graph.facebook.com/v20.0/me/feed"  # Sharing to user's own feed
-    params = {'link': f"https://www.facebook.com/{object_id}", 'access_token': access_token}
-    if message:
-        params['message'] = message
+    # The token usage check is now handled in /check-token-usage endpoint before this is called
+    # So we can proceed with the share.
 
     try:
-        response = requests.post(share_url, data=params)
+        api_url = f"https://graph.facebook.com/v19.0/{object_id}/shares"
+        payload = {'access_token': access_token}
+        if message:
+            payload['message'] = message
+
+        response = requests.post(api_url, data=payload)
         response.raise_for_status()
         result = response.json()
-        return jsonify(result)  # Facebook API returns { 'id': '...' } on success for shares
-    except requests.exceptions.RequestException as e:
-        error_message = str(e)
-        if hasattr(e, 'response') and e.response is not None:
-            try:
-                error_data = e.response.json()
-                error_message = error_data.get('error', {}).get('message', error_message)
-            except ValueError:
-                pass
-        return jsonify({'success': False, 'error': f'Network or API error: {error_message}'}), 500
+        return jsonify(result)
 
+    except requests.exceptions.HTTPError as e:
+        error_details = e.response.json().get('error', {})
+        return jsonify({'error': error_details}), e.response.status_code
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Network error: {e}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'An unexpected error occurred: {e}'}), 500
 
 if __name__ == '__main__':
-    # Run Flask app on all available interfaces (0.0.0.0) and port 5000
-    # In Termux, you can then access it from your device's browser at http://localhost:5000
-    # or http://<your_termux_ip>:5000 if you want to access from another device on the same network.
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True, port=5000)
