@@ -1,11 +1,18 @@
-o
+from flask import Flask, render_template_string, request, jsonify
+import requests
+import time
+from datetime import datetime, timedelta
+import re
 
-    #çmhÄ ã                   @   s   d dl mZmZmZmZ d dlZd dlZd dlmZmZ d dl	Z	ee
-ƒZi ZdZ
-dd„ Ze d¡dd	„ ƒZejd
-dgdd
-d„ ƒZejddgddd„ ƒZdd„ Zejddgddd„ ƒZejddgddd„ ƒZejddgddd„ ƒZejddgddd„ ƒZe
-d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequestÚjsonifyN)ÚdatetimeÚ	timedeltauYì  
+app = Flask(__name__)
+
+# --- Server-side storage for token last usage ---
+# Key: access_token, Value: last_used_timestamp (e.g., datetime object)
+token_last_used = {}
+# --- End of new additions for token usage tracking ---
+
+# The HTML content as a Python string (unchanged, will add info to 'about' section below)
+HTML_CONTENT = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -224,9 +231,35 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             align-items: center;
         }
         #aboutPage ul li::before {
-            content: 'âœ¨'; /* Sparkle emoji or other suitable icon */
+            content: '✨'; /* Sparkle emoji or other suitable icon */
             margin-right: 10px;
         }
+        /* Social Media Links */
+        .social-links {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .social-link {
+            text-decoration: none;
+            color: #1877f2;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1em;
+            transition: color 0.3s ease;
+        }
+        .social-link:hover {
+            color: #145dbf;
+        }
+        .social-link img {
+            width: 24px;
+            height: 24px;
+        }
+
 
         /* --- Responsive Adjustments --- */
         @media (max-width: 768px) {
@@ -272,6 +305,10 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             #aboutPage p {
                 font-size: 1em;
             }
+            .social-links {
+                flex-direction: column;
+                align-items: center;
+            }
         }
 
         @media (max-width: 480px) {
@@ -300,34 +337,34 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
     </style>
 </head>
 <body>
-    <h2>ðŸ“£ Facebook Tool By: Dars: V1</h2>
+    <h2>📣 Facebook Tool By: Dars: V1</h2>
 
     <div class="nav">
-        <button id="navReaction" class="active">â¤ï¸ Reaction Tool</button>
-        <button id="navComment">ðŸ’¬ Comment Tool</button>
-        <button id="navCommentReaction">ðŸ‘ Upvotes Tool</button>
-        <button id="navShare">â†—ï¸ Sharing Tool</button>
-        <button id="navAbout">â„¹ï¸ About</button>
+        <button id="navReaction" class="active">❤️ Reaction Tool</button>
+        <button id="navComment">💬 Comment Tool</button>
+        <button id="navCommentReaction">👍 Upvotes Tool</button>
+        <button id="navShare">↗️ Sharing Tool</button>
+        <button id="navAbout">ℹ️ About</button>
     </div>
 
     <div id="reactionPage" class="page active">
         <div class="container">
-            <label for="tokenFile">ðŸ“„ Load Access Tokens from File</label>
+            <label for="tokenFile">📄 Load Access Tokens from File</label>
             <input type="file" id="tokenFile" accept=".txt" />
 
-            <label for="accessToken">ðŸ”‘ Access Token (currently loaded)</label>
+            <label for="accessToken">🔑 Access Token (currently loaded)</label>
             <input type="text" id="accessToken" placeholder="Loaded access token" readonly>
 
             <div id="reactionLinkPathContainer">
             </div>
 
-            <button type="button" id="addReactionLinkPathBtn">âž• Add Another Post Link</button>
+            <button type="button" id="addReactionLinkPathBtn">➕ Add Another Post Link</button>
 
-            <button id="sendReactionBtn">âœ… Send Post Reactions</button>
-            <button id="clearLogBtn" style="background-color: #888; margin-top: 10px;">ðŸ—‘ï¸ Clear Post Reaction History</button>
+            <button id="sendReactionBtn">✅ Send Post Reactions</button>
+            <button id="clearLogBtn" style="background-color: #888; margin-top: 10px;">🗑️ Clear Post Reaction History</button>
 
             <div id="result">
-                <strong>ðŸ—‚ï¸ Post Reaction History:</strong>
+                <strong>🗂️ Post Reaction History:</strong>
                 <div id="log"></div>
             </div>
         </div>
@@ -335,22 +372,22 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
 
     <div id="commentPage" class="page">
         <div class="container">
-            <label for="commentTokenFile">ðŸ“„ Load Access Tokens from File</label>
+            <label for="commentTokenFile">📄 Load Access Tokens from File</label>
             <input type="file" id="commentTokenFile" accept=".txt" />
 
-            <label for="commentToken">ðŸ”‘ Access Token (currently loaded)</label>
+            <label for="commentToken">🔑 Access Token (currently loaded)</label>
             <input type="text" id="commentToken" placeholder="Loaded access token" readonly>
 
             <div id="linkPathContainer">
             </div>
 
-            <button type="button" id="addLinkPathBtn">âž• Add Another Post Link</button>
+            <button type="button" id="addLinkPathBtn">➕ Add Another Post Link</button>
 
-            <button id="sendCommentBtn">âœ… Send Comments</button>
-            <button id="clearCommentLogBtn" style="background-color: #888; margin-top: 10px;">ðŸ—‘ï¸ Clear Comment Log</button>
+            <button id="sendCommentBtn">✅ Send Comments</button>
+            <button id="clearCommentLogBtn" style="background-color: #888; margin-top: 10px;">🗑️ Clear Comment Log</button>
 
             <div id="commentResult">
-                <strong>ðŸ—‚ï¸ Comment History:</strong>
+                <strong>🗂️ Comment History:</strong>
                 <div id="commentLog"></div>
             </div>
         </div>
@@ -358,22 +395,22 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
 
     <div id="commentReactionPage" class="page">
         <div class="container">
-            <label for="commentReactionTokenFile">ðŸ“„ Load Access Tokens from File</label>
+            <label for="commentReactionTokenFile">📄 Load Access Tokens from File</label>
             <input type="file" id="commentReactionTokenFile" accept=".txt" />
 
-            <label for="commentReactionAccessToken">ðŸ”‘ Access Token (currently loaded)</label>
+            <label for="commentReactionAccessToken">🔑 Access Token (currently loaded)</label>
             <input type="text" id="commentReactionAccessToken" placeholder="Loaded access token" readonly>
 
             <div id="commentReactionLinkPathContainer">
             </div>
 
-            <button type="button" id="addCommentReactionLinkPathBtn">âž• Add Another Comment Link</button>
+            <button type="button" id="addCommentReactionLinkPathBtn">➕ Add Another Comment Link</button>
 
-            <button id="sendCommentReactionBtn">âœ… Send Comment Reactions</button>
-            <button id="clearCommentReactionLogBtn" style="background-color: #888; margin-top: 10px;">ðŸ—‘ï¸ Clear Comment Reaction History</button>
+            <button id="sendCommentReactionBtn">✅ Send Comment Reactions</button>
+            <button id="clearCommentReactionLogBtn" style="background-color: #888; margin-top: 10px;">🗑️ Clear Comment Reaction History</button>
 
             <div id="commentReactionResult">
-                <strong>ðŸ—‚ï¸ Comment Reaction History:</strong>
+                <strong>🗂️ Comment Reaction History:</strong>
                 <div id="commentReactionLog"></div>
             </div>
         </div>
@@ -381,22 +418,22 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
 
     <div id="sharePage" class="page">
         <div class="container">
-            <label for="shareTokenFile">ðŸ“„ Load Access Tokens from File</label>
+            <label for="shareTokenFile">📄 Load Access Tokens from File</label>
             <input type="file" id="shareTokenFile" accept=".txt" />
 
-            <label for="shareAccessToken">ðŸ”‘ Access Token (currently loaded)</label>
+            <label for="shareAccessToken">🔑 Access Token (currently loaded)</label>
             <input type="text" id="shareAccessToken" placeholder="Loaded access token" readonly>
 
             <div id="shareLinkPathContainer">
             </div>
 
-            <button type="button" id="addShareLinkPathBtn">âž• Add Another Post Link to Share</button>
+            <button type="button" id="addShareLinkPathBtn">➕ Add Another Post Link to Share</button>
 
-            <button id="sendShareBtn">âœ… Share Page</button>
-            <button id="clearShareLogBtn" style="background-color: #888; margin-top: 10px;">ðŸ—‘ï¸ Clear Share Log</button>
+            <button id="sendShareBtn">✅ Share Page</button>
+            <button id="clearShareLogBtn" style="background-color: #888; margin-top: 10px;">🗑️ Clear Share Log</button>
 
             <div id="shareResult">
-                <strong>ðŸ—‚ï¸ Share History:</strong>
+                <strong>🗂️ Share History:</strong>
                 <div id="shareLog"></div>
             </div>
         </div>
@@ -411,18 +448,29 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
 
             <h4>Key Features:</h4>
             <ul>
-                <li><strong>â¤ï¸ Reaction Tool:</strong> Easily send various reactions (Like, Love, Wow, Haha, Sad, Angry, Care) to multiple Facebook posts.</li>
-                <li><strong>ðŸ’¬ Comment Tool:</strong> Automate sending comments to specified Facebook posts using pre-defined messages from a file.</li>
-                <li><strong>ðŸ‘ Upvotes Tool:</strong> Specifically designed to send reactions (upvotes/likes) to individual comments on Facebook.</li>
-                <li><strong>â†—ï¸ Sharing Tool:</strong> Facilitate the sharing of Facebook posts to different destinations.</li>
+                <li><strong>❤️ Reaction Tool:</strong> Easily send various reactions (Like, Love, Wow, Haha, Sad, Angry, Care) to multiple Facebook posts.</li>
+                <li><strong>💬 Comment Tool:</strong> Automate sending comments to specified Facebook posts using pre-defined messages from a file.</li>
+                <li><strong>👍 Upvotes Tool:</strong> Specifically designed to send reactions (upvotes/likes) to individual comments on Facebook.</li>
+                <li><strong>↗️ Sharing Tool:</strong> Facilitate the sharing of Facebook posts to different destinations.</li>
                 <li><strong>Token Management:</strong> Securely load and manage access tokens from text files for streamlined operations.</li>
                 <li><strong>Real-time Logging:</strong> Keep track of all your activities with detailed success and error logs.</li>
-                <li><strong>â³ Daily Token Usage Limit:</strong> Each access token can only be used once every 24 hours to ensure fair usage and prevent potential abuse.</li>
+                <li><strong>⏳ Daily Token Usage Limit:</strong> Each access token can only be used once every 24 hours to ensure fair usage and prevent potential abuse.</li>
             </ul>
 
             <p>We are continuously working to improve and expand the functionalities of this tool. Your feedback is invaluable as we strive to make it even better.</p>
 
             <p>Thank you for using the Facebook Tool by Dars!</p>
+
+            <div class="social-links">
+                <a href="https://www.facebook.com/darwinversoza139" target="_blank" class="social-link">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook">
+                    Facebook
+                </a>
+                <a href="https://t.me/versozadarwin" target="_blank" class="social-link">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram">
+                    Telegram
+                </a>
+            </div>
         </div>
     </div>
 
@@ -500,7 +548,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function (e) {
-                accessTokens = e.target.result.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+                accessTokens = e.target.result.split(/\\r?\\n/).map(line => line.trim()).filter(line => line.length > 0);
                 if (accessTokens.length > 0) {
                     document.getElementById('accessToken').value = accessTokens[0];
                     addLog(`Loaded ${accessTokens.length} access tokens.`, 'info');
@@ -522,26 +570,26 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
 
             rowDiv.innerHTML = `
                 <div class="link-path-column">
-                    <label for="reactionLinkInput-${reactionLinkCounter}">ðŸ”— Facebook Post ID/URL</label>
+                    <label for="reactionLinkInput-${reactionLinkCounter}">🔗 Facebook Post ID/URL</label>
                     <input type="text" id="reactionLinkInput-${reactionLinkCounter}" placeholder="Enter Post ID or URL here" value="${initialLink}">
                 </div>
                 <div class="link-path-column">
-                    <label for="reactionType-${reactionLinkCounter}">â¤ï¸ Choose Reaction</label>
+                    <label for="reactionType-${reactionLinkCounter}">❤️ Choose Reaction</label>
                     <select id="reactionType-${reactionLinkCounter}">
-                        <option value="LIKE">ðŸ‘ Like</option>
-                        <option value="LOVE">â¤ï¸ Love</option>
-                        <option value="WOW">ðŸ˜® Wow</option>
-                        <option value="HAHA">ðŸ˜‚ Haha</option>
-                        <option value="SAD">ðŸ˜¢ Sad</option>
-                        <option value="ANGRY">ðŸ˜¡ Angry</option>
-                        <option value="CARE">ðŸ¤— Care</option>
+                        <option value="LIKE">👍 Like</option>
+                        <option value="LOVE">❤️ Love</option>
+                        <option value="WOW">😮 Wow</option>
+                        <option value="HAHA">😂 Haha</option>
+                        <option value="SAD">😢 Sad</option>
+                        <option value="ANGRY">😡 Angry</option>
+                        <option value="CARE">🤗 Care</option>
                     </select>
                 </div>
                 <div class="link-path-column">
-                    <label for="maxReactions-${reactionLinkCounter}">ðŸŽ¯ Max Reactions</label>
+                    <label for="maxReactions-${reactionLinkCounter}">🎯 Max Reactions</label>
                     <input type="number" id="maxReactions-${reactionLinkCounter}" min="0" value="${initialMaxReactions}" placeholder="Enter max reactions">
                 </div>
-                <button type="button" class="remove-row-btn" data-row-id="${rowId}">âž– Remove</button>
+                <button type="button" class="remove-row-btn" data-row-id="${rowId}">➖ Remove</button>
             `;
             container.appendChild(rowDiv);
 
@@ -598,7 +646,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             const sendBtn = document.getElementById('sendReactionBtn');
 
             if (accessTokens.length === 0) {
-                addLog('âš ï¸ Please load Access Tokens from a file first.', 'error');
+                addLog('⚠️ Please load Access Tokens from a file first.', 'error');
                 return;
             }
 
@@ -606,12 +654,12 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             const activeReactionLinkData = reactionLinkPathData.filter(item => item.link);
 
             if (activeReactionLinkData.length === 0) {
-                addLog('âš ï¸ Please add at least one Post ID/URL for reactions.', 'error');
+                addLog('⚠️ Please add at least one Post ID/URL for reactions.', 'error');
                 return;
             }
 
             sendBtn.disabled = true;
-            sendBtn.textContent = "â³ Sending reactions...";
+            sendBtn.textContent = "⏳ Sending reactions...";
 
             let overallSuccessCount = 0;
             let overallErrorCount = 0;
@@ -628,7 +676,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
                 const tokenCheckData = await tokenCheckResponse.json();
 
                 if (!tokenCheckData.can_use) {
-                    addLog(`âŒ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
+                    addLog(`❌ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
                     overallErrorCount++;
                     continue; // Skip this token
                 }
@@ -641,7 +689,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
                     const maxReactions = entry.maxReactions;
 
                     if (maxReactions > 0 && entry.successCount >= maxReactions) {
-                        addLog(`âœ… Max reactions (${maxReactions}) reached for Link ${j + 1} ("${rawInput}"). Skipping further reactions for this link.`, "info");
+                        addLog(`✅ Max reactions (${maxReactions}) reached for Link ${j + 1} ("${rawInput}"). Skipping further reactions for this link.`, "info");
                         continue;
                     }
 
@@ -649,7 +697,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
                     try {
                         objectId = await resolveObjectId(rawInput, token); // Use resolveObjectId
                     } catch (e) {
-                        addLog(`âŒ Error resolving Post ID/URL for Link ${j + 1} ("${rawInput}"): ${e.message}`, 'error');
+                        addLog(`❌ Error resolving Post ID/URL for Link ${j + 1} ("${rawInput}"): ${e.message}`, 'error');
                         overallErrorCount++;
                         continue;
                     }
@@ -669,15 +717,15 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
                         const data = await response.json();
 
                         if (data.success === true) {
-                            addLog(`âœ… Reaction: ${reactionType} success for Post Link ${j + 1} (${entry.successCount + 1}${maxReactions > 0 ? '/' + maxReactions : ''})`, "success");
+                            addLog(`✅ Reaction: ${reactionType} success for Post Link ${j + 1} (${entry.successCount + 1}${maxReactions > 0 ? '/' + maxReactions : ''})`, "success");
                             entry.successCount++;
                             overallSuccessCount++;
                         } else {
-                            addLog(`âŒ Reaction failed for Post Link ${j + 1}. Error: ${data.error ? data.error : 'Unknown error'}`, "error");
+                            addLog(`❌ Reaction failed for Post Link ${j + 1}. Error: ${data.error ? data.error : 'Unknown error'}`, "error");
                             overallErrorCount++;
                         }
                     } catch (fetchError) {
-                        addLog(`âŒ Network error for Post Link ${j + 1}: ${fetchError.message}`, "error");
+                        addLog(`❌ Network error for Post Link ${j + 1}: ${fetchError.message}`, "error");
                         overallErrorCount++;
                     }
                     await new Promise(resolve => setTimeout(resolve, 500));
@@ -687,12 +735,12 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             addLog(`--- Post Reaction Process Finished ---`, 'info');
             activeReactionLinkData.forEach((item, index) => {
                 const targetText = item.maxReactions > 0 ? ` (Target: ${item.maxReactions})` : ` (No max limit)`;
-                addLog(`âœ… Total Successful Reactions for Post Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
+                addLog(`✅ Total Successful Reactions for Post Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
             });
-            addLog(`âœ… Overall Total Successful Post Reactions: ${overallSuccessCount}`, "info");
-            addLog(`âŒ Overall Total Failed Post Reactions: ${overallErrorCount}`, "error");
+            addLog(`✅ Overall Total Successful Post Reactions: ${overallSuccessCount}`, "info");
+            addLog(`❌ Overall Total Failed Post Reactions: ${overallErrorCount}`, "error");
             sendBtn.disabled = false;
-            sendBtn.textContent = "âœ… Send Post Reactions";
+            sendBtn.textContent = "✅ Send Post Reactions";
         });
 
         document.getElementById('clearLogBtn').addEventListener('click', () => {
@@ -722,7 +770,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             const reader = new FileReader();
             reader.onload = function (e) {
                 commentTokens = e.target.result
-                    .split(/\r?\n/)
+                    .split(/\\r?\\n/)
                     .map(line => line.trim())
                     .filter(line => line.length > 0);
 
@@ -747,39 +795,24 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
 
             rowDiv.innerHTML = `
                 <div class="link-path-column">
-                    <label for="commentLinkInput-${commentLinkCounter}">ðŸ”— Facebook Post ID/URL</label>
+                    <label for="commentLinkInput-${commentLinkCounter}">🔗 Facebook Post ID/URL</label>
                     <input type="text" id="commentLinkInput-${commentLinkCounter}" placeholder="Enter Post ID or URL here" value="${initialLink}">
                 </div>
                 <div class="link-path-column">
-                    <label for="commentPathFile-${commentLinkCounter}">ðŸ“ Load Comments from File </label>
+                    <label for="commentPathFile-${commentLinkCounter}">💬 Comment Messages File (.txt)</label>
                     <input type="file" id="commentPathFile-${commentLinkCounter}" accept=".txt">
+                    <textarea id="commentMessages-${commentLinkCounter}" rows="4" placeholder="Or enter comments directly here, one per line"></textarea>
                 </div>
                 <div class="link-path-column">
-                    <label for="maxComments-${commentLinkCounter}">ðŸŽ¯ Max Comments</label>
+                    <label for="maxComments-${commentLinkCounter}">🎯 Max Comments</label>
                     <input type="number" id="maxComments-${commentLinkCounter}" min="0" value="${initialMaxComments}" placeholder="Enter max comments">
                 </div>
-                <button type="button" class="remove-row-btn" data-row-id="${rowId}">âž– Remove</button>
+                <button type="button" class="remove-row-btn" data-row-id="${rowId}">➖ Remove</button>
             `;
             container.appendChild(rowDiv);
 
-            const newRowData = { id: rowId, link: initialLink, commentPaths: [], successCount: 0, maxComments: parseInt(initialMaxComments, 10) || 0 };
+            const newRowData = { id: rowId, link: initialLink, comments: [], successCount: 0, maxComments: parseInt(initialMaxComments, 10) || 0 };
             commentLinkPathData.push(newRowData);
-            const currentIndex = commentLinkPathData.length - 1;
-
-            document.getElementById(`commentPathFile-${commentLinkCounter}`).addEventListener('change', function () {
-                const file = this.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    newRowData.commentPaths = e.target.result
-                        .split(/\r?\n/)
-                        .map(line => line.trim())
-                        .filter(line => line.length > 0);
-                    addCommentLog(`Loaded ${newRowData.commentPaths.length} comments for Link ${currentIndex + 1}.`, 'info');
-                };
-                reader.readAsText(file);
-            });
 
             rowDiv.querySelector('.remove-row-btn').addEventListener('click', function() {
                 const rowIdToRemove = this.dataset.rowId;
@@ -788,11 +821,30 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
                     commentLinkPathData.splice(indexToRemove, 1);
                 }
                 document.getElementById(rowIdToRemove).remove();
-                addCommentLog(`Removed comment link/file path row "${rowIdToRemove}".`, 'info');
+                addCommentLog(`Removed comment link row "${rowIdToRemove}".`, 'info');
             });
 
             document.getElementById(`commentLinkInput-${commentLinkCounter}`).addEventListener('input', function() {
                 newRowData.link = this.value.trim();
+            });
+
+            document.getElementById(`commentPathFile-${commentLinkCounter}`).addEventListener('change', function() {
+                const file = this.files[0];
+                if (!file) {
+                    newRowData.comments = [];
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    newRowData.comments = e.target.result.split(/\\r?\\n/).map(line => line.trim()).filter(line => line.length > 0);
+                    addCommentLog(`Loaded ${newRowData.comments.length} comments from file for row "${rowId}".`, 'info');
+                    document.getElementById(`commentMessages-${commentLinkCounter}`).value = newRowData.comments.join('\\n');
+                };
+                reader.readAsText(file);
+            });
+
+            document.getElementById(`commentMessages-${commentLinkCounter}`).addEventListener('input', function() {
+                newRowData.comments = this.value.split(/\\r?\\n/).map(line => line.trim()).filter(line => line.length > 0);
             });
 
             document.getElementById(`maxComments-${commentLinkCounter}`).addEventListener('input', function() {
@@ -808,20 +860,20 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             const sendBtn = document.getElementById('sendCommentBtn');
 
             if (commentTokens.length === 0) {
-                addCommentLog('âš ï¸ Please load Access Tokens from a file first.', 'error');
+                addCommentLog('⚠️ Please load Access Tokens from a file first.', 'error');
                 return;
             }
 
             commentLinkPathData.forEach(item => item.successCount = 0);
-            const activeCommentLinkData = commentLinkPathData.filter(item => item.link && item.commentPaths.length > 0);
+            const activeCommentLinkData = commentLinkPathData.filter(item => item.link && (item.comments.length > 0));
 
             if (activeCommentLinkData.length === 0) {
-                addCommentLog('âš ï¸ Please add at least one Post ID/URL and load comments from a file.', 'error');
+                addCommentLog('⚠️ Please add at least one Post ID/URL and comments for commenting.', 'error');
                 return;
             }
 
             sendBtn.disabled = true;
-            sendBtn.textContent = "â³ Sending comments...";
+            sendBtn.textContent = "⏳ Sending comments...";
 
             let overallSuccessCount = 0;
             let overallErrorCount = 0;
@@ -829,7 +881,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             for (const token of commentTokens) {
                 document.getElementById('commentToken').value = token;
 
-                // Client-side token usage check before sending to backend
+                // --- Client-side token usage check before sending to backend ---
                 const tokenCheckResponse = await fetch('/check-token-usage', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -838,19 +890,20 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
                 const tokenCheckData = await tokenCheckResponse.json();
 
                 if (!tokenCheckData.can_use) {
-                    addCommentLog(`âŒ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
+                    addCommentLog(`❌ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
                     overallErrorCount++;
                     continue; // Skip this token
                 }
+                // --- End of client-side token usage check ---
 
                 for (let j = 0; j < activeCommentLinkData.length; j++) {
                     const entry = activeCommentLinkData[j];
                     const rawInput = entry.link;
-                    const commentsToSend = entry.commentPaths;
+                    const comments = entry.comments;
                     const maxComments = entry.maxComments;
 
-                    if (maxComments > 0 && entry.successCount >= maxComments) {
-                        addCommentLog(`âœ… Max comments (${maxComments}) reached for Link ${j + 1} ("${rawInput}"). Skipping further comments for this link.`, "info");
+                    if (comments.length === 0) {
+                        addCommentLog(`⚠️ No comments provided for Link ${j + 1} ("${rawInput}"). Skipping.`, "error");
                         continue;
                     }
 
@@ -858,17 +911,18 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
                     try {
                         objectId = await resolveObjectId(rawInput, token);
                     } catch (e) {
-                        addCommentLog(`âŒ Error resolving Post ID/URL for Link ${j + 1} ("${rawInput}"): ${e.message}`, 'error');
+                        addCommentLog(`❌ Error resolving Post ID/URL for Link ${j + 1} ("${rawInput}"): ${e.message}`, 'error');
                         overallErrorCount++;
                         continue;
                     }
 
-                    for (const comment of commentsToSend) {
+                    for (let k = 0; k < comments.length; k++) {
                         if (maxComments > 0 && entry.successCount >= maxComments) {
-                            addCommentLog(`âœ… Max comments (${maxComments}) reached for Link ${j + 1} ("${rawInput}"). Skipping further comments for this link.`, "info");
-                            break; // Break from inner comment loop
+                            addCommentLog(`✅ Max comments (${maxComments}) reached for Link ${j + 1} ("${rawInput}"). Skipping further comments for this link.`, "info");
+                            break; // Stop commenting for this link
                         }
 
+                        const commentMessage = comments[k];
                         try {
                             const response = await fetch('/send-comment', {
                                 method: 'POST',
@@ -877,25 +931,25 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
                                 },
                                 body: JSON.stringify({
                                     object_id: objectId,
-                                    message: comment,
+                                    message: commentMessage,
                                     access_token: token
                                 })
                             });
                             const data = await response.json();
 
                             if (data.success === true) {
-                                addCommentLog(`âœ… Comment sent for Post Link ${j + 1} (${entry.successCount + 1}${maxComments > 0 ? '/' + maxComments : ''}): "${comment}"`, "success");
+                                addCommentLog(`✅ Comment ${k + 1} (${entry.successCount + 1}${maxComments > 0 ? '/' + maxComments : ''}) success for Post Link ${j + 1}`, "success");
                                 entry.successCount++;
                                 overallSuccessCount++;
                             } else {
-                                addCommentLog(`âŒ Comment failed for Post Link ${j + 1} ("${comment}"). Error: ${data.error ? data.error : 'Unknown error'}`, "error");
+                                addCommentLog(`❌ Comment ${k + 1} failed for Post Link ${j + 1}. Error: ${data.error ? data.error : 'Unknown error'}`, "error");
                                 overallErrorCount++;
                             }
                         } catch (fetchError) {
-                            addCommentLog(`âŒ Network error for Post Link ${j + 1} ("${comment}"): ${fetchError.message}`, "error");
+                            addCommentLog(`❌ Network error for Post Link ${j + 1}, Comment ${k + 1}: ${fetchError.message}`, "error");
                             overallErrorCount++;
                         }
-                        await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between comments
+                        await new Promise(resolve => setTimeout(resolve, 500));
                     }
                 }
             }
@@ -903,12 +957,12 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             addCommentLog(`--- Comment Process Finished ---`, 'info');
             activeCommentLinkData.forEach((item, index) => {
                 const targetText = item.maxComments > 0 ? ` (Target: ${item.maxComments})` : ` (No max limit)`;
-                addCommentLog(`âœ… Total Successful Comments for Post Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
+                addCommentLog(`✅ Total Successful Comments for Post Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
             });
-            addCommentLog(`âœ… Overall Total Successful Comments: ${overallSuccessCount}`, "info");
-            addCommentLog(`âŒ Overall Total Failed Comments: ${overallErrorCount}`, "error");
+            addCommentLog(`✅ Overall Total Successful Comments: ${overallSuccessCount}`, "info");
+            addCommentLog(`❌ Overall Total Failed Comments: ${overallErrorCount}`, "error");
             sendBtn.disabled = false;
-            sendBtn.textContent = "âœ… Send Comments";
+            sendBtn.textContent = "✅ Send Comments";
         });
 
         document.getElementById('clearCommentLogBtn').addEventListener('click', () => {
@@ -916,7 +970,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             addCommentLog('Comment history cleared.', 'info');
         });
 
-        // --- Comment Reaction Tool (Upvotes) ---
+        // --- Comment Reaction Tool ---
         let commentReactionTokens = [];
         const commentReactionLinkPathData = [];
         let commentReactionLinkCounter = 0;
@@ -938,7 +992,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             const reader = new FileReader();
             reader.onload = function (e) {
                 commentReactionTokens = e.target.result
-                    .split(/\r?\n/)
+                    .split(/\\r?\\n/)
                     .map(line => line.trim())
                     .filter(line => line.length > 0);
 
@@ -963,31 +1017,31 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
 
             rowDiv.innerHTML = `
                 <div class="link-path-column">
-                    <label for="commentReactionLinkInput-${commentReactionLinkCounter}">ðŸ”— Facebook Comment ID/URL</label>
+                    <label for="commentReactionLinkInput-${commentReactionLinkCounter}">🔗 Facebook Comment ID/URL</label>
                     <input type="text" id="commentReactionLinkInput-${commentReactionLinkCounter}" placeholder="Enter Comment ID or URL here" value="${initialLink}">
                 </div>
                 <div class="link-path-column">
-                    <label for="commentReactionType-${commentReactionLinkCounter}">â¤ï¸ Choose Reaction</label>
+                    <label for="commentReactionType-${commentReactionLinkCounter}">❤️ Choose Reaction</label>
                     <select id="commentReactionType-${commentReactionLinkCounter}">
-                        <option value="LIKE">ðŸ‘ Like</option>
-                        <option value="LOVE">â¤ï¸ Love</option>
-                        <option value="WOW">ðŸ˜® Wow</option>
-                        <option value="HAHA">ðŸ˜‚ Haha</option>
-                        <option value="SAD">ðŸ˜¢ Sad</option>
-                        <option value="ANGRY">ðŸ˜¡ Angry</option>
-                        <option value="CARE">ðŸ¤— Care</option>
+                        <option value="LIKE">👍 Like</option>
+                        <option value="LOVE">❤️ Love</option>
+                        <option value="WOW">😮 Wow</option>
+                        <option value="HAHA">😂 Haha</option>
+                        <option value="SAD">😢 Sad</option>
+                        <option value="ANGRY">😡 Angry</option>
+                        <option value="CARE">🤗 Care</option>
                     </select>
                 </div>
-                <div class="link-path-column">
-                    <label for="maxCommentReactions-${commentReactionLinkCounter}">ðŸŽ¯ Max Reactions</label>
+                 <div class="link-path-column">
+                    <label for="maxCommentReactions-${commentReactionLinkCounter}">🎯 Max Reactions</label>
                     <input type="number" id="maxCommentReactions-${commentReactionLinkCounter}" min="0" value="${initialMaxReactions}" placeholder="Enter max reactions">
                 </div>
-                <button type="button" class="remove-row-btn" data-row-id="${rowId}">âž– Remove</button>
+                <button type="button" class="remove-row-btn" data-row-id="${rowId}">➖ Remove</button>
             `;
             container.appendChild(rowDiv);
 
-            const reactionTypeSelect = document.getElementById(`commentReactionType-${commentReactionLinkCounter}`);
-            reactionTypeSelect.value = initialReactionType;
+            const commentReactionTypeSelect = document.getElementById(`commentReactionType-${commentReactionLinkCounter}`);
+            commentReactionTypeSelect.value = initialReactionType;
 
             const newRowData = { id: rowId, link: initialLink, reactionType: initialReactionType, successCount: 0, maxReactions: parseInt(initialMaxReactions, 10) || 0 };
             commentReactionLinkPathData.push(newRowData);
@@ -1023,7 +1077,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             const sendBtn = document.getElementById('sendCommentReactionBtn');
 
             if (commentReactionTokens.length === 0) {
-                addCommentReactionLog('âš ï¸ Please load Access Tokens from a file first.', 'error');
+                addCommentReactionLog('⚠️ Please load Access Tokens from a file first.', 'error');
                 return;
             }
 
@@ -1031,12 +1085,12 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             const activeCommentReactionLinkData = commentReactionLinkPathData.filter(item => item.link);
 
             if (activeCommentReactionLinkData.length === 0) {
-                addCommentReactionLog('âš ï¸ Please add at least one Comment ID/URL for reactions.', 'error');
+                addCommentReactionLog('⚠️ Please add at least one Comment ID/URL for reactions.', 'error');
                 return;
             }
 
             sendBtn.disabled = true;
-            sendBtn.textContent = "â³ Sending comment reactions...";
+            sendBtn.textContent = "⏳ Sending comment reactions...";
 
             let overallSuccessCount = 0;
             let overallErrorCount = 0;
@@ -1044,7 +1098,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             for (const token of commentReactionTokens) {
                 document.getElementById('commentReactionAccessToken').value = token;
 
-                // Client-side token usage check before sending to backend
+                // --- Client-side token usage check before sending to backend ---
                 const tokenCheckResponse = await fetch('/check-token-usage', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1053,10 +1107,11 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
                 const tokenCheckData = await tokenCheckResponse.json();
 
                 if (!tokenCheckData.can_use) {
-                    addCommentReactionLog(`âŒ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
+                    addCommentReactionLog(`❌ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
                     overallErrorCount++;
                     continue; // Skip this token
                 }
+                // --- End of client-side token usage check ---
 
                 for (let j = 0; j < activeCommentReactionLinkData.length; j++) {
                     const entry = activeCommentReactionLinkData[j];
@@ -1065,7 +1120,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
                     const maxReactions = entry.maxReactions;
 
                     if (maxReactions > 0 && entry.successCount >= maxReactions) {
-                        addCommentReactionLog(`âœ… Max reactions (${maxReactions}) reached for Comment Link ${j + 1} ("${rawInput}"). Skipping further reactions for this link.`, "info");
+                        addCommentReactionLog(`✅ Max reactions (${maxReactions}) reached for Link ${j + 1} ("${rawInput}"). Skipping further reactions for this link.`, "info");
                         continue;
                     }
 
@@ -1073,13 +1128,13 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
                     try {
                         objectId = await resolveObjectId(rawInput, token);
                     } catch (e) {
-                        addCommentReactionLog(`âŒ Error resolving Comment ID/URL for Link ${j + 1} ("${rawInput}"): ${e.message}`, 'error');
+                        addCommentReactionLog(`❌ Error resolving Comment ID/URL for Link ${j + 1} ("${rawInput}"): ${e.message}`, 'error');
                         overallErrorCount++;
                         continue;
                     }
 
                     try {
-                        const response = await fetch('/send-comment-reaction', {
+                        const response = await fetch('/send-reaction', { // Re-using send-reaction for comments
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1093,15 +1148,15 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
                         const data = await response.json();
 
                         if (data.success === true) {
-                            addCommentReactionLog(`âœ… Reaction: ${reactionType} success for Comment Link ${j + 1} (${entry.successCount + 1}${maxReactions > 0 ? '/' + maxReactions : ''})`, "success");
+                            addCommentReactionLog(`✅ Reaction: ${reactionType} success for Comment Link ${j + 1} (${entry.successCount + 1}${maxReactions > 0 ? '/' + maxReactions : ''})`, "success");
                             entry.successCount++;
                             overallSuccessCount++;
                         } else {
-                            addCommentReactionLog(`âŒ Reaction failed for Comment Link ${j + 1}. Error: ${data.error ? data.error : 'Unknown error'}`, "error");
+                            addCommentReactionLog(`❌ Reaction failed for Comment Link ${j + 1}. Error: ${data.error ? data.error : 'Unknown error'}`, "error");
                             overallErrorCount++;
                         }
                     } catch (fetchError) {
-                        addCommentReactionLog(`âŒ Network error for Comment Link ${j + 1}: ${fetchError.message}`, "error");
+                        addCommentReactionLog(`❌ Network error for Comment Link ${j + 1}: ${fetchError.message}`, "error");
                         overallErrorCount++;
                     }
                     await new Promise(resolve => setTimeout(resolve, 500));
@@ -1111,12 +1166,12 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             addCommentReactionLog(`--- Comment Reaction Process Finished ---`, 'info');
             activeCommentReactionLinkData.forEach((item, index) => {
                 const targetText = item.maxReactions > 0 ? ` (Target: ${item.maxReactions})` : ` (No max limit)`;
-                addCommentReactionLog(`âœ… Total Successful Reactions for Comment Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
+                addCommentReactionLog(`✅ Total Successful Reactions for Comment Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
             });
-            addCommentReactionLog(`âœ… Overall Total Successful Comment Reactions: ${overallSuccessCount}`, "info");
-            addCommentReactionLog(`âŒ Overall Total Failed Comment Reactions: ${overallErrorCount}`, "error");
+            addCommentReactionLog(`✅ Overall Total Successful Comment Reactions: ${overallSuccessCount}`, "info");
+            addCommentReactionLog(`❌ Overall Total Failed Comment Reactions: ${overallErrorCount}`, "error");
             sendBtn.disabled = false;
-            sendBtn.textContent = "âœ… Send Comment Reactions";
+            sendBtn.textContent = "✅ Send Comment Reactions";
         });
 
         document.getElementById('clearCommentReactionLogBtn').addEventListener('click', () => {
@@ -1146,7 +1201,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             const reader = new FileReader();
             reader.onload = function (e) {
                 shareTokens = e.target.result
-                    .split(/\r?\n/)
+                    .split(/\\r?\\n/)
                     .map(line => line.trim())
                     .filter(line => line.length > 0);
 
@@ -1162,7 +1217,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
 
         function addShareLinkPathRow(initialLink = '', initialShareMessage = '', initialMaxShares = '') {
             shareLinkCounter++;
-            const rowId = `share-link-row-${shareLinkCounter}`;
+            const rowId = `share-link-path-row-${shareLinkCounter}`;
             const container = document.getElementById('shareLinkPathContainer');
 
             const rowDiv = document.createElement('div');
@@ -1171,22 +1226,22 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
 
             rowDiv.innerHTML = `
                 <div class="link-path-column">
-                    <label for="shareLinkInput-${shareLinkCounter}">ðŸ”— Facebook Post ID/URL to Share</label>
+                    <label for="shareLinkInput-${shareLinkCounter}">🔗 Facebook Post ID/URL to Share</label>
                     <input type="text" id="shareLinkInput-${shareLinkCounter}" placeholder="Enter Post ID or URL here" value="${initialLink}">
                 </div>
                 <div class="link-path-column">
-                    <label for="shareMessage-${shareLinkCounter}">ðŸ“ Share Message (Optional)</label>
-                    <textarea id="shareMessage-${shareLinkCounter}" placeholder="Enter optional share message">${initialShareMessage}</textarea>
+                    <label for="shareMessage-${shareLinkCounter}">📝 Share Message (Optional)</label>
+                    <textarea id="shareMessage-${shareLinkCounter}" rows="4" placeholder="Enter optional share message">${initialShareMessage}</textarea>
                 </div>
                 <div class="link-path-column">
-                    <label for="maxShares-${shareLinkCounter}">ðŸŽ¯ Max Shares</label>
+                    <label for="maxShares-${shareLinkCounter}">🎯 Max Shares</label>
                     <input type="number" id="maxShares-${shareLinkCounter}" min="0" value="${initialMaxShares}" placeholder="Enter max shares">
                 </div>
-                <button type="button" class="remove-row-btn" data-row-id="${rowId}">âž– Remove</button>
+                <button type="button" class="remove-row-btn" data-row-id="${rowId}">➖ Remove</button>
             `;
             container.appendChild(rowDiv);
 
-            const newRowData = { id: rowId, link: initialLink, shareMessage: initialShareMessage, successCount: 0, maxShares: parseInt(initialMaxShares, 10) || 0 };
+            const newRowData = { id: rowId, link: initialLink, message: initialShareMessage, successCount: 0, maxShares: parseInt(initialMaxShares, 10) || 0 };
             shareLinkPathData.push(newRowData);
 
             rowDiv.querySelector('.remove-row-btn').addEventListener('click', function() {
@@ -1204,7 +1259,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             });
 
             document.getElementById(`shareMessage-${shareLinkCounter}`).addEventListener('input', function() {
-                newRowData.shareMessage = this.value.trim();
+                newRowData.message = this.value;
             });
 
             document.getElementById(`maxShares-${shareLinkCounter}`).addEventListener('input', function() {
@@ -1220,7 +1275,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             const sendBtn = document.getElementById('sendShareBtn');
 
             if (shareTokens.length === 0) {
-                addShareLog('âš ï¸ Please load Access Tokens from a file first.', 'error');
+                addShareLog('⚠️ Please load Access Tokens from a file first.', 'error');
                 return;
             }
 
@@ -1228,12 +1283,12 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             const activeShareLinkData = shareLinkPathData.filter(item => item.link);
 
             if (activeShareLinkData.length === 0) {
-                addShareLog('âš ï¸ Please add at least one Post ID/URL to share.', 'error');
+                addShareLog('⚠️ Please add at least one Post ID/URL to share.', 'error');
                 return;
             }
 
             sendBtn.disabled = true;
-            sendBtn.textContent = "â³ Sharing posts...";
+            sendBtn.textContent = "⏳ Sharing posts...";
 
             let overallSuccessCount = 0;
             let overallErrorCount = 0;
@@ -1241,7 +1296,7 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             for (const token of shareTokens) {
                 document.getElementById('shareAccessToken').value = token;
 
-                // Client-side token usage check before sending to backend
+                // --- Client-side token usage check before sending to backend ---
                 const tokenCheckResponse = await fetch('/check-token-usage', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1250,19 +1305,20 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
                 const tokenCheckData = await tokenCheckResponse.json();
 
                 if (!tokenCheckData.can_use) {
-                    addShareLog(`âŒ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
+                    addShareLog(`❌ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
                     overallErrorCount++;
                     continue; // Skip this token
                 }
+                // --- End of client-side token usage check ---
 
                 for (let j = 0; j < activeShareLinkData.length; j++) {
                     const entry = activeShareLinkData[j];
                     const rawInput = entry.link;
-                    const shareMessage = entry.shareMessage;
+                    const shareMessage = entry.message;
                     const maxShares = entry.maxShares;
 
                     if (maxShares > 0 && entry.successCount >= maxShares) {
-                        addShareLog(`âœ… Max shares (${maxShares}) reached for Link ${j + 1} ("${rawInput}"). Skipping further shares for this link.`, "info");
+                        addShareLog(`✅ Max shares (${maxShares}) reached for Link ${j + 1} ("${rawInput}"). Skipping further shares for this link.`, "info");
                         continue;
                     }
 
@@ -1270,35 +1326,35 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
                     try {
                         objectId = await resolveObjectId(rawInput, token);
                     } catch (e) {
-                        addShareLog(`âŒ Error resolving Post ID/URL for Link ${j + 1} ("${rawInput}"): ${e.message}`, 'error');
+                        addShareLog(`❌ Error resolving Post ID/URL for Link ${j + 1} ("${rawInput}"): ${e.message}`, 'error');
                         overallErrorCount++;
                         continue;
                     }
 
                     try {
-                        const response = await fetch('/send-share', {
+                        const response = await fetch('/share-post', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                             },
                             body: JSON.stringify({
                                 object_id: objectId,
-                                message: shareMessage, // Pass the share message
+                                message: shareMessage,
                                 access_token: token
                             })
                         });
                         const data = await response.json();
 
                         if (data.success === true) {
-                            addShareLog(`âœ… Post shared for Link ${j + 1} (${entry.successCount + 1}${maxShares > 0 ? '/' + maxShares : ''})`, "success");
+                            addShareLog(`✅ Share success for Post Link ${j + 1} (${entry.successCount + 1}${maxShares > 0 ? '/' + maxShares : ''})`, "success");
                             entry.successCount++;
                             overallSuccessCount++;
                         } else {
-                            addShareLog(`âŒ Sharing failed for Link ${j + 1}. Error: ${data.error ? data.error : 'Unknown error'}`, "error");
+                            addShareLog(`❌ Share failed for Post Link ${j + 1}. Error: ${data.error ? data.error : 'Unknown error'}`, "error");
                             overallErrorCount++;
                         }
                     } catch (fetchError) {
-                        addShareLog(`âŒ Network error for Link ${j + 1}: ${fetchError.message}`, "error");
+                        addShareLog(`❌ Network error for Post Link ${j + 1}: ${fetchError.message}`, "error");
                         overallErrorCount++;
                     }
                     await new Promise(resolve => setTimeout(resolve, 500));
@@ -1308,12 +1364,12 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             addShareLog(`--- Share Process Finished ---`, 'info');
             activeShareLinkData.forEach((item, index) => {
                 const targetText = item.maxShares > 0 ? ` (Target: ${item.maxShares})` : ` (No max limit)`;
-                addShareLog(`âœ… Total Successful Shares for Post Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
+                addShareLog(`✅ Total Successful Shares for Post Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
             });
-            addShareLog(`âœ… Overall Total Successful Shares: ${overallSuccessCount}`, "info");
-            addShareLog(`âŒ Overall Total Failed Shares: ${overallErrorCount}`, "error");
+            addShareLog(`✅ Overall Total Successful Shares: ${overallSuccessCount}`, "info");
+            addShareLog(`❌ Overall Total Failed Shares: ${overallErrorCount}`, "error");
             sendBtn.disabled = false;
-            sendBtn.textContent = "âœ… Share Page";
+            sendBtn.textContent = "✅ Share Page";
         });
 
         document.getElementById('clearShareLogBtn').addEventListener('click', () => {
@@ -1321,92 +1377,214 @@ d krŽejd!d"d# dS dS )$é    )ÚFlaskÚrender_template_stringÚrequ
             addShareLog('Share history cleared.', 'info');
         });
 
+        // --- Utility Functions for Backend ---
+
+        function extractFacebookId(url) {
+            // Regex for various Facebook URL patterns to extract post/comment ID
+            const patterns = [
+                /(?:facebook\.com\/)(?:[^/]+\/)?(?:posts|photos|videos|permalink|comment)\/(\d+)/,
+                /(?:facebook\.com\/story\.php\?story_fbid=(\d+))/,
+                /(?:facebook\.com\/)(\d+)(?:\/?(?:\?|$))/, // For profile/page IDs used as post IDs
+                /(?:fb\.watch\/[a-zA-Z0-9_-]+\/(\d+))/, // For fb.watch links
+                /(?:comment_id=(\d+))/ // For comment IDs in URLs
+            ];
+
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match && match[1]) {
+                    return match[1];
+                }
+            }
+            // If no specific pattern matches, check if it's just a numeric ID
+            if (/^\d+$/.test(url)) {
+                return url;
+            }
+            return null;
+        }
     </script>
 </body>
 </html>
-c                 C   sH   t  d| ¡}|r
-| d¡S t  d| ¡r| S t  d| ¡}|r"| d¡S d S )Nz•(?:facebook\.com/(?:[a-zA-Z0-9\.]+/)?(?:posts|photos|videos|permalink|media)/|story_fbid=|fbid=|comment_id=|photo_id=|feedback_id=|set=.*?\.t)\b(\d+)é   z^\d+$z facebook\.com/([a-zA-Z0-9\._-]+))ÚreÚsearchÚgroupÚmatch)Ú	raw_inputr   Z
-profile_match© r   úapp.pyÚextract_object_id:  s   þ
-
-r   ú/c                   C   s   t tƒS ©N)r   ÚHTML_CONTENTr   r   r   r   ÚindexY  s   r   z/resolve-object-idZPOST)Úmethodsc               
-   C   sì   t  ¡ } |  d¡}|  d¡}|r|stddiƒdfS t|ƒ}|spz/d|› d|› }t |¡}| ¡  | ¡ } d| v rCtd	| d iƒW S tdd
-|› diƒdfW S  tjj	yo } ztdd|› d
-iƒdfW  Y d }~S d }~ww td	|iƒS )Nr
-   Úaccess_tokenÚerrorz!Missing raw_input or access_tokené  ú!https://graph.facebook.com/v19.0/z?access_token=ÚidÚ	object_idz!Could not resolve object ID for "z'". No "id" found in Graph API response.z+Failed to resolve object ID via Graph API: z!. Raw input was treated as an ID.)
-r   Úget_jsonÚgetr   r   ÚrequestsZraise_for_statusÚjsonÚ
-exceptionsÚRequestException)Údatar
-   r   r   Z
-graph_api_urlÚresponseÚer   r   r   Úresolve_object_id_backend^  s8   
-
-
-ÿÿÿÿ€ÿr%   z/check-token-usagec                  C   s|   t  ¡ } |  d¡}|stddiƒdfS t |¡}t ¡ }|r8|| tddk r8|tdd  d¡}td|d	œƒS td
-diƒS )Nr   r   zMissing access_tokenr   é   ©Zhoursz%Y-%m-%d %H:%M:%SF)Úcan_useÚ
-wait_untilr(   T)	r   r   r   r   Útoken_last_usedr   Únowr   Ústrftime)r"   r   Ú	last_usedr+   r)   r   r   r   Úcheck_token_usage~  s   
-
-r.   c                 C   s   t  ¡ t| < d S r   )r   r+   r*   )r   r   r   r   Úupdate_token_usage’  s   r/   z/send-reactionc               
-   C   ó:  t  ¡ } |  d¡}|  d¡}|  d¡}t|||gƒs#tdddœƒdfS t |¡}t ¡ }|r@|| tdd	k r@tdd
-dœƒdfS d|› d
-}||dœ}z3t	j
-||d}| ¡ }	|jdkro|	 d¡du rot
-|ƒ tdddœƒW S td|	 di ¡ dd¡dœƒW S  t	jjyœ }
- ztdd|
-› dœƒW  Y d }
-~
-S d }
-~
-ww )Nr   Ú
-reaction_typer   Fú
-Missing data.©Úsuccessr   r   r&   r'   ú3Access token already used within the last 24 hours.é­  r   ú
-/reactions©Útyper   ©ÚparamséÈ   r4   TzReaction sent successfully!©r4   Úmessager   r>   zFailed to send reaction.úNetwork or API error: ©r   r   r   Úallr   r*   r   r+   r   r   Zpostr   Zstatus_coder/   r    r!   ©r"   r   r1   r   r-   r+   Úurlr;   r#   Ú
-response_datar$   r   r   r   Ú
-send_reaction–  s>   
-
-
-
-ÿÿþÿ €ÿrE   z
-/send-commentc               
-   C   s:  t  ¡ } |  d¡}|  d¡}|  d¡}t|||gƒs#tdddœƒdfS t |¡}t ¡ }|r@|| tdd	k r@tdd
-dœƒdfS d|› d
-}||dœ}z3t	j
-||d}| ¡ }	|jdkrod|	v rot
-|ƒ tdd|	d dœƒW S td|	 di ¡ dd¡dœƒW S  t	jjyœ }
- ztdd|
-› dœƒW  Y d }
-~
-S d }
-~
-ww )Nr   r>   r   Fr2   r3   r   r&   r'   r5   r6   r   z	/comments)r>   r   r:   r<   r   TzComment sent successfully!)r4   r>   Z
-comment_idr   zFailed to send comment.r?   r@   ©r"   r   r>   r   r-   r+   rC   r;   r#   rD   r$   r   r   r   Úsend_comment»  s:   
-
-
-
-þÿÿ €ÿrG   z/send-comment-reactionc               
-   C   r0   )Nr   r1   r   Fr2   r3   r   r&   r'   r5   r6   r   r7   r8   r:   r<   r4   Tz#Comment reaction sent successfully!r=   r   r>   z Failed to send comment reaction.r?   r@   rB   r   r   r   Úsend_comment_reactionÞ  s6   
-
-
-
-þ
-ÿ €ÿrH   z/send-sharec               
-   C   sD  t  ¡ } |  d¡}|  dd¡}|  d¡}t||gƒs#tdddœƒdfS t |¡}t ¡ }|r@|| td	d
-k r@tdddœƒdfS d
-}d|› |dœ}|rP||d< z3t	j
-||d}| ¡ }	|jdkrtd|	v rtt
-|ƒ tdd|	d dœƒW S td|	 di ¡ dd¡dœƒW S  t	jjy¡ }
- ztdd|
-› dœƒW  Y d }
-~
-S d }
-~
-ww )Nr   r>   Ú r   Fz"Missing object_id or access_token.r3   r   r&   r'   r5   r6   z(https://graph.facebook.com/v19.0/me/feedzhttps://www.facebook.com/)Úlinkr   r:   r<   r   TzPost shared successfully!)r4   r>   Z
-share_post_idr   zFailed to share post.r?   r@   rF   r   r   r   Ú
-send_share  s>   
-
-
-þÿÿ €ÿrK   Ú__main__Tiˆ  )ÚdebugZport)Zflaskr   r   r   r   r   Útimer   r   r	   Ú__name__Zappr*   r   r   Zrouter   r%   r.   r/   rE   rG   rH   rK   Úrunr   r   r   r   Ú<module>   sJ              5
-
-
-
-$
-"
-"
-(ÿ
+"""
+
+
+# Helper function to extract ID from Facebook URL or return as is if it's a direct ID
+def extract_facebook_id_from_url(url_or_id):
+    # Regex for various Facebook URL patterns to extract post/comment ID
+    patterns = [
+        r"(?:facebook\.com\/)(?:[^/]+\/)?(?:posts|photos|videos|permalink|comment)\/(\d+)",
+        r"(?:facebook\.com\/story\.php\?story_fbid=(\d+))",
+        r"(?:facebook\.com\/)(\d+)(?:\/?(?:\?|$))",  # For profile/page IDs used as post IDs
+        r"(?:fb\.watch\/[a-zA-Z0-9_-]+\/(\d+))",  # For fb.watch links
+        r"(?:comment_id=(\d+))"  # For comment IDs in URLs
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, url_or_id)
+        if match and match.group(1):
+            return match.group(1)
+
+    # If no specific pattern matches, check if it's just a numeric ID
+    if re.match(r"^\d+$", url_or_id):
+        return url_or_id
+    return None
+
+
+@app.route('/')
+def index():
+    return render_template_string(HTML_CONTENT)
+
+
+@app.route('/resolve-object-id', methods=['POST'])
+def resolve_object_id():
+    data = request.json
+    raw_input = data.get('raw_input')
+    access_token = data.get('access_token')
+
+    object_id = extract_facebook_id_from_url(raw_input)
+
+    if not object_id:
+        return jsonify(
+            error="Could not extract a valid Facebook ID from the provided input. Please ensure it's a valid Post/Comment ID or URL."), 400
+
+    # Verify the object_id with a simple graph API call if it's not a comment ID
+    # For comments, we trust the regex for now as direct verification can be complex.
+    if "comment_id=" not in raw_input and not object_id.startswith("t_"):  # t_ can indicate comment
+        try:
+            # Attempt to fetch basic info about the object
+            response = requests.get(
+                f"https://graph.facebook.com/v19.0/{object_id}",
+                params={'access_token': access_token, 'fields': 'id,created_time'}  # Request minimal fields
+            )
+            response.raise_for_status()  # Raise an exception for HTTP errors
+            response_data = response.json()
+            if 'id' not in response_data:
+                return jsonify(
+                    error="Provided ID/URL does not correspond to a valid Facebook object or you don't have access."), 400
+        except requests.exceptions.RequestException as e:
+            return jsonify(error=f"Error verifying Facebook object ID: {e}"), 500
+
+    return jsonify(object_id=object_id)
+
+
+@app.route('/check-token-usage', methods=['POST'])
+def check_token_usage():
+    access_token = request.json.get('access_token')
+
+    # Prune old entries from token_last_used to prevent it from growing indefinitely
+    # (e.g., remove entries older than 25 hours)
+    cutoff_time = datetime.now() - timedelta(hours=25)
+    keys_to_remove = [token for token, timestamp in token_last_used.items() if timestamp < cutoff_time]
+    for key in keys_to_remove:
+        token_last_used.pop(key)
+
+    last_used = token_last_used.get(access_token)
+
+    if last_used:
+        time_since_last_use = datetime.now() - last_used
+        if time_since_last_use < timedelta(hours=24):
+            wait_time = timedelta(hours=24) - time_since_last_use
+            # Calculate wait_until for displaying to the user
+            wait_until = datetime.now() + wait_time
+            return jsonify(can_use=False, wait_until=wait_until.strftime("%Y-%m-%d %H:%M:%S"))
+
+    # If can use, update the last used timestamp
+    token_last_used[access_token] = datetime.now()
+    return jsonify(can_use=True)
+
+
+@app.route('/send-reaction', methods=['POST'])
+def send_reaction():
+    data = request.json
+    object_id = data.get('object_id')
+    reaction_type = data.get('reaction_type')
+    access_token = data.get('access_token')
+
+    graph_url = f"https://graph.facebook.com/v19.0/{object_id}/reactions"
+    params = {
+        'type': reaction_type,
+        'access_token': access_token
+    }
+
+    try:
+        response = requests.post(graph_url, params=params)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return jsonify(success=True)
+    except requests.exceptions.RequestException as e:
+        error_message = str(e)
+        if response and response.text:
+            try:
+                error_data = response.json()
+                if 'error' in error_data:
+                    error_message = error_data['error'].get('message', error_message)
+            except ValueError:
+                pass
+        return jsonify(success=False, error=error_message)
+
+
+@app.route('/send-comment', methods=['POST'])
+def send_comment():
+    data = request.json
+    object_id = data.get('object_id')
+    message = data.get('message')
+    access_token = data.get('access_token')
+
+    graph_url = f"https://graph.facebook.com/v19.0/{object_id}/comments"
+    params = {
+        'message': message,
+        'access_token': access_token
+    }
+
+    try:
+        response = requests.post(graph_url, params=params)
+        response.raise_for_status()
+        return jsonify(success=True)
+    except requests.exceptions.RequestException as e:
+        error_message = str(e)
+        if response and response.text:
+            try:
+                error_data = response.json()
+                if 'error' in error_data:
+                    error_message = error_data['error'].get('message', error_message)
+            except ValueError:
+                pass
+        return jsonify(success=False, error=error_message)
+
+
+@app.route('/share-post', methods=['POST'])
+def share_post():
+    data = request.json
+    object_id = data.get('object_id')
+    message = data.get('message')
+    access_token = data.get('access_token')
+
+    # Shares are typically published to the user's feed.
+    # The 'link' parameter is the object being shared.
+    graph_url = f"https://graph.facebook.com/v19.0/me/feed"
+
+    params = {
+        'link': f"https://www.facebook.com/{object_id}",
+        'privacy': '{"value":"SELF"}',  # Default to only me for privacy, can be changed
+        'access_token': access_token
+    }
+
+    if message:
+        params['message'] = message
+
+    try:
+        response = requests.post(graph_url, params=params)
+        response.raise_for_status()
+        return jsonify(success=True)
+    except requests.exceptions.RequestException as e:
+        error_message = str(e)
+        if response and response.text:
+            try:
+                error_data = response.json()
+                if 'error' in error_data:
+                    error_message = error_data['error'].get('message', error_message)
+            except ValueError:
+                pass
+        return jsonify(success=False, error=error_message)
+
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
