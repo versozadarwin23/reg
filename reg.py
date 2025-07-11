@@ -403,16 +403,19 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Referer": "https://m.facebook.com/reg",
         "Connection": "keep-alive",
-        "X-FB-Connection-Type": "MOBILE.LTE",
-        "X-FB-Connection-Quality": "EXCELLENT",
+        "Accept-Language": "en-US,en;q=0.9",
+        "X-FB-Connection-Type": "mobile.LTE",
         "X-FB-Device": random_device_model(),
         "X-FB-Device-ID": random_device_id(),
         "X-FB-Fingerprint": random_fingerprint(),
+        "X-FB-Connection-Quality": "EXCELLENT",
         "X-FB-Net-HNI": "51502",
         "X-FB-SIM-HNI": "51502",
         "X-FB-HTTP-Engine": "Liger",
+        'x-fb-connection-type': 'Unknown',
         'accept-encoding': 'gzip, deflate',
         'content-type': 'application/x-www-form-urlencoded',
+        'x-fb-http-engine': 'Liger',
         'User-Agent': agent,
     }
 
@@ -422,13 +425,13 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     def get_registration_form():
         while True:
             try:
-                response = session.get(url, headers=headers, timeout=10)
+                response = session.get(url, headers=headers, timeout=60)
                 soup = BeautifulSoup(response.text, "html.parser")
                 form = soup.find("form")
                 if form:
                     return form
             except:
-                print('😢 No internet. Retrying...')
+                print('\033[1;91m😢 Failed to connect to network on off airplane mode...\033[0m')
                 time.sleep(3)
 
     form = get_registration_form()
@@ -481,14 +484,16 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             if inp.has_attr("name") and inp["name"] not in data:
                 data[inp["name"]] = inp.get("value", "")
 
-        try:
-            response = session.post(action_url, headers=headers, data=data, timeout=15)
-        except:
-            print("❌ Failed to submit form.")
-            return
+        while True:
+            try:
+                response = session.post(action_url, headers=headers, data=data, timeout=60)
+                break
+            except:
+                pass
 
     if "c_user" not in session.cookies:
-        print("\033[1;91m⚠️ Create Account Failed. Try again later.\033[0m")
+        print("\033[1;91m⚠️ Create Account Failed. Turn your airplane mode on and off.\033[0m")
+        time.sleep(3)
         return
 
     # Change email if generated with phone
@@ -501,17 +506,16 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                     print("\033[91m❌ Email cannot be empty.\033[0m")
                     continue
 
-                change_email_url = "https://m.facebook.com/changeemail/"
-                change_headers = {
-                    "User-Agent": headers["User-Agent"],
-                    "Accept": "*/*",
-                    "X-Requested-With": "XMLHttpRequest",
-                    "Accept-Encoding": "gzip, deflate",
-                    "Accept-Language": "en-US,en;q=0.9",
-                    "Connection": "keep-alive"
-                }
+                if "c_user" not in session.cookies:
+                    return
 
-                response = session.get(change_email_url, headers=change_headers, timeout=10)
+                change_email_url = "https://m.facebook.com/changeemail/"
+                while True:
+                    try:
+                        response = session.get(change_email_url, headers=headers, timeout=60)
+                        break
+                    except:
+                        pass
                 soup = BeautifulSoup(response.text, "html.parser")
                 form = soup.find("form")
 
@@ -528,7 +532,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                 data["new"] = new_email
                 data["submit"] = "Add"
 
-                response = session.post(action_url, headers=change_headers, data=data, timeout=10)
+                response = session.post(action_url, headers=headers, data=data, timeout=60)
                 if "email" in response.text.lower():
                     print("\033[92m✅ Email change submitted successfully!\033[0m")
                 else:
