@@ -506,6 +506,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         if "c_user" not in session.cookies:
             clear_console()
             print("\033[1;91m⚠️ Create Account Failed. Turn your airplane mode on and off.\033[0m")
+            print("\033[1;91m⚠️ to stop Click CTRL ALT Z\033[0m")
             # Simulate airplane mode toggle by asking the user
             input("✈️ Please turn airplane mode ON, then OFF, and press Enter to continue... \033[0m")
             # After simulated airplane mode toggle, force choice 2 for the next attempt
