@@ -491,10 +491,11 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             except:
                 pass
 
-     if "c_user" not in session.cookies:
-         print("\033[1;91m⚠️ Create Account Failed. Turn your airplane mode on and off.\033[0m")
-         time.sleep(3)
-         return
+
+    if "c_user" not in session.cookies:
+        print(f"\033[1;91m⚠️ Create Account Failed No c_user cookie found. Try toggling airplane mode or use another email.\033[0m")
+        time.sleep(3)
+        return "FAILED_NO_C_USER"
 
     # Change email if generated with phone
     if is_phone_choice:
