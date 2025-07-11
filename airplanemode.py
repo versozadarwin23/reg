@@ -13,6 +13,7 @@ from zipfile import BadZipFile
 COOKIE_DIR = "/storage/emulated/0/cookie"
 CONFIG_FILE = "/storage/emulated/0/settings.json"
 
+
 def random_device_model():
     models = [
         "Samsung-SM-S918B",
@@ -232,15 +233,18 @@ ua = [
     "Mozilla/5.0 (Linux; Android 12; SM-G990U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]"
 ]
 
+
 def delete_config_file():
     if os.path.exists(CONFIG_FILE):
         try:
             os.remove(CONFIG_FILE)
-            print("🗑️  Deleted settings file on exit.")
+            print("🗑️ Deleted settings file on exit.")
         except Exception as e:
             print(f"⚠️ Failed to delete settings file: {e}")
 
+
 atexit.register(delete_config_file)
+
 
 def save_user_choice(key, value):
     data = {}
@@ -254,6 +258,7 @@ def save_user_choice(key, value):
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
+
 def load_user_choice(key):
     if not os.path.exists(CONFIG_FILE):
         return None
@@ -264,11 +269,13 @@ def load_user_choice(key):
         except:
             return None
 
+
 def clear_console():
     try:
         os.system("cls" if os.name == "nt" else "clear")
     except:
         pass
+
 
 def save_to_txt(filename, data):
     try:
@@ -276,6 +283,7 @@ def save_to_txt(filename, data):
             f.write("|".join(data) + "\n")
     except Exception as e:
         print(f"\033[1;91m❗ Error saving to {filename}: {e}\033[0m")
+
 
 def has_access_token_in_xlsx(filename, email_address):
     if not os.path.exists(filename):
@@ -294,6 +302,7 @@ def has_access_token_in_xlsx(filename, email_address):
         if saved_email == email_address and saved_access_token and saved_access_token.strip():
             return True
     return False
+
 
 def save_to_xlsx(filename, data):
     header_columns = ['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'ACCESS TOKEN']
@@ -333,9 +342,11 @@ def save_to_xlsx(filename, data):
             print(f"❗ Error saving to {filename}: {e}. Retrying in 1 second...")
             time.sleep(1)
 
+
 def load_names_from_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         return [line.strip() for line in file if line.strip()]
+
 
 def get_names(account_type, gender):
     firstnames = load_names_from_file("first_name.txt")
@@ -344,14 +355,17 @@ def get_names(account_type, gender):
     lastname = random.choice(last_names)
     return firstname, lastname
 
+
 def generate_random_phone_number():
     random_number = str(random.randint(1000000, 9999999))
     third = random.randint(0, 4)
     forth = random.randint(1, 7)
     return f"9{third}{forth}{random_number}"
 
+
 def generate_random_password():
     return 'Promises' + str(random.randint(100000, 999999))
+
 
 def generate_user_details(account_type, gender, password=None):
     firstname, lastname = get_names(account_type, gender)
@@ -363,12 +377,15 @@ def generate_user_details(account_type, gender, password=None):
     phone_number = generate_random_phone_number()
     return firstname, lastname, date, year, month, phone_number, password
 
+
 custom_password_base = None
-last_input_email = None # New global variable to store the last input email
+last_input_email = None  # New global variable to store the last email input
+
 
 def ensure_cookie_dir():
     if not os.path.exists(COOKIE_DIR):
         os.makedirs(COOKIE_DIR)
+
 
 def save_cookie_json(cookie_dict):
     ensure_cookie_dir()
@@ -383,14 +400,15 @@ def save_cookie_json(cookie_dict):
     except Exception as e:
         print(f"❌ Failed to save cookie: {e}")
 
+
 def save_session_cookie(session):
     cookie_dict = dict_from_cookiejar(session.cookies)
     save_cookie_json(cookie_dict)
 
+
 def create_fbunconfirmed(account_type, usern, gender, password=None, session=None):
     global custom_password_base
-    global last_input_email # Declare global usage for last_input_email
-
+    global last_input_email  # Access the global variable
     agent = random.choice(ua)
 
     if password is None:
@@ -399,7 +417,8 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         else:
             password = generate_random_password()
 
-    firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender, password)
+    firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender,
+                                                                                                password)
 
     url = "https://m.facebook.com/reg"
     headers = {
@@ -437,65 +456,97 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                 print('\033[1;91m😢 Failed to connect to network on off airplane mode...\033[0m')
                 time.sleep(3)
 
-    # Loop for account creation attempts
-    while True:
-        form = get_registration_form()
+    # --- Start of the modified logic ---
+    account_created_successfully = False
+    attempt_with_phone = False
 
-        # Determine choice based on previous failure or initial run
-        current_choice = load_user_choice("reg_choice")
-        if current_choice is None:
-            clear_console()
-            # Initial run or no previous preference saved, prompt user
-            while True:
-                print("\n\033[94mChoose an option that doesn’t get blocked:\033[0m")
-                print(" [1] Enter Email")
-                print(" [2] Use Random Phone Number")
-                choice = input("\033[92mYour choice (1 or 2): \033[0m").strip()
-                clear_console()
-                if choice in ['1', '2']:
-                    save_user_choice("reg_choice", choice)
-                    break
-                else:
-                    print("\033[91m❌ Invalid choice. Please enter 1 or 2.\033[0m")
-            current_choice = choice # Update current_choice after user input
-        else:
-            # If a choice was saved, use it.
-            pass
+    # Try with saved choice first
+    choice = load_user_choice("reg_choice")
 
-        email_or_phone = ""
+    if choice == '1':
+        email_or_phone = input("\033[92mEnter your email:\033[0m ").strip()
+        while not email_or_phone:
+            print("\033[91m❌ Email cannot be empty.\033[0m")
+            email_or_phone = input("\033[92mEnter your email:\033[0m ").strip()
+        last_input_email = email_or_phone  # Save the last input email
         is_phone_choice = False
+    elif choice == '2':
+        email_or_phone = phone_number
+        print(f"\033[92mUsing generated phone number:\033[0m {email_or_phone}")
+        is_phone_choice = True
+        attempt_with_phone = True
+    else:  # No saved choice, ask the user
+        while True:
+            print("\n\033[94mChoose an option that doesn’t get blocked:\033[0m")
+            print(" [1] Enter Email")
+            print(" [2] Use Random Phone Number")
+            choice = input("\033[92mYour choice (1 or 2): \033[0m").strip()
+            clear_console()
+            if choice in ['1', '2']:
+                save_user_choice("reg_choice", choice)
+                break
+            else:
+                print("\033[91m❌ Invalid choice. Please enter 1 or 2.\033[0m")
 
-        if current_choice == '1':
-            while True:
-                email_or_phone = input("\033[92mEnter your email:\033[0m ").strip()
-                if email_or_phone:
-                    last_input_email = email_or_phone # Store the last input email
-                    break
+        if choice == '1':
+            email_or_phone = input("\033[92mEnter your email:\033[0m ").strip()
+            while not email_or_phone:
                 print("\033[91m❌ Email cannot be empty.\033[0m")
+                email_or_phone = input("\033[92mEnter your email:\033[0m ").strip()
+            last_input_email = email_or_phone  # Save the last input email
             is_phone_choice = False
-        else:  # current_choice == '2'
+        else:  # choice == '2'
             email_or_phone = phone_number
             print(f"\033[92mUsing generated phone number:\033[0m {email_or_phone}")
             is_phone_choice = True
+            attempt_with_phone = True
 
-        data = {
-            "firstname": firstname,
-            "lastname": lastname,
-            "birthday_day": str(date),
-            "birthday_month": str(month),
-            "birthday_year": str(year),
-            "reg_email__": email_or_phone,
-            "sex": str(gender),
-            "encpass": used_password,
-            "submit": "Sign Up"
-        }
+    form = get_registration_form()
 
+    data = {
+        "firstname": firstname,
+        "lastname": lastname,
+        "birthday_day": str(date),
+        "birthday_month": str(month),
+        "birthday_year": str(year),
+        "reg_email__": email_or_phone,
+        "sex": str(gender),
+        "encpass": used_password,
+        "submit": "Sign Up"
+    }
+
+    if form:
+        action_url = requests.compat.urljoin(url, form.get("action", url))
+        for inp in form.find_all("input"):
+            if inp.has_attr("name") and inp["name"] not in data:
+                data[inp["name"]] = inp.get("value", "")
+
+        while True:
+            try:
+                response = session.post(action_url, headers=headers, data=data, timeout=60)
+                break
+            except:
+                pass
+
+    if "c_user" not in session.cookies:
+        print(
+            "\033[1;91m⚠️ Create Account Failed. Turning airplane mode on and off, then retrying with option 2.\033[0m")
+        # Simulate airplane mode toggle
+        time.sleep(3)  # Give user time to see the message
+        # Automatically switch to option 2 and retry
+        email_or_phone = phone_number
+        is_phone_choice = True
+        attempt_with_phone = True
+        print(f"\033[92mRetrying with generated phone number (Option 2): \033[0m {email_or_phone}")
+
+        data["reg_email__"] = email_or_phone  # Update the registration data
+
+        form = get_registration_form()  # Get the form again for the retry
         if form:
             action_url = requests.compat.urljoin(url, form.get("action", url))
             for inp in form.find_all("input"):
                 if inp.has_attr("name") and inp["name"] not in data:
                     data[inp["name"]] = inp.get("value", "")
-
             while True:
                 try:
                     response = session.post(action_url, headers=headers, data=data, timeout=60)
@@ -503,78 +554,63 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                 except:
                     pass
 
-        if "c_user" not in session.cookies:
-            clear_console()
-            print("\033[1;91m⚠️ Create Account Failed. Turn your airplane mode on and off.\033[0m")
-            print("\033[1;91m⚠️ to stop Click CTRL ALT Z\033[0m")
-            # Simulate airplane mode toggle by asking the user
-            input("✈️ Please turn airplane mode ON, then OFF, and press Enter to continue... \033[0m")
-            # After simulated airplane mode toggle, force choice 2 for the next attempt
-            save_user_choice("reg_choice", "2")
-            print("\033[93mRetrying account creation with option [2] Use Random Phone Number.\033[0m")
-            time.sleep(3)
-            # Continue the loop to retry
-            continue
-        else:
-            # Account creation successful, break the retry loop
-            break
+    if "c_user" not in session.cookies:
+        print("\033[1;91m❌ Account creation failed even after retrying with Option 2 and airplane mode toggle.\033[0m")
+        return  # Exit if still unsuccessful
 
-    # Change email if generated with phone and if last_input_email is available
-    if is_phone_choice:
-        print("\n\033[93m✅ Account created with phone number. Now let's change it to an email.\033[0m")
-        target_email_for_change = last_input_email if last_input_email else input("\033[92mPlease enter the email to change to:\033[0m ").strip()
+    # --- End of the modified logic ---
 
-        if target_email_for_change:
-            while True:
-                try:
-                    if "c_user" not in session.cookies:
-                        print("\033[91mSession expired or lost. Cannot change email.\033[0m")
-                        return
+    # Change email if generated with phone and last_input_email is available
+    if is_phone_choice and last_input_email:
+        print("\n\033[93m✅ Account created with phone number. Now let's change it to the last input email.\033[0m")
+        new_email = last_input_email  # Use the last input email
+        print(f"\033[92mUsing your previously entered email for change: {new_email}\033[0m")
 
-                    change_email_url = "https://m.facebook.com/changeemail/"
-                    while True:
-                        try:
-                            response = session.get(change_email_url, headers=headers, timeout=60)
-                            break
-                        except:
-                            pass
-                    soup = BeautifulSoup(response.text, "html.parser")
-                    form = soup.find("form")
+        while True:
+            try:
+                if "c_user" not in session.cookies:
+                    return
 
-                    if not form:
-                        print("\033[91m❌ Could not load email change form. Skipping.\033[0m")
+                change_email_url = "https://m.facebook.com/changeemail/"
+                while True:
+                    try:
+                        response = session.get(change_email_url, headers=headers, timeout=60)
                         break
+                    except:
+                        pass
+                soup = BeautifulSoup(response.text, "html.parser")
+                form = soup.find("form")
 
-                    action_url = requests.compat.urljoin(change_email_url, form.get("action", change_email_url))
-                    data = {}
-                    for inp in form.find_all("input"):
-                        if inp.has_attr("name"):
-                            data[inp["name"]] = inp.get("value", "")
-
-                    data["new"] = target_email_for_change
-                    data["submit"] = "Add"
-
-                    while True:
-                        try:
-                            response = session.post(action_url, headers=headers, data=data, timeout=60)
-                            break
-                        except:
-                            pass
-
-                    if "email" in response.text.lower():
-                        print(f"\033[92m✅ Email change submitted successfully to {target_email_for_change}!\033[0m")
-                    else:
-                        print("\033[91m⚠️ Email change may not have succeeded. Check your account manually.\033[0m")
-
-                    email_or_phone = target_email_for_change
+                if not form:
+                    print("\033[91m❌ Could not load email change form. Skipping.\033[0m")
                     break
-                except Exception as e:
-                    print(f"\033[91m❌ Error changing email: {e}\033[0m")
-                    time.sleep(2)
-        else:
-            print("\033[91mNo email provided for change, skipping email update.\033[0m")
 
+                action_url = requests.compat.urljoin(change_email_url, form.get("action", change_email_url))
+                data = {}
+                for inp in form.find_all("input"):
+                    if inp.has_attr("name"):
+                        data[inp["name"]] = inp.get("value", "")
 
+                data["new"] = new_email
+                data["submit"] = "Add"
+
+                while True:
+                    try:
+                        response = session.post(action_url, headers=headers, data=data, timeout=60)
+                        break
+                    except:
+                        pass
+
+                if "email" in response.text.lower():
+                    print("\033[92m✅ Email change submitted successfully!\033[0m")
+                else:
+                    print("\033[91m⚠️ Email change may not have succeeded. Check your account manually.\033[0m")
+
+                email_or_phone = new_email
+                break
+            except Exception as e:
+                print(f"\033[91m❌ Error changing email: {e}\033[0m")
+                time.sleep(2)
     full_name = f"{firstname} {lastname}"
     print(f"\033[92m✅ | Account | Pass | {password}\033[0m")
     print(f"\033[92m✅ | info | {full_name}\033[0m")
@@ -595,6 +631,8 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         if choice == "n":
             break
         elif choice == "y":
+            # proceed with save logic here
+
             while True:
                 print(f"🔄 Trying to get access token...")
                 api_key = "882a8490361da98702bf97a021ddc14d"
@@ -617,7 +655,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
 
                 try:
                     resp = requests.get("https://api.facebook.com/restserver.php", params=params, headers=headers,
-                                         timeout=60)
+                                        timeout=60)
                     try:
                         data = resp.json()
                     except json.JSONDecodeError:
@@ -647,7 +685,6 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                     else:
                         print("ℹ️ Skipping airplane mode toggle.")
 
-            break # Break out of the save loop after trying to get access token
 
 def NEMAIN():
     clear_console()
@@ -664,6 +701,7 @@ def NEMAIN():
     for _ in range(max_create):
         usern = "ali"
         create_fbunconfirmed(account_type, usern, gender, session=session)
+
 
 if __name__ == "__main__":
     if os.path.exists("/storage/emulated/0/settings.json"):
