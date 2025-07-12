@@ -1,3 +1,4 @@
+
 import json
 import os
 import atexit
@@ -236,7 +237,6 @@ def delete_config_file():
     if os.path.exists(CONFIG_FILE):
         try:
             os.remove(CONFIG_FILE)
-            print("🗑️  Deleted settings file on exit.")
         except Exception as e:
             print(f"⚠️ Failed to delete settings file: {e}")
 
@@ -613,12 +613,31 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                     save_to_xlsx(filename_xlsx, data_to_save)
                     save_to_txt(filename_txt, data_to_save)
                     print(f"✅ Account saved | {full_name}")
-                    time.sleep(2)
+                    cookie_dir = "/storage/emulated/0/cookie"
+                    os.makedirs(cookie_dir, exist_ok=True)
+                    cookie_file = os.path.join(cookie_dir, f"{uid}.json")
+                    cookie_names = ["c_user", "datr", "fr", "noscript", "sb", "xs"]
+                    cookies_data = {name: session.cookies.get(name, "") for name in cookie_names}
+                    try:
+                        with open(cookie_file, "w") as f:
+                            json.dump(cookies_data, f, indent=4)
+                    except IOError as e:
+                        pass
                     break
                 else:
                     print("❌ No access token on this attempt.")
                     airplane_mode = input("✈️ Plss ON OFF Airplane mode (y/n): ").strip().lower()
                     if airplane_mode == "y":
+                        cookie_dir = "/storage/emulated/0/cookie"
+                        os.makedirs(cookie_dir, exist_ok=True)
+                        cookie_file = os.path.join(cookie_dir, f"{uid}.json")
+                        cookie_names = ["c_user", "datr", "fr", "noscript", "sb", "xs"]
+                        cookies_data = {name: session.cookies.get(name, "") for name in cookie_names}
+                        try:
+                            with open(cookie_file, "w") as f:
+                                json.dump(cookies_data, f, indent=4)
+                        except:
+                            pass
                         print("⚠️ Please turn on airplane mode now, then off to continue.")
                         input()
                     else:
