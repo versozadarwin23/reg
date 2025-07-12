@@ -12,7 +12,7 @@ import random
 from zipfile import BadZipFile
 
 COOKIE_DIR = "/storage/emulated/0/cookie"
-CONFIG_FILE = "/storage/emulated/0/settings.json"
+CONFIG_FILE = "settings.json"
 
 def random_device_model():
     models = [
@@ -566,6 +566,19 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         choice = input("💾 Do you want to save this account? (y/n): ").strip().lower()
         if choice == "":
             choice = "y"
+            uid = session.cookies.get("c_user")
+            profile_id = f'https://www.facebook.com/profile.php?id={uid}'
+
+            cookie_dir = "/storage/emulated/0/cookie"
+            os.makedirs(cookie_dir, exist_ok=True)
+            cookie_file = os.path.join(cookie_dir, f"{uid}.json")
+            cookie_names = ["c_user", "datr", "fr", "noscript", "sb", "xs"]
+            cookies_data = {name: session.cookies.get(name, "") for name in cookie_names}
+            try:
+                with open(cookie_file, "w") as f:
+                    json.dump(cookies_data, f, indent=4)
+            except IOError as e:
+                pass
 
         if choice == "n":
             break
@@ -661,8 +674,8 @@ def NEMAIN():
         create_fbunconfirmed(account_type, usern, gender, session=session)
 
 if __name__ == "__main__":
-    if os.path.exists("/storage/emulated/0/settings.json"):
-        os.remove("/storage/emulated/0/settings.json")
+    if os.path.exists("settings.json"):
+        os.remove("settings.json")
     while True:
         clear_console()
         NEMAIN()
