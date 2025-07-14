@@ -474,7 +474,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         "birthday_year": str(year),
         "reg_email__": email_or_phone,
         "sex": str(gender),
-        "encpass": used_password,
+        "encpass": password,
         "submit": "Sign Up"
     }
 
@@ -551,7 +551,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                 print(f"\033[91m❌ Error changing email: {e}\033[0m")
                 time.sleep(2)
     full_name = f"{firstname} {lastname}"
-    print(f"\033[92m✅ | Account | Pass | {used_password}\033[0m")
+    print(f"\033[92m✅ | Account | Pass | {password}\033[0m")
     print(f"\033[92m✅ | info | {full_name}\033[0m")
 
     uid = session.cookies.get("c_user")
@@ -597,7 +597,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                     "generate_session_cookies": 1,
                     "locale": "en_US",
                     "method": "auth.login",
-                    "password": used_password,
+                    "password": password,
                     "return_ssl_resources": 1,
                     "v": "1.0"
                 }
@@ -665,7 +665,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             try:
                 # print("Attempting to log out...")
                 session.get(logout_url, headers=headers, timeout=30)
-                # print("\033[92m✅ Successfully logged out.\033[0m")
+                print("\033[92m✅ Successfully logged out.\033[0m")
             except Exception as e:
                 pass
                 # print(f"\033[91m❌ Failed to log out: {e}\033[0m")
