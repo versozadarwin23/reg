@@ -18,6 +18,11 @@ app = Flask(__name__)
 COOKIE_DIR = "/storage/emulated/0/cookie"  # Keep original cookie directory
 CONFIG_FILE = "/storage/emulated/0/settings.json"  # Keep original settings file for choices
 
+def clear_console():
+    try:
+        os.system("cls" if os.name == "nt" else "clear")
+    except:
+        pass
 
 def random_device_model():
     models = [
@@ -784,5 +789,6 @@ if __name__ == "__main__":
 
     # To suppress the default Flask message, set `debug=False` and `use_reloader=False`
     # Then print your custom message.
-    print("copy this paste to google chrome:  |  http://127.0.0.1:5000   |")
+    clear_console()
+    print("paste to chrome:  | http://127.0.0.1:5000 |")
     app.run(debug=False, host='0.0.0.0', port=5000, use_reloader=False)
