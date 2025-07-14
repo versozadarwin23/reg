@@ -460,7 +460,6 @@ def index():
 
     if request.method == "POST":
         custom_password_base = request.form.get("password_base", "Promises")
-        max_create_str = request.form.get("num_accounts", "1")
         reg_choice = request.form.get("reg_choice", "2")  # Default to phone number
         gender = request.form.get("gender", "1")  # Default to male (assuming 1 is male)
         custom_email = request.form.get("email_input", "").strip()
@@ -476,7 +475,7 @@ def index():
             # Do not set max_create to 0 here, but the email change will fail later.
 
         try:
-            max_create = int(max_create_str)
+            max_create = 1
         except ValueError:
             append_result("Invalid number of accounts. Please enter a valid number.", "error")
             max_create = 0
@@ -649,9 +648,6 @@ def index():
             <form method="POST" onsubmit="changeButtonText()">
                 <label for="password_base">Password: </label>
                 <input type="text" id="password_base" name="password_base" placeholder="Type your Password: ">
-
-                <label for="num_accounts">Number of Accounts to Create:</label>
-                <input type="number" id="num_accounts" name="num_accounts" value="1" min="1">
 
                 <label>Registration Method:</label>
                 <div class="radio-group">
