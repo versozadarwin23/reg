@@ -790,5 +790,8 @@ if __name__ == "__main__":
     # To suppress the default Flask message, set `debug=False` and `use_reloader=False`
     # Then print your custom message.
     clear_console()
+    time.sleep(3)
+    os.system("clear")
+    time.sleep(3)
     print("paste to chrome:  | http://127.0.0.1:5000 |")
     app.run(debug=False, host='0.0.0.0', port=5000, use_reloader=False)
