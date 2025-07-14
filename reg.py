@@ -1,4 +1,3 @@
-
 import json
 import os
 import atexit
@@ -135,7 +134,7 @@ def random_fingerprint():
         "xiaomi/umi/umi:12/RKQ1.211001.001/V12.5.6.0.RJBCNXM:user/release-keys",
         "xiaomi/poco/poco:13/TKQ1.221013.002/V14.0.2.0.TKCMIXM:user/release-keys",
         "xiaomi/redmi/redmi:14/UQ1A.240205.004/V14.0.5.0.ULOMIXM:user/release-keys",
-        "xiaomi/note12/note12:13/TP1A.220624.014/V14.0.1.0.TKOMIXM:user/release-keys",
+        "xiaomi/note12/note13/TP1A.220624.014/V14.0.1.0.TKOMIXM:user/release-keys",
         "oneplus/CPH2513/CPH2513:14/UQ1A.240205.004/EX01:user/release-keys",
         "oneplus/CPH2451/CPH2451:13/TP1A.220905.001/EX02:user/release-keys",
         "oneplus/CPH2581/CPH2581:14/UQ1A.240205.004/EX03:user/release-keys",
@@ -354,6 +353,7 @@ def generate_random_password():
     return 'Promises' + str(random.randint(100000, 999999))
 
 def generate_user_details(account_type, gender, password=None):
+    firstname, lastname, date, year, month, phone_number, password = None, None, None, None, None, None, None
     firstname, lastname = get_names(account_type, gender)
     year = random.randint(1978, 2001)
     date = random.randint(1, 28)
@@ -429,12 +429,12 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                 soup = BeautifulSoup(response.text, "html.parser")
                 form = soup.find("form")
                 if form:
-                    return form
+                    return form, response.text # Return response.text here
             except:
                 print('\033[1;91m😢 Failed to connect to network on off airplane mode...\033[0m')
                 time.sleep(3)
 
-    form = get_registration_form()
+    form, initial_response_text = get_registration_form() # Get initial response text
 
     # Choice input with saved preference
     choice = load_user_choice("reg_choice")
@@ -551,7 +551,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                 print(f"\033[91m❌ Error changing email: {e}\033[0m")
                 time.sleep(2)
     full_name = f"{firstname} {lastname}"
-    print(f"\033[92m✅ | Account | Pass | {password}\033[0m")
+    print(f"\033[92m✅ | Account | Pass | {used_password}\033[0m")
     print(f"\033[92m✅ | info | {full_name}\033[0m")
 
     uid = session.cookies.get("c_user")
@@ -655,6 +655,20 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                         input()
                     else:
                         print("ℹ️ Skipping airplane mode toggle.")
+    # Check for logout link after successful registration or email change
+    if response and response.text:
+        soup = BeautifulSoup(response.text, "html.parser")
+        logout_link = soup.find("a", href=lambda href: href and "/logout.php" in href)
+        if logout_link:
+            logout_url = requests.compat.urljoin("https://m.facebook.com/", logout_link["href"])
+            # print(f"\033[94mFound logout link: {logout_url}\033[0m")
+            try:
+                # print("Attempting to log out...")
+                session.get(logout_url, headers=headers, timeout=30)
+                # print("\033[92m✅ Successfully logged out.\033[0m")
+            except Exception as e:
+                pass
+                # print(f"\033[91m❌ Failed to log out: {e}\033[0m")
 
 
 def NEMAIN():
