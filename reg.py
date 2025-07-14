@@ -1,4 +1,3 @@
-from flask import Flask, render_template_string, request, jsonify
 import json
 import os
 import atexit
@@ -11,21 +10,58 @@ import time
 import random
 from zipfile import BadZipFile
 
-app = Flask(__name__)
-
-# --- Original reg.py functions (modified for Flask context) ---
-
-COOKIE_DIR = "/storage/emulated/0/cookie"  # Keep original cookie directory
-CONFIG_FILE = "/storage/emulated/0/settings.json"  # Keep original settings file for choices
-
-def clear_console():
-    try:
-        os.system("cls" if os.name == "nt" else "clear")
-    except:
-        pass
+COOKIE_DIR = "/storage/emulated/0/cookie"
+CONFIG_FILE = "settings.json"
 
 def random_device_model():
     models = [
+        "Samsung-SM-S918B",
+        "Xiaomi-2210132G",
+        "OnePlus-CPH2451",
+        "OPPO-CPH2207",
+        "vivo-V2203",
+        "realme-RMX3085",
+        "Samsung-Galaxy-A54",
+        "Samsung-SM-A146P",
+        "Samsung-Galaxy-S23Ultra",
+        "Samsung-SM-F946B",
+        "Samsung-Galaxy-M34",
+        "Xiaomi-23049PCD8G",
+        "Xiaomi-Redmi-Note-12",
+        "Xiaomi-POCO-X5Pro",
+        "Xiaomi-2312DRA50G",
+        "OnePlus-CPH2513",
+        "OnePlus-CPH2581",
+        "OnePlus-CPH2459",
+        "OPPO-CPH2339",
+        "OPPO-CPH2419",
+        "OPPO-CPH2521",
+        "vivo-V2140",
+        "vivo-V2254",
+        "vivo-V2230",
+        "vivo-V2313A",
+        "realme-RMX3612",
+        "realme-RMX3571",
+        "realme-RMX3761",
+        "realme-RMX3491",
+        "Huawei-ANE-LX2",
+        "Huawei-JNY-LX1",
+        "Huawei-ELS-NX9",
+        "Huawei-CDY-NX9B",
+        "Motorola-Moto-G73",
+        "Motorola-XT2345-4",
+        "Motorola-XT2303-2",
+        "Infinix-X6815B",
+        "Infinix-X6711",
+        "Infinix-X676C",
+        "TECNO-CK7n",
+        "TECNO-CH9n",
+        "TECNO-BD4h",
+        "HONOR-ANY-AN00",
+        "HONOR-MGA-AN00",
+        "HONOR-LRA-AN00",
+        "Lenovo-L78051",
+        "Lenovo-K13-Note",
         "Google-Pixel-7",
         "Google-Pixel-6a",
         "Google-Pixel-5"
@@ -35,7 +71,54 @@ def random_device_model():
 
 def random_device_id():
     ids = [
-        "15526637-0441-2553-4664-888888888048",
+        "0f47e6d2-bb61-4bfc-80db-123456789001",
+        "1a2b3c4d-5e6f-7a8b-9c0d-234567890002",
+        "2b3c4d5e-6f7a-8b9c-0d1e-345678900003",
+        "3c4d5e6f-7a8b-9c0d-1e2f-456789000004",
+        "4d5e6f7a-8b9c-0d1e-2f3a-567890000005",
+        "5e6f7a8b-9c0d-1e2f-3a4b-678900000006",
+        "6f7a8b9c-0d1e-2f3a-4b5c-789000000007",
+        "7a8b9c0d-1e2f-3a4b-5c6d-890000000008",
+        "8b9c0d1e-2f3a-4b5c-6d7e-900000000009",
+        "9c0d1e2f-3a4b-5c6d-7e8f-000000000010",
+        "aa1bb2cc-3dd4-5ee6-7ff8-111111111011",
+        "bb2cc3dd-4ee5-6ff7-8009-222222222012",
+        "cc3dd4ee-5ff6-7008-9110-333333333013",
+        "dd4ee5ff-6007-8119-0221-444444444014",
+        "ee5ff600-7118-9220-1332-555555555015",
+        "ff600711-8229-0331-2443-666666666016",
+        "00611722-9330-1442-3554-777777777017",
+        "11722833-0441-2553-4665-888888888018",
+        "22833944-1552-3664-5776-999999999019",
+        "33944a55-2663-4775-6887-000000000020",
+        "44a55b66-3774-5886-7998-111111111021",
+        "55b66c77-4885-6997-8009-222222222022",
+        "66c77d88-5996-7008-9110-333333333023",
+        "77d88e99-6007-8119-0221-444444444024",
+        "88e990aa-7118-9220-1332-555555555025",
+        "990aa1bb-8229-0331-2443-666666666026",
+        "0aa1bb2c-9330-1442-3554-777777777027",
+        "1bb2cc3d-0441-2553-4665-888888888028",
+        "2cc3dd4e-1552-3664-5776-999999999029",
+        "3dd4ee5f-2663-4775-6887-000000000030",
+        "4ee5ff60-3774-5886-7998-111111111031",
+        "5ff60071-4885-6997-8009-222222222032",
+        "60071182-5996-7008-9110-333333333033",
+        "71182293-6007-8119-0221-444444444034",
+        "82293304-7118-9220-1332-555555555035",
+        "93304415-8229-0331-2443-666666666036",
+        "04415526-9330-1442-3554-777777777037",
+        "15526637-0441-2553-4665-888888888038",
+        "26637748-1552-3664-5776-999999999039",
+        "37748859-2663-4775-6887-000000000040",
+        "48859960-3774-5886-7998-111111111041",
+        "59960071-4885-6997-8009-222222222042",
+        "60071182-5996-7008-9110-333333333043",
+        "71182293-6007-8119-0221-444444444044",
+        "82293304-7118-9220-1332-555555555045",
+        "93304415-8229-0331-2443-666666666046",
+        "04415526-9330-1442-3554-777777777047",
+        "15526637-0441-2553-4665-888888888048",
         "26637748-1552-3664-5776-999999999049",
         "37748859-2663-4775-6887-000000000050"
     ]
@@ -44,6 +127,50 @@ def random_device_id():
 
 def random_fingerprint():
     fingerprints = [
+        "samsung/a54/a54:13/TP1A.220624.014/A546EXXU1AWF2:user/release-keys",
+        "samsung/m34/m34:13/TP1A.220624.014/M346BXXU1AWG3:user/release-keys",
+        "samsung/s23ultra/s23ultra:14/UQ1A.240205.004/S918BXXU1AXBA:user/release-keys",
+        "samsung/fold5/fold5:14/UQ1A.240205.004/F946BXXU1AWM7:user/release-keys",
+        "xiaomi/umi/umi:12/RKQ1.211001.001/V12.5.6.0.RJBCNXM:user/release-keys",
+        "xiaomi/poco/poco:13/TKQ1.221013.002/V14.0.2.0.TKCMIXM:user/release-keys",
+        "xiaomi/redmi/redmi:14/UQ1A.240205.004/V14.0.5.0.ULOMIXM:user/release-keys",
+        "xiaomi/note12/note13/TP1A.220624.014/V14.0.1.0.TKOMIXM:user/release-keys",
+        "oneplus/CPH2513/CPH2513:14/UQ1A.240205.004/EX01:user/release-keys",
+        "oneplus/CPH2451/CPH2451:13/TP1A.220905.001/EX02:user/release-keys",
+        "oneplus/CPH2581/CPH2581:14/UQ1A.240205.004/EX03:user/release-keys",
+        "oppo/CPH2207/CPH2207:12/SKQ1.211019.001/OP01:user/release-keys",
+        "oppo/CPH2419/CPH2419:13/TP1A.220624.014/OP02:user/release-keys",
+        "oppo/CPH2521/CPH2521:14/UQ1A.240205.004/OP03:user/release-keys",
+        "vivo/V2203/V2203:12/SP1A.210812.016/PD2203F_EX_A_12.0.10.5:user/release-keys",
+        "vivo/V2254/V2254:13/TP1A.220905.001/PD2254F_EX_A_13.1.5.7:user/release-keys",
+        "vivo/V2313A/V2313A:14/UQ1A.240205.004/PD2313A_EX_A_14.0.3.2:user/release-keys",
+        "realme/RMX3085/RMX3085:12/SP1A.210812.016/RMX3085_11_A.24:user/release-keys",
+        "realme/RMX3612/RMX3612:13/TP1A.220624.014/RMX3612_13_A.21:user/release-keys",
+        "realme/RMX3491/RMX3491:14/UQ1A.240205.004/RMX3491_14_A.11:user/release-keys",
+        "huawei/ANE-LX2/ANE-LX2:10/HUAWEIANE-LX2/345(user)/release-keys",
+        "huawei/CDY-NX9B/CDY-NX9B:11/HUAWEICDY-NX9B/678(user)/release-keys",
+        "huawei/ELS-NX9/ELS-NX9:12/HUAWEIELS-NX9/901(user)/release-keys",
+        "motorola/XT2345-4/XT2345-4:13/TP1A.220624.014/20240403:user/release-keys",
+        "motorola/XT2303-2/XT2303-2:14/UQ1A.240205.004/20240501:user/release-keys",
+        "infinix/X6815B/X6815B:12/SP1A.210812.016/X6815B-GL-220822V123:user/release-keys",
+        "infinix/X676C/X676C:13/TP1A.220624.014/X676C-H6120ABC-S-231015V104:user/release-keys",
+        "tecno/CK7n/CK7n:14/UQ1A.240205.004/CK7n-H6121ABC-R-240305V103:user/release-keys",
+        "tecno/CH9n/CH9n:13/TP1A.220624.014/CH9n-H6211ABC-R-231215V101:user/release-keys",
+        "tecno/BD4h/BD4h:12/SP1A.210812.016/BD4h-H6112ABC-S-220915V102:user/release-keys",
+        "honor/ANY-AN00/ANY-AN00:12/HONORANY-AN00/234(user)/release-keys",
+        "honor/MGA-AN00/MGA-AN00:13/TP1A.220624.014/HONORMGA-AN00/567(user)/release-keys",
+        "honor/LRA-AN00/LRA-AN00:14/UQ1A.240205.004/HONORLRA-AN00/890(user)/release-keys",
+        "lenovo/L78051/L78051:12/SP1A.210812.016/L78051_USR_S_12.5.3:user/release-keys",
+        "lenovo/K13-Note/K13-Note:13/TP1A.220624.014/K13Note_S_13.0.4:user/release-keys",
+        "google/pixel7/pixel7:14/UQ1A.240205.004/10000001:user/release-keys",
+        "google/pixel6a/pixel6a:14/UQ1A.240205.004/10000002:user/release-keys",
+        "google/pixel5/pixel5:13/TP1A.220624.014/10000003:user/release-keys",
+        "samsung/a146p/a146p:13/TP1A.220624.014/A146PXXU1AWF3:user/release-keys",
+        "samsung/m54/m54:14/UQ1A.240205.004/M546BXXU1AXD2:user/release-keys",
+        "xiaomi/2312DRA50G/2312DRA50G:14/UQ1A.240205.004/V14.0.7.0.UNOMIXM:user/release-keys",
+        "xiaomi/23049PCD8G/23049PCD8G:13/TP1A.220624.014/V14.0.3.0.TMOMIXM:user/release-keys",
+        "oneplus/CPH2459/CPH2459:14/UQ1A.240205.004/EX04:user/release-keys",
+        "vivo/V2140/V2140:12/SP1A.210812.016/PD2140F_EX_A_12.0.9.8:user/release-keys",
         "realme/RMX3761/RMX3761:14/UQ1A.240205.004/RMX3761_14_A.13:user/release-keys",
         "motorola/Moto-G73/Moto-G73:13/TP1A.220624.014/20240401:user/release-keys",
         "infinix/X6711/X6711:14/UQ1A.240205.004/X6711-GL-240104V101:user/release-keys"
@@ -52,23 +179,67 @@ def random_fingerprint():
 
 
 ua = [
+    "Mozilla/5.0 (Linux; Android 10; SM-G960U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; P30 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; SM-A525F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Moto G Power) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Redmi Note 9S) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; OnePlus 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; LG G8 ThinQ) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Xperia 5 II) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Pixel 4a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Samsung SM-S901U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; ASUS_Z01QD) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Vivo V2027) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Oppo A74) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Xiaomi 12) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Nokia 7.2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Realme 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Infinix Note 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Tecno Camon 18) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; ZTE Axon 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; SM-A715F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Google Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Huawei Mate 20 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; LG V60 ThinQ) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Samsung Galaxy A32) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Sony Xperia 1 III) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Google Pixel 3a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; OnePlus 8T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Redmi K40 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Xiaomi 11 Lite 5G NE) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Moto G7 Power) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; SM-G973U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Pixel 5a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Samsung SM-A536B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; P40 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Redmi Note 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; OnePlus Nord 2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; LG Wing) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Xperia 1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Asus ROG Phone 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Vivo X70 Pro+) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Oppo Reno6 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Nokia X20) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Realme 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Infinix Zero X Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Tecno Pova 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; ZTE Blade V2020) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
     "Mozilla/5.0 (Linux; Android 10; SM-A908B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
     "Mozilla/5.0 (Linux; Android 11; Google Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
     "Mozilla/5.0 (Linux; Android 12; SM-G990U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]"
 ]
 
-
 def delete_config_file():
     if os.path.exists(CONFIG_FILE):
         try:
             os.remove(CONFIG_FILE)
-            print("Settings file deleted on exit.")
         except Exception as e:
             print(f"⚠️ Failed to delete settings file: {e}")
 
-
 atexit.register(delete_config_file)
-
 
 def save_user_choice(key, value):
     data = {}
@@ -76,12 +247,11 @@ def save_user_choice(key, value):
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             try:
                 data = json.load(f)
-            except json.JSONDecodeError:
+            except:
                 data = {}
     data[key] = value
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
-
 
 def load_user_choice(key):
     if not os.path.exists(CONFIG_FILE):
@@ -90,22 +260,21 @@ def load_user_choice(key):
         try:
             data = json.load(f)
             return data.get(key)
-        except json.JSONDecodeError:
+        except:
             return None
 
-
 def clear_console():
-    # Not relevant for Flask web interface
-    pass
-
+    try:
+        os.system("cls" if os.name == "nt" else "clear")
+    except:
+        pass
 
 def save_to_txt(filename, data):
     try:
         with open(filename, "a", encoding="utf-8") as f:
             f.write("|".join(data) + "\n")
     except Exception as e:
-        print(f"❗ Error saving to {filename}: {e}")
-
+        print(f"\033[1;91m❗ Error saving to {filename}: {e}\033[0m")
 
 def has_access_token_in_xlsx(filename, email_address):
     if not os.path.exists(filename):
@@ -114,7 +283,7 @@ def has_access_token_in_xlsx(filename, email_address):
     try:
         wb = load_workbook(filename)
     except BadZipFile:
-        print(f"⚠️ Corrupted XLSX detected at {filename}. Skipping access token check.")
+        print(f"\033[91m⚠️ Corrupted XLSX detected at {filename}. Skipping access token check.\033[0m")
         return False
 
     ws = wb.active
@@ -124,7 +293,6 @@ def has_access_token_in_xlsx(filename, email_address):
         if saved_email == email_address and saved_access_token and saved_access_token.strip():
             return True
     return False
-
 
 def save_to_xlsx(filename, data):
     header_columns = ['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'ACCESS TOKEN']
@@ -136,7 +304,7 @@ def save_to_xlsx(filename, data):
                     wb = load_workbook(filename)
                     ws = wb.active
                 except BadZipFile:
-                    print(f"⚠️ Corrupted XLSX detected at {filename}. Recreating file...")
+                    print(f"\033[91m⚠️ Corrupted XLSX detected at {filename}. Recreating file...\033[0m")
                     os.remove(filename)
                     wb = Workbook()
                     ws = wb.active
@@ -164,18 +332,9 @@ def save_to_xlsx(filename, data):
             print(f"❗ Error saving to {filename}: {e}. Retrying in 1 second...")
             time.sleep(1)
 
-
 def load_names_from_file(file_path):
-    # This assumes first_name.txt and last_name.txt are in the same directory as the script
-    script_dir = os.path.dirname(__file__)
-    full_file_path = os.path.join(script_dir, file_path)
-    try:
-        with open(full_file_path, 'r', encoding='utf-8') as file:
-            return [line.strip() for line in file if line.strip()]
-    except FileNotFoundError:
-        print(f"Error: {full_file_path} not found. Please ensure name files are present.")
-        return ["Unknown"]  # Provide a fallback to prevent errors
-
+    with open(file_path, 'r', encoding='utf-8') as file:
+        return [line.strip() for line in file if line.strip()]
 
 def get_names(account_type, gender):
     firstnames = load_names_from_file("first_name.txt")
@@ -184,19 +343,17 @@ def get_names(account_type, gender):
     lastname = random.choice(last_names)
     return firstname, lastname
 
-
 def generate_random_phone_number():
     random_number = str(random.randint(1000000, 9999999))
     third = random.randint(0, 4)
     forth = random.randint(1, 7)
     return f"9{third}{forth}{random_number}"
 
-
 def generate_random_password():
     return 'Promises' + str(random.randint(100000, 999999))
 
-
 def generate_user_details(account_type, gender, password=None):
+    firstname, lastname, date, year, month, phone_number, password = None, None, None, None, None, None, None
     firstname, lastname = get_names(account_type, gender)
     year = random.randint(1978, 2001)
     date = random.randint(1, 28)
@@ -206,11 +363,11 @@ def generate_user_details(account_type, gender, password=None):
     phone_number = generate_random_phone_number()
     return firstname, lastname, date, year, month, phone_number, password
 
+custom_password_base = None
 
 def ensure_cookie_dir():
     if not os.path.exists(COOKIE_DIR):
         os.makedirs(COOKIE_DIR)
-
 
 def save_cookie_json(cookie_dict):
     ensure_cookie_dir()
@@ -225,26 +382,21 @@ def save_cookie_json(cookie_dict):
     except Exception as e:
         print(f"❌ Failed to save cookie: {e}")
 
-
 def save_session_cookie(session):
     cookie_dict = dict_from_cookiejar(session.cookies)
     save_cookie_json(cookie_dict)
 
-
-# Global variable to store results to be displayed in the log
-# This is a simple approach; for production, consider a database or more robust state management
-current_results_log = []
-
-# Pass `results_callback` to send updates to the Flask app
-def create_fbunconfirmed(account_type, usern, gender, password=None, session=None, reg_choice=None, custom_email=None,
-                         results_callback=None):
+def create_fbunconfirmed(account_type, usern, gender, password=None, session=None):
+    global custom_password_base
     agent = random.choice(ua)
 
     if password is None:
-        password = generate_random_password()
+        if custom_password_base:
+            password = custom_password_base + str(random.randint(100000, 999999))
+        else:
+            password = generate_random_password()
 
-    firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender,
-                                                                                                password)
+    firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender, password)
 
     url = "https://m.facebook.com/reg"
     headers = {
@@ -277,23 +429,42 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                 soup = BeautifulSoup(response.text, "html.parser")
                 form = soup.find("form")
                 if form:
-                    return form, response.text
-            except requests.exceptions.RequestException as e:
-                results_callback(f"😢 Failed to connect to network: {e}. Retrying...", "error")
+                    return form, response.text # Return response.text here
+            except:
+                print('\033[1;91m😢 Failed to connect to network on off airplane mode...\033[0m')
                 time.sleep(3)
 
-    form, initial_response_text = get_registration_form()
+    form, initial_response_text = get_registration_form() # Get initial response text
 
-    is_phone_choice = (reg_choice == '2')
-    email_or_phone = ""
+    # Choice input with saved preference
+    choice = load_user_choice("reg_choice")
 
-    if reg_choice == '1':  # Enter Email
-        email_or_phone = custom_email
-        if not email_or_phone:
-            results_callback("❌ Email cannot be empty. Aborting.", "error")
-            return "FAILED_INVALID_EMAIL"
-    else:  # Use Random Phone Number
+    if choice is None:
+        while True:
+            print("\n\033[94mChoose an option that doesn’t get blocked:\033[0m")
+            print(" [1] Enter Email")
+            print(" [2] Use Random Phone Number")
+            choice = input("\033[92mYour choice (1 or 2): \033[0m").strip()
+            clear_console()
+            if choice in ['1', '2']:
+                save_user_choice("reg_choice", choice)
+                break
+            else:
+                print("\033[91m❌ Invalid choice. Please enter 1 or 2.\033[0m")
+    else:
+        pass
+
+    if choice == '1':
+        while True:
+            email_or_phone = input("\033[92mEnter your email:\033[0m ").strip()
+            if email_or_phone:
+                break
+            print("\033[91m❌ Email cannot be empty.\033[0m")
+        is_phone_choice = False
+    else:  # choice == '2'
         email_or_phone = phone_number
+        print(f"\033[92mUsing generated phone number:\033[0m {email_or_phone}")
+        is_phone_choice = True
 
     data = {
         "firstname": firstname,
@@ -313,46 +484,46 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
             if inp.has_attr("name") and inp["name"] not in data:
                 data[inp["name"]] = inp.get("value", "")
 
-        try:
-            response = session.post(action_url, headers=headers, data=data, timeout=60)
-        except requests.exceptions.RequestException as e:
-            results_callback(f"😢 Failed to post registration data: {e}. Aborting.", "error")
-            return "FAILED_POST"
-    else:
-        results_callback("❌ Could not find registration form. Aborting.", "error")
-        return "FAILED_NO_FORM"
+        while True:
+            try:
+                response = session.post(action_url, headers=headers, data=data, timeout=60)
+                break
+            except:
+                pass
+
 
     if "c_user" not in session.cookies:
-        results_callback(f"⚠️ Create Account Failed. No c_user cookie found. Try again or use another email/phone.",
-                         "error")
+        print(f"\033[1;91m⚠️ Create Account Failed No c_user cookie found. Try toggling airplane mode or use another email.\033[0m")
+        time.sleep(3)
         return "FAILED_NO_C_USER"
 
     # Change email if generated with phone
     if is_phone_choice:
-        # Ensure that `custom_email` is available and not empty for the change
-        if not custom_email:
-            results_callback("❌ New email cannot be empty for email change. Skipping email change.", "error")
-        else:
-            new_email = custom_email  # Use the custom_email provided in the form
-
-            if "c_user" not in session.cookies:
-                results_callback("Session expired or invalid, cannot change email.", "error")
-                return
-
-            change_email_url = "https://m.facebook.com/changeemail/"
+        print("\n\033[93m✅ Account created with phone number. Now let's change it to an email.\033[0m")
+        while True:
             try:
-                response = session.get(change_email_url, headers=headers, timeout=60)
-            except requests.exceptions.RequestException as e:
-                results_callback(f"❌ Error getting email change form: {e}. Skipping.", "error")
-                # break Removed break as it was in a while True loop that is now removed.
+                new_email = input("\033[92mPlease enter your new email:\033[0m ").strip()
+                if not new_email:
+                    print("\033[91m❌ Email cannot be empty.\033[0m")
+                    continue
 
-            soup = BeautifulSoup(response.text, "html.parser")
-            form = soup.find("form")
+                if "c_user" not in session.cookies:
+                    return
 
-            if not form:
-                results_callback("❌ Could not load email change form. Skipping.", "error")
-                # break Removed break as it was in a while True loop that is now removed.
-            else:
+                change_email_url = "https://m.facebook.com/changeemail/"
+                while True:
+                    try:
+                        response = session.get(change_email_url, headers=headers, timeout=60)
+                        break
+                    except:
+                        pass
+                soup = BeautifulSoup(response.text, "html.parser")
+                form = soup.find("form")
+
+                if not form:
+                    print("\033[91m❌ Could not load email change form. Skipping.\033[0m")
+                    break
+
                 action_url = requests.compat.urljoin(change_email_url, form.get("action", change_email_url))
                 data = {}
                 for inp in form.find_all("input"):
@@ -362,436 +533,163 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
                 data["new"] = new_email
                 data["submit"] = "Add"
 
-                try:
-                    response = session.post(action_url, headers=headers, data=data, timeout=60)
-                except requests.exceptions.RequestException as e:
-                    results_callback(f"❌ Error submitting email change: {e}. Skipping.", "error")
-                    # break Removed break as it was in a while True loop that is now removed.
+                while True:
+                    try:
+                        response = session.post(action_url, headers=headers, data=data, timeout=60)
+                        break
+                    except:
+                        pass
 
                 if "email" in response.text.lower():
-                    results_callback(f"✅ Email: {custom_email}", "success", email=custom_email)
+                    print("\033[92m✅ Email change submitted successfully!\033[0m")
                 else:
-                    results_callback("⚠️ Email change may not have succeeded. Check your account manually.", "warning")
+                    print("\033[91m⚠️ Email change may not have succeeded. Check your account manually.\033[0m")
 
                 email_or_phone = new_email
-
+                break
+            except Exception as e:
+                print(f"\033[91m❌ Error changing email: {e}\033[0m")
+                time.sleep(2)
     full_name = f"{firstname} {lastname}"
-    results_callback(f"Account Created | Password: {password}", "success", password=password)
-    results_callback(f"Info | Full Name: {full_name}", "success")
+    print(f"\033[92m✅ | Account | Pass | {password}\033[0m")
+    print(f"\033[92m✅ | info | {full_name}\033[0m")
 
     uid = session.cookies.get("c_user")
     profile_id = f'https://www.facebook.com/profile.php?id={uid}'
     filename_xlsx = "/storage/emulated/0/Acc_Created.xlsx"
     filename_txt = "/storage/emulated/0/Acc_created.txt"
 
-    if has_access_token_in_xlsx(filename_xlsx, email_or_phone):
-        results_callback("Account already saved with an access token.", "info")
-        return "ALREADY_SAVED"
+    while True:
+        if has_access_token_in_xlsx(filename_xlsx, email_or_phone):
+            break
 
-    api_key = "882a8490361da98702bf97a021ddc14d"
-    secret = "62f8ce9f74b12f84c123cc23437a4a32"
+        choice = input("💾 Do you want to save this account? (y/n): ").strip().lower()
+        if choice == "":
+            choice = "y"
+            uid = session.cookies.get("c_user")
+            profile_id = f'https://www.facebook.com/profile.php?id={uid}'
 
-    params = {
-        "api_key": api_key,
-        "email": uid,
-        "format": "JSON",
-        "generate_session_cookies": 1,
-        "locale": "en_US",
-        "method": "auth.login",
-        "password": password,
-        "return_ssl_resources": 1,
-        "v": "1.0"
-    }
+            cookie_dir = "/storage/emulated/0/cookie"
+            os.makedirs(cookie_dir, exist_ok=True)
+            cookie_file = os.path.join(cookie_dir, f"{uid}.json")
+            cookie_names = ["c_user", "datr", "fr", "noscript", "sb", "xs"]
+            cookies_data = {name: session.cookies.get(name, "") for name in cookie_names}
+            try:
+                with open(cookie_file, "w") as f:
+                    json.dump(cookies_data, f, indent=4)
+            except IOError as e:
+                pass
 
-    sig_str = "".join(f"{key}={params[key]}" for key in sorted(params)) + secret
-    params["sig"] = hashlib.md5(sig_str.encode()).hexdigest()
+        if choice == "n":
+            break
+        elif choice == "y":
+            # proceed with save logic here
 
-    access_token = ""
-    try:
-        resp = requests.get("https://api.facebook.com/restserver.php", params=params, headers=headers, timeout=60)
-        data = resp.json()
-        access_token = data.get("access_token", "")
-        if "error_title" in data:
-            results_callback(f"Facebook API Error: {data['error_title']}", "error")
-    except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
-        results_callback(f"Error getting access token from API: {e}", "error")
+            while True:
+                print(f"🔄 Trying to get access token...")
+                api_key = "882a8490361da98702bf97a021ddc14d"
+                secret = "62f8ce9f74b12f84c123cc23437a4a32"
 
-    if access_token.strip():
-        data_to_save = [full_name, email_or_phone, password, profile_id, access_token]
-        save_to_xlsx(filename_xlsx, data_to_save)
-        save_to_txt(filename_txt, data_to_save)
+                params = {
+                    "api_key": api_key,
+                    "email": uid,
+                    "format": "JSON",
+                    "generate_session_cookies": 1,
+                    "locale": "en_US",
+                    "method": "auth.login",
+                    "password": password,
+                    "return_ssl_resources": 1,
+                    "v": "1.0"
+                }
 
-        # Save cookies
-        ensure_cookie_dir()
-        cookie_file = os.path.join(COOKIE_DIR, f"{uid}.json")
-        cookie_names = ["c_user", "datr", "fr", "noscript", "sb", "xs"]
-        cookies_data = {name: session.cookies.get(name, "") for name in cookie_names}
-        try:
-            with open(cookie_file, "w", encoding="utf-8") as f:
-                json.dump(cookies_data, f, indent=4)
-        except IOError as e:
-            results_callback(f"❌ Failed to save cookie file: {e}", "error")
+                sig_str = "".join(f"{key}={params[key]}" for key in sorted(params)) + secret
+                params["sig"] = hashlib.md5(sig_str.encode()).hexdigest()
 
-    else:
-        results_callback("❌ No access token acquired on this attempt.", "warning")
-        results_callback("Manual intervention (like airplane mode toggle) might be needed for access token.", "info")
+                try:
+                    resp = requests.get("https://api.facebook.com/restserver.php", params=params, headers=headers,
+                                        timeout=60)
+                    try:
+                        data = resp.json()
+                    except json.JSONDecodeError:
+                        print("❌ Failed to parse Facebook API JSON response.")
+                        continue
+                    access_token = data.get("access_token", "")
+                    if "error_title" in data:
+                        print(data["error_title"])
+                except Exception as error_title:
+                    print(error_title)
+                    access_token = ""
 
-    # Attempt to log out
+                if access_token.strip():
+                    print("✅ Access token acquired.")
+                    data_to_save = [full_name, email_or_phone, password, profile_id, access_token]
+                    save_to_xlsx(filename_xlsx, data_to_save)
+                    save_to_txt(filename_txt, data_to_save)
+                    print(f"✅ Account saved | {full_name}")
+                    cookie_dir = "/storage/emulated/0/cookie"
+                    os.makedirs(cookie_dir, exist_ok=True)
+                    cookie_file = os.path.join(cookie_dir, f"{uid}.json")
+                    cookie_names = ["c_user", "datr", "fr", "noscript", "sb", "xs"]
+                    cookies_data = {name: session.cookies.get(name, "") for name in cookie_names}
+                    try:
+                        with open(cookie_file, "w") as f:
+                            json.dump(cookies_data, f, indent=4)
+                    except IOError as e:
+                        pass
+                    break
+                else:
+                    print("❌ No access token on this attempt.")
+                    airplane_mode = input("✈️ Plss ON OFF Airplane mode (y/n): ").strip().lower()
+                    if airplane_mode == "y":
+                        cookie_dir = "/storage/emulated/0/cookie"
+                        os.makedirs(cookie_dir, exist_ok=True)
+                        cookie_file = os.path.join(cookie_dir, f"{uid}.json")
+                        cookie_names = ["c_user", "datr", "fr", "noscript", "sb", "xs"]
+                        cookies_data = {name: session.cookies.get(name, "") for name in cookie_names}
+                        try:
+                            with open(cookie_file, "w") as f:
+                                json.dump(cookies_data, f, indent=4)
+                        except:
+                            pass
+                        print("⚠️ Please turn on airplane mode now, then off to continue.")
+                        input()
+                    else:
+                        print("ℹ️ Skipping airplane mode toggle.")
+    # Check for logout link after successful registration or email change
     if response and response.text:
         soup = BeautifulSoup(response.text, "html.parser")
         logout_link = soup.find("a", href=lambda href: href and "/logout.php" in href)
         if logout_link:
             logout_url = requests.compat.urljoin("https://m.facebook.com/", logout_link["href"])
+            # print(f"\033[94mFound logout link: {logout_url}\033[0m")
             try:
+                # print("Attempting to log out...")
                 session.get(logout_url, headers=headers, timeout=30)
-            except requests.exceptions.RequestException as e:
-                results_callback(f"❌ Failed to log out: {e}", "warning")
-    return "SUCCESS"
+                print("\033[92m✅ Successfully logged out.\033[0m")
+            except Exception as e:
+                pass
+                # print(f"\033[91m❌ Failed to log out: {e}\033[0m")
 
 
-# --- Flask Application Routes and HTML ---
+def NEMAIN():
+    clear_console()
+    max_create = 1
+    account_type = 1
+    gender = 1
+    session = requests.Session()
 
-@app.route("/", methods=["GET", "POST"])
-def index():
-    global current_results_log # Declare as global to modify the list
+    global custom_password_base
+    if custom_password_base is None:
+        inp = input("\033[1;92m😊 Type your password: \033[0m").strip()
+        custom_password_base = inp if inp else "Promises"
 
-    def append_result(message, type="info", password=None, email=None):
-        result_item = {"message": message, "type": type}
-        if password:
-            result_item["password"] = password
-        if email:
-            result_item["email"] = email
-        current_results_log.append(result_item) # Append to the global log
-
-    if request.method == "POST":
-        custom_password_base = request.form.get("password_base", "Promises")
-        reg_choice = request.form.get("reg_choice", "2")  # Default to phone number
-        gender = request.form.get("gender", "1")  # Default to male (assuming 1 is male)
-        custom_email = request.form.get("email_input", "").strip()
-
-        # Server-side validation for email if "Enter Email" is chosen or if phone-registered needs email change
-        if reg_choice == '1' and not custom_email:
-            append_result("Please provide an email address when 'Enter Email' is selected.", "error")
-            max_create = 0  # Prevent account creation
-        elif reg_choice == '2' and not custom_email:
-            append_result(
-                "Please provide an email address in the 'Custom Email' field. This will be used to change the email after phone registration.",
-                "warning")
-            # Do not set max_create to 0 here, but the email change will fail later.
-
-        try:
-            max_create = 1
-        except ValueError:
-            append_result("Invalid number of accounts. Please enter a valid number.", "error")
-            max_create = 0
-
-        if max_create > 0:
-            append_result(f"Starting account creation for {max_create} account(s)...", "info")
-            for i in range(max_create):
-                append_result(f"--- Creating account {i + 1}/{max_create} ---", "info")
-                session = requests.Session()
-                # Pass custom_email and reg_choice from form
-                generated_password = custom_password_base + str(random.randint(100000, 999999))
-                status = create_fbunconfirmed(1, "ali", int(gender),
-                                              password=generated_password,
-                                              session=session, reg_choice=reg_choice, custom_email=custom_email,
-                                              results_callback=append_result)
-                append_result(f"Account creation finished with status: {status}", "info")
-                # Small delay between creations
-                time.sleep(random.uniform(2, 5))
-            append_result("All account creation attempts completed.", "success")
-        else:
-            append_result("No accounts to create or validation failed.", "info")
-
-    html_content = """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Facebook Account Creator</title>
-        <style>
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background-color: #f0f2f5;
-                color: #1c1e21;
-                margin: 0;
-                padding: 20px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
-            .container {
-                background-color: #fff;
-                padding: 30px;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                width: 100%;
-                max-width: 600px;
-                margin-bottom: 20px;
-            }
-            h1 {
-                color: #1877f2;
-                text-align: center;
-                margin-bottom: 25px;
-            }
-            form {
-                display: flex;
-                flex-direction: column;
-            }
-            label {
-                margin-bottom: 8px;
-                font-weight: bold;
-                color: #606770;
-            }
-            input[type="text"],
-            input[type="number"],
-            input[type="email"],
-            select {
-                padding: 12px;
-                margin-bottom: 20px;
-                border: 1px solid #dddfe2;
-                border-radius: 6px;
-                font-size: 1rem;
-                width: calc(100% - 24px);
-            }
-            input[type="radio"] {
-                margin-right: 5px;
-            }
-            .radio-group {
-                margin-bottom: 20px;
-            }
-            .radio-group label {
-                margin-right: 15px;
-                font-weight: normal;
-            }
-            button {
-                background-color: #42b72a;
-                color: white;
-                padding: 12px 20px;
-                border: none;
-                border-radius: 6px;
-                font-size: 1.1rem;
-                cursor: pointer;
-                transition: background-color 0.3s ease;
-            }
-            button:hover {
-                background-color: #36a420;
-            }
-            .results-box {
-                background-color: #e9ebee;
-                border: 1px solid #ccd0d5;
-                border-radius: 8px;
-                padding: 20px;
-                width: 100%;
-                max-width: 600px;
-                max-height: 400px;
-                overflow-y: auto;
-            }
-            .results-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 15px;
-            }
-            .results-header h2 {
-                margin: 0;
-            }
-            .clear-button {
-                background-color: #f02849;
-                color: white;
-                padding: 8px 15px;
-                border: none;
-                border-radius: 6px;
-                font-size: 0.9rem;
-                cursor: pointer;
-                transition: background-color 0.3s ease;
-            }
-            .clear-button:hover {
-                background-color: #d1213f;
-            }
-            .result-item {
-                padding: 8px 0;
-                border-bottom: 1px dashed #c0c0c0;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                flex-wrap: wrap; /* Allow items to wrap */
-            }
-            .result-item span {
-                flex-grow: 1; /* Allow message to take available space */
-            }
-            .result-item:last-child {
-                border-bottom: none;
-            }
-            .result-item.info { color: #1877f2; }
-            .result-item.success { color: #42b72a; font-weight: bold; }
-            .result-item.warning { color: #f2c200; }
-            .result-item.error { color: #eb4d4b; font-weight: bold; }
-            #emailInputContainer {
-                display: none; /* Hidden by default */
-            }
-            .copy-button {
-                background-color: #007bff;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                padding: 5px 10px;
-                cursor: pointer;
-                margin-left: 10px;
-                font-size: 0.85rem;
-                transition: background-color 0.2s ease;
-            }
-            .copy-button:hover {
-                background-color: #0056b3;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>🤖 Facebook Account Creator By Dars: V1</h1>
-            <form method="POST" onsubmit="changeButtonText()">
-                <label for="password_base">Password: </label>
-                <input type="text" id="password_base" name="password_base" placeholder="Type your Password: ">
-
-                <label>Registration Method:</label>
-                <div class="radio-group">
-                    <input type="radio" id="reg_email" name="reg_choice" value="1" onclick="toggleEmailInput()">
-                    <label for="reg_email">Enter Email</label>
-                    <input type="radio" id="reg_phone" name="reg_choice" value="2" checked onclick="toggleEmailInput()">
-                    <label for="reg_phone">Use Random Phone Number</label>
-                </div>
-
-                <div id="emailInputContainer">
-                    <label for="email_input">Email Address: </label>
-                    <input type="email" id="email_input" name="email_input" placeholder="e.g., your_email@example.com">
-                </div>
-
-                <label for="gender">Gender:</label>
-                <select id="gender" name="gender">
-                    <option value="1">Male</option>
-                    <option value="2">Female</option>
-                </select>
-
-                <button type="submit" id="start_button">Start Creating Accounts</button>
-            </form>
-        </div>
-
-        <div class="results-box">
-            <div class="results-header">
-                <h2>Activity Log</h2>
-                <button class="clear-button" onclick="clearActivityLog()">Clear Log</button>
-            </div>
-            <div id="results">
-                {% for result in results %}
-                    <p class="result-item {{ result.type }}">
-                        <span>{{ result.message }}</span>
-                        {% if result.password %}
-                            <button class="copy-button" onclick="copyToClipboard('{{ result.password }}', this)">Copy Password</button>
-                        {% endif %}
-                        {% if result.email %}
-                            <button class="copy-button" onclick="copyToClipboard('{{ result.email }}', this)">Copy Email</button>
-                        {% endif %}
-                    </p>
-                {% endfor %}
-            </div>
-        </div>
-
-        <script>
-            function toggleEmailInput() {
-                var emailRadio = document.getElementById('reg_email');
-                var emailInput = document.getElementById('email_input');
-                var emailInputContainer = document.getElementById('emailInputContainer');
-
-                if (emailRadio.checked) {
-                    emailInputContainer.style.display = 'block';
-                    emailInput.setAttribute('required', 'required'); // Make it required
-                    emailInput.placeholder = 'Paste your Email: ';
-                } else {
-                    emailInputContainer.style.display = 'block'; // Keep visible but not required
-                    emailInput.removeAttribute('required'); // Not strictly required but highly recommended
-                    emailInput.placeholder = 'Paste your Email: ';
-                }
-            }
-
-            function copyToClipboard(text, buttonElement) {
-                navigator.clipboard.writeText(text).then(function() {
-                    var originalText = buttonElement.innerText;
-                    buttonElement.innerText = 'Copied!';
-                    setTimeout(function() {
-                        buttonElement.innerText = originalText;
-                    }, 2000);
-                }).catch(function(err) {
-                    console.error('Could not copy text: ', err);
-                    alert('Failed to copy. Please copy manually: ' + text);
-                });
-            }
-
-            function changeButtonText() {
-                var submitButton = document.getElementById('start_button');
-                submitButton.innerText = 'Creating your account. Please be patient';
-                // You might also want to disable the button to prevent multiple submissions
-                submitButton.disabled = true;
-            }
-
-            function clearActivityLog() {
-                fetch('/clear_log', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        document.getElementById('results').innerHTML = '<p class="result-item info"><span>Activity log cleared.</span></p>';
-                    } else {
-                        alert('Failed to clear activity log: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while clearing the log.');
-                });
-            }
-
-            // Call on page load to set initial state
-            document.addEventListener('DOMContentLoaded', toggleEmailInput);
-        </script>
-    </body>
-    </html>
-    """
-    return render_template_string(html_content, results=current_results_log)
-
-@app.route("/clear_log", methods=["POST"])
-def clear_log():
-    global current_results_log
-    current_results_log = [] # Clear the global list
-    return jsonify({"status": "success", "message": "Activity log cleared."})
-
+    for _ in range(max_create):
+        usern = "ali"
+        create_fbunconfirmed(account_type, usern, gender, session=session)
 
 if __name__ == "__main__":
-    if not os.path.exists("first_name.txt"):
-        with open("first_name.txt", "w") as f:
-            f.write("John\nJane\nMichael\nEmily\n")
-            print("Created placeholder 'first_name.txt'. Please populate it with names.")
-    if not os.path.exists("last_name.txt"):
-        with open("last_name.txt", "w") as f:
-            f.write("Smith\nJohnson\nWilliams\nBrown\n")
-            print("Created placeholder 'last_name.txt'. Please populate it with names.")
-
-    if os.path.exists(CONFIG_FILE):
-        try:
-            os.remove(CONFIG_FILE)
-            print("Removed existing settings.json on startup.")
-        except Exception as e:
-            print(f"Warning: Could not remove settings.json on startup: {e}")
-
-    # To suppress the default Flask message, set `debug=False` and `use_reloader=False`
-    # Then print your custom message.
-    clear_console()
-    time.sleep(3)
-    os.system("clear")
-    time.sleep(3)
-    print("paste to chrome:  | http://127.0.0.1:5000 |")
-    app.run(debug=False, host='0.0.0.0', port=5000, use_reloader=False)
+    if os.path.exists("settings.json"):
+        os.remove("settings.json")
+    while True:
+        clear_console()
+        NEMAIN()
