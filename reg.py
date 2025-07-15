@@ -226,8 +226,8 @@ def create_fbunconfirmed_flask(account_type, usern, gender, password=None, sessi
             password = generate_random_password()
 
     firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender, password)
-    log_to_ui(f"Generated Name: {firstname} {lastname}", "text-primary")
-    log_to_ui(f"Generated Password: {password}", "text-primary")
+    log_to_ui(f"Generated Name: {firstname} {lastname}", "text-success")
+    log_to_ui(f"Generated Password: {password}", "text-success")
 
     url = "https://m.facebook.com/reg"
     headers = {
@@ -450,7 +450,7 @@ def create_fbunconfirmed_flask(account_type, usern, gender, password=None, sessi
 
 @app.route('/')
 def index():
-    # Professional Dark and White Theme HTML content for the Flask app
+    # New Minimalist & Modern Design HTML content for the Flask app
     html_content = """
     <!DOCTYPE html>
     <html lang="en">
@@ -459,127 +459,139 @@ def index():
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>FB Account Creator</title>
         <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
         <style>
             :root {
-                --bg-light: #f8f9fa;
-                --bg-dark: #212529;
-                --text-light: #343a40;
-                --text-dark: #e9ecef;
-                --card-light: #ffffff;
-                --card-dark: #2c3034;
-                --border-light: #dee2e6;
-                --border-dark: #495057;
-                --primary: #007bff;
-                --secondary: #6c757d;
-                --success: #28a745;
-                --info: #17a2b8;
-                --warning: #ffc107;
-                --danger: #dc3545;
+                --color-primary: #4CAF50; /* Green */
+                --color-primary-dark: #388E3C;
+                --color-secondary: #03A9F4; /* Light Blue */
+                --color-info: #2196F3; /* Blue */
+                --color-success: #4CAF50; /* Green */
+                --color-warning: #FFC107; /* Amber */
+                --color-danger: #F44336; /* Red */
+
+                /* Light Theme */
+                --light-bg: #f5f7fa;
+                --light-text: #333333;
+                --light-card-bg: #ffffff;
+                --light-border: #e0e0e0;
+                --light-input-bg: #f0f0f0;
+                --light-log-bg: #e8ebf0;
+
+                /* Dark Theme */
+                --dark-bg: #1a202c;
+                --dark-text: #e2e8f0;
+                --dark-card-bg: #2d3748;
+                --dark-border: #4a5568;
+                --dark-input-bg: #242b36;
+                --dark-log-bg: #374151;
             }
 
             body {
-                font-family: 'Inter', sans-serif;
+                font-family: 'Roboto', sans-serif;
                 transition: background-color 0.3s, color 0.3s;
                 min-height: 100vh;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                padding: 1rem;
+                padding: 1.5rem;
+                line-height: 1.6;
             }
 
             body.light-theme {
-                background-color: var(--bg-light);
-                color: var(--text-light);
+                background-color: var(--light-bg);
+                color: var(--light-text);
             }
 
             body.dark-theme {
-                background-color: var(--bg-dark);
-                color: var(--text-dark);
+                background-color: var(--dark-bg);
+                color: var(--dark-text);
             }
 
-            .container-wrapper {
-                background-color: var(--card-light);
-                border-radius: 0.5rem;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-                border: 1px solid var(--border-light);
-                max-width: 500px;
+            .card-container {
+                background-color: var(--light-card-bg);
+                border-radius: 0.75rem;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+                border: 1px solid var(--light-border);
+                max-width: 550px;
                 width: 100%;
                 transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
             }
 
-            body.dark-theme .container-wrapper {
-                background-color: var(--card-dark);
-                border-color: var(--border-dark);
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            body.dark-theme .card-container {
+                background-color: var(--dark-card-bg);
+                border-color: var(--dark-border);
+                box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
             }
 
             .input-field {
-                padding: 0.75rem 1rem;
-                border-radius: 0.25rem;
-                border: 1px solid var(--border-light);
-                background-color: var(--bg-light);
-                color: var(--text-light);
+                padding: 0.8rem 1rem;
+                border-radius: 0.5rem;
+                border: 1px solid var(--light-border);
+                background-color: var(--light-input-bg);
+                color: var(--light-text);
                 outline: none;
                 transition: border-color 0.2s, box-shadow 0.2s, background-color 0.3s, color 0.3s;
             }
 
             body.dark-theme .input-field {
-                border-color: var(--border-dark);
-                background-color: var(--bg-dark);
-                color: var(--text-dark);
+                border-color: var(--dark-border);
+                background-color: var(--dark-input-bg);
+                color: var(--dark-text);
             }
 
             .input-field:focus {
-                border-color: var(--primary);
-                box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+                border-color: var(--color-primary);
+                box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
             }
 
             .btn {
-                padding: 0.75rem 1.25rem;
-                border-radius: 0.25rem;
-                font-weight: 600;
-                transition: background-color 0.2s, opacity 0.2s, box-shadow 0.2s;
+                padding: 0.8rem 1.5rem;
+                border-radius: 0.5rem;
+                font-weight: 500;
+                transition: background-color 0.2s, transform 0.1s ease-in-out;
                 border: none;
                 cursor: pointer;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             }
 
             .btn-primary {
-                background-color: var(--primary);
+                background-color: var(--color-primary);
                 color: white;
             }
             .btn-primary:hover {
-                background-color: #0056b3;
-                box-shadow: 0 2px 5px rgba(0, 123, 255, 0.3);
+                background-color: var(--color-primary-dark);
+                transform: translateY(-1px);
             }
 
             .btn-secondary {
-                background-color: var(--secondary);
+                background-color: var(--color-secondary);
                 color: white;
             }
             .btn-secondary:hover {
-                background-color: #5a6268;
-                box-shadow: 0 2px 5px rgba(108, 117, 125, 0.3);
+                background-color: #0288D1;
+                transform: translateY(-1px);
             }
 
             .btn-copy {
-                background-color: var(--info);
+                background-color: var(--color-info);
                 color: white;
-                padding: 0.3rem 0.6rem;
-                font-size: 0.75rem;
-                border-radius: 0.2rem;
+                padding: 0.3rem 0.7rem;
+                font-size: 0.7rem;
+                border-radius: 0.3rem;
                 border: none;
+                box-shadow: none;
             }
             .btn-copy:hover {
-                background-color: #138496;
+                background-color: #1976D2;
             }
 
             .log-entry {
                 padding: 0.4rem 0;
-                border-bottom: 1px dashed var(--border-light);
+                border-bottom: 1px dotted var(--light-border);
             }
             body.dark-theme .log-entry {
-                border-bottom: 1px dashed var(--border-dark);
+                border-bottom: 1px dotted var(--dark-border);
             }
             .log-entry:last-child {
                 border-bottom: none;
@@ -594,36 +606,36 @@ def index():
                 width: 100%;
                 height: 100%;
                 overflow: auto;
-                background-color: rgba(0,0,0,0.6);
+                background-color: rgba(0,0,0,0.7);
                 justify-content: center;
                 align-items: center;
             }
             .modal-content {
-                background-color: var(--card-light);
+                background-color: var(--light-card-bg);
                 margin: auto;
-                padding: 30px;
-                border-radius: 0.5rem;
-                box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+                padding: 40px;
+                border-radius: 0.75rem;
+                box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
                 width: 90%;
-                max-width: 400px;
+                max-width: 450px;
                 text-align: center;
-                border: 1px solid var(--border-light);
+                border: 1px solid var(--light-border);
                 transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
             }
             body.dark-theme .modal-content {
-                background-color: var(--card-dark);
-                border-color: var(--border-dark);
-                box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+                background-color: var(--dark-card-bg);
+                border-color: var(--dark-border);
+                box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
             }
 
             .loader {
-                border: 4px solid var(--primary);
-                border-top: 4px solid transparent;
+                border: 5px solid var(--color-primary);
+                border-top: 5px solid transparent;
                 border-radius: 50%;
-                width: 40px;
-                height: 40px;
+                width: 50px;
+                height: 50px;
                 animation: spin 1s linear infinite;
-                margin: 0 auto 1.5rem auto;
+                margin: 0 auto 1.8rem auto;
             }
             @keyframes spin {
                 0% { transform: rotate(0deg); }
@@ -631,125 +643,157 @@ def index():
             }
 
             /* Themed text colors */
-            .text-success { color: var(--success); }
-            .text-info { color: var(--info); }
-            .text-warning { color: var(--warning); }
-            .text-danger { color: var(--danger); }
-            .text-primary { color: var(--primary); }
-            .text-secondary { color: var(--secondary); }
-            .text-muted { color: var(--secondary); } /* General lighter text */
+            .text-success { color: var(--color-success); }
+            .text-info { color: var(--color-info); }
+            .text-warning { color: var(--color-warning); }
+            .text-danger { color: var(--color-danger); }
+            .text-primary { color: var(--color-primary); }
+            .text-secondary-color { color: var(--color-secondary); } /* Renamed to avoid Tailwind conflict */
+            .text-muted { color: #6c757d; } /* General lighter text */
+            body.dark-theme .text-muted { color: #a0aec0; }
 
             .form-radio:checked {
-                background-color: var(--primary);
-                border-color: var(--primary);
+                background-color: var(--color-primary);
+                border-color: var(--color-primary);
             }
             .form-radio {
-                border-color: var(--secondary);
+                border-color: var(--light-border);
+                transition: background-color 0.2s, border-color 0.2s;
+            }
+            body.dark-theme .form-radio {
+                border-color: var(--dark-border);
             }
 
             .bg-result-light {
-                background-color: #e9f7ef; /* Light green tint */
-                border-color: #d1ecf1; /* Light blue border */
+                background-color: #e6ffe6; /* Very light green tint */
+                border-color: #a7d9a8;
             }
             .bg-result-dark {
-                background-color: #2c3a2f; /* Dark green tint */
-                border-color: #213c42; /* Dark blue border */
+                background-color: #3b4e3e; /* Dark green tint */
+                border-color: #557556;
             }
 
             .bg-log-light {
-                background-color: #f1f3f5; /* Lighter gray for log */
-                border-color: #e2e6ea;
+                background-color: var(--light-log-bg);
+                border-color: var(--light-border);
             }
             .bg-log-dark {
-                background-color: #2b2e31; /* Darker gray for log */
-                border-color: #3b4045;
+                background-color: var(--dark-log-bg);
+                border-color: var(--dark-border);
             }
 
             a {
-                color: var(--primary);
+                color: var(--color-info);
+                text-decoration: none;
             }
             a:hover {
                 text-decoration: underline;
-                color: #0056b3;
+                color: #1976D2;
             }
 
-            .toggle-theme-btn {
+            .theme-toggle-switch {
                 position: absolute;
-                top: 1rem;
-                right: 1rem;
-                background: var(--secondary);
-                color: white;
-                border: none;
-                padding: 0.5rem 0.8rem;
-                border-radius: 0.25rem;
+                top: 1.5rem;
+                right: 1.5rem;
+                display: flex;
+                align-items: center;
                 cursor: pointer;
-                font-size: 0.8rem;
-                transition: background-color 0.2s;
+                user-select: none;
             }
-            .toggle-theme-btn:hover {
-                background: #5a6268;
+
+            .theme-toggle-switch input {
+                display: none;
+            }
+
+            .slider {
+                position: relative;
+                width: 50px;
+                height: 26px;
+                background-color: #ccc;
+                border-radius: 26px;
+                transition: 0.4s;
+            }
+
+            .slider:before {
+                position: absolute;
+                content: "";
+                height: 18px;
+                width: 18px;
+                left: 4px;
+                bottom: 4px;
+                background-color: white;
+                border-radius: 50%;
+                transition: 0.4s;
+            }
+
+            input:checked + .slider {
+                background-color: var(--color-primary);
+            }
+
+            input:checked + .slider:before {
+                transform: translateX(24px);
             }
 
         </style>
     </head>
     <body class="light-theme">
-        <button id="toggleThemeBtn" class="toggle-theme-btn">Toggle Theme</button>
-        <div class="container-wrapper p-6">
-            <h1 class="text-2xl font-bold text-center mb-6">FB ACCOUNT CREATOR <span class="font-light">// VER 2.0</span></h1>
+        <label class="theme-toggle-switch">
+            <input type="checkbox" id="themeToggleCheckbox">
+            <span class="slider"></span>
+        </label>
 
-            <div class="mb-4">
+        <div class="card-container p-7">
+            <h1 class="text-3xl font-bold text-center mb-7 leading-tight">FB ACCOUNT CREATOR <span class="font-light text-2xl">// 2.0</span></h1>
+
+            <div class="mb-5">
                 <label for="passwordInput" class="block text-sm font-medium mb-1 text-muted">PASSWORD</label>
-                <input type="text" id="passwordInput" class="input-field w-full" placeholder="TYPE YOUR PASSWORD:">
+                <input type="text" id="passwordInput" class="input-field w-full" placeholder="Type your password here...">
             </div>
 
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-1 text-muted">Select registration protocol where no checkpoint occurred.</label>
-                <div class="flex items-center space-x-4">
+            <div class="mb-5">
+                <label class="block text-sm font-medium mb-2 text-muted">Select registration method:</label>
+                <div class="flex items-center space-x-6">
                     <div class="flex items-center">
-                        <input type="radio" id="regChoiceEmail" name="regChoice" value="1" class="form-radio h-4 w-4" checked>
-                        <label for="regChoiceEmail" class="ml-2 text-muted">INPUT EMAIL</label>
+                        <input type="radio" id="regChoiceEmail" name="regChoice" value="1" class="form-radio h-5 w-5" checked>
+                        <label for="regChoiceEmail" class="ml-2 text-base text-muted">Input Email</label>
                     </div>
                     <div class="flex items-center">
-                        <input type="radio" id="regChoicePhone" name="regChoice" value="2" class="form-radio h-4 w-4">
-                        <label for="regChoicePhone" class="ml-2 text-muted">GENERATE RANDOM PHONE</label>
+                        <input type="radio" id="regChoicePhone" name="regChoice" value="2" class="form-radio h-5 w-5">
+                        <label for="regChoicePhone" class="ml-2 text-base text-muted">Generate Random Phone</label>
                     </div>
                 </div>
             </div>
 
-            <div id="emailInputContainer" class="mb-4">
-                <label for="userEmailInput" class="block text-sm font-medium mb-1 text-muted">
-                    EMAIL ADDRESS:
-                </label>
-                <input type="email" id="userEmailInput" class="input-field w-full" placeholder="PASTE YOUR EMAIL:">
+            <div id="emailInputContainer" class="mb-5">
+                <label for="userEmailInput" class="block text-sm font-medium mb-1 text-muted">EMAIL ADDRESS</label>
+                <input type="email" id="userEmailInput" class="input-field w-full" placeholder="Paste your email...">
             </div>
 
-            <div id="newEmailInputContainer" class="mb-4 hidden">
-                <label for="newEmailInput" class="block text-sm font-medium mb-1 text-muted">
-                    ENTER NEW EMAIL FOR PHONE-BASED ACCOUNT:
-                </label>
+            <div id="newEmailInputContainer" class="mb-5 hidden">
+                <label for="newEmailInput" class="block text-sm font-medium mb-1 text-muted">NEW EMAIL FOR PHONE-BASED ACCOUNT</label>
                 <input type="email" id="newEmailInput" class="input-field w-full" placeholder="new.email@example.com">
             </div>
 
-            <button id="createAccountBtn" class="btn btn-primary w-full mb-5">
+            <button id="createAccountBtn" class="btn btn-primary w-full mb-6">
                 INITIATE ACCOUNT CREATION
             </button>
 
-            <div id="resultDisplay" class="p-4 rounded-md mb-4 hidden border" data-theme-class-light="bg-result-light border-blue-200" data-theme-class-dark="bg-result-dark border-gray-700">
-                <p class="text-base font-semibold mb-2 text-primary">ACCOUNT DETAILS:</p>
-                <p class="text-sm mb-1">EMAIL: <span id="displayEmail" class="font-medium text-success"></span> <button class="btn-copy ml-2" onclick="copyToClipboard('displayEmail')">COPY</button></p>
-                <p class="text-sm mb-1">PASSWORD: <span id="displayPassword" class="font-medium text-success"></span> <button class="btn-copy ml-2" onclick="copyToClipboard('displayPassword')">COPY</button></p>
+            <div id="resultDisplay" class="p-5 rounded-lg mb-5 border hidden" data-theme-class-light="bg-result-light border-green-300" data-theme-class-dark="bg-result-dark border-gray-700">
+                <p class="text-lg font-semibold mb-3 text-primary">ACCOUNT DETAILS</p>
+                <p class="text-sm mb-1 break-words">EMAIL: <span id="displayEmail" class="font-medium text-success"></span> <button class="btn-copy ml-2" onclick="copyToClipboard('displayEmail')">COPY</button></p>
+                <p class="text-sm mb-1 break-words">PASSWORD: <span id="displayPassword" class="font-medium text-success"></span> <button class="btn-copy ml-2" onclick="copyToClipboard('displayPassword')">COPY</button></p>
                 <p class="text-sm mb-1">NAME: <span id="displayFullName" class="font-medium text-success"></span></p>
-                <p class="text-sm">PROFILE LINK: <a id="displayProfileLink" href="#" target="_blank" class="text-info hover:underline"></a></p>
+                <p class="text-sm break-words">PROFILE LINK: <a id="displayProfileLink" href="#" target="_blank" class="text-info hover:underline"></a></p>
             </div>
 
-            <div id="saveAccountButtons" class="flex justify-center space-x-3 mb-5 hidden">
+            <div id="saveAccountButtons" class="flex justify-center space-x-4 mb-6 hidden">
                 <button id="saveAccountBtn" class="btn btn-primary">SAVE ACCOUNT DATA</button>
                 <button id="dontSaveAccountBtn" class="btn btn-secondary">DO NOT SAVE</button>
             </div>
 
-            <div class="p-4 rounded-md shadow-inner border" data-theme-class-light="bg-log-light border-gray-200" data-theme-class-dark="bg-log-dark border-gray-700">
-                <h2 class="text-lg font-semibold mb-3 text-primary">ACTIVITY LOG</h2>
-                <div id="activityLog" class="max-h-48 overflow-y-auto text-sm">
+            <div class="p-5 rounded-lg shadow-inner border" data-theme-class-light="bg-log-light border-gray-200" data-theme-class-dark="bg-log-dark border-gray-700">
+                <h2 class="text-xl font-semibold mb-4 text-primary">ACTIVITY LOG</h2>
+                <div id="activityLog" class="max-h-56 overflow-y-auto text-sm">
                 </div>
             </div>
         </div>
@@ -757,7 +801,7 @@ def index():
         <div id="loadingModal" class="modal">
             <div class="modal-content">
                 <div class="loader"></div>
-                <p class="text-md font-medium text-primary">Processing Account Creation for Betient</p>
+                <p class="text-lg font-medium text-primary">Processing Account Creation...</p>
             </div>
         </div>
 
@@ -783,15 +827,13 @@ def index():
                 const saveAccountBtn = document.getElementById('saveAccountBtn');
                 const dontSaveAccountBtn = document.getElementById('dontSaveAccountBtn');
                 const loadingModal = document.getElementById('loadingModal');
-                const toggleThemeBtn = document.getElementById('toggleThemeBtn');
+                const themeToggleCheckbox = document.getElementById('themeToggleCheckbox');
                 const body = document.body;
 
-                // Function to clear the newEmailInput field
                 function clearNewEmailField() {
                     newEmailInput.value = '';
                 }
 
-                // Function to clear the userEmailInput field
                 function clearUserEmailField() {
                     userEmailInput.value = '';
                 }
@@ -801,42 +843,42 @@ def index():
                     body.classList.remove('light-theme', 'dark-theme');
                     body.classList.add(theme);
                     localStorage.setItem('theme', theme);
+                    themeToggleCheckbox.checked = (theme === 'dark-theme');
 
-                    // Apply theme-specific classes to dynamic elements
                     const elementsToTheme = [
-                        { element: resultDisplay, light: 'bg-result-light border-blue-200', dark: 'bg-result-dark border-gray-700' },
+                        { element: resultDisplay, light: 'bg-result-light border-green-300', dark: 'bg-result-dark border-gray-700' },
                         { element: document.querySelector('#activityLog').closest('div'), light: 'bg-log-light border-gray-200', dark: 'bg-log-dark border-gray-700' }
                     ];
 
                     elementsToTheme.forEach(({ element, light, dark }) => {
                         if (element) {
+                            element.classList.remove(...light.split(' '));
+                            element.classList.remove(...dark.split(' '));
                             if (theme === 'light-theme') {
-                                element.className = element.className.replace(dark, '').trim() + ' ' + light;
+                                element.classList.add(...light.split(' '));
                             } else {
-                                element.className = element.className.replace(light, '').trim() + ' ' + dark;
+                                element.classList.add(...dark.split(' '));
                             }
                         }
                     });
                 }
 
-                // Load saved theme or default to light
                 const savedTheme = localStorage.getItem('theme') || 'light-theme';
                 setTheme(savedTheme);
 
-                toggleThemeBtn.addEventListener('click', () => {
-                    if (body.classList.contains('light-theme')) {
+                themeToggleCheckbox.addEventListener('change', () => {
+                    if (themeToggleCheckbox.checked) {
                         setTheme('dark-theme');
                     } else {
                         setTheme('light-theme');
                     }
                 });
 
-
                 // Initial state based on radio button
                 if (regChoiceEmail.checked) {
                     emailInputContainer.classList.remove('hidden');
                     newEmailInputContainer.classList.add('hidden');
-                    clearNewEmailField(); // Clear when email is default choice
+                    clearNewEmailField();
                 } else {
                     emailInputContainer.classList.add('hidden');
                     newEmailInputContainer.classList.remove('hidden');
@@ -845,22 +887,22 @@ def index():
                 regChoiceEmail.addEventListener('change', function() {
                     emailInputContainer.classList.remove('hidden');
                     newEmailInputContainer.classList.add('hidden');
-                    clearUserEmailField(); // Clear user email field when switching to email input
-                    clearNewEmailField(); // Clear new email field when switching to email input
+                    clearUserEmailField();
+                    clearNewEmailField();
                 });
 
                 regChoicePhone.addEventListener('change', function() {
                     emailInputContainer.classList.add('hidden');
                     newEmailInputContainer.classList.remove('hidden');
-                    clearUserEmailField(); // Clear user email field when switching to phone
+                    clearUserEmailField();
                 });
 
-                function appendLog(message, colorClass = 'text-muted') { // Default to text-muted for general logs
+                function appendLog(message, colorClass = 'text-muted') {
                     const logEntry = document.createElement('div');
                     logEntry.classList.add('log-entry', colorClass);
                     logEntry.textContent = message;
                     activityLog.appendChild(logEntry);
-                    activityLog.scrollTop = activityLog.scrollHeight; // Auto-scroll to bottom
+                    activityLog.scrollTop = activityLog.scrollHeight;
                 }
 
                 function clearActivityLog() {
@@ -868,11 +910,10 @@ def index():
                 }
 
                 createAccountBtn.addEventListener('click', async () => {
-                    clearActivityLog(); // Clear log on new attempt
-                    resultDisplay.classList.add('hidden'); // Hide previous results
-                    saveAccountButtons.classList.add('hidden'); // Hide save buttons
-                    currentAccountData = null; // Reset account data
-                    // Do NOT clear newEmailInput or userEmailInput here yet, as they might be needed for the current creation attempt
+                    clearActivityLog();
+                    resultDisplay.classList.add('hidden');
+                    saveAccountButtons.classList.add('hidden');
+                    currentAccountData = null;
 
                     const customPassword = passwordInput.value.trim();
                     const regChoice = document.querySelector('input[name="regChoice"]:checked').value;
@@ -881,7 +922,6 @@ def index():
 
                     if (regChoice === '1' && !userEmail) {
                         appendLog("❌ ERROR: EMAIL ADDRESS REQUIRED.", "text-danger");
-                        clearUserEmailField(); // Clear on client-side validation error
                         return;
                     }
                     if (regChoice === '2' && !newEmail) {
@@ -889,7 +929,7 @@ def index():
                         return;
                     }
 
-                    loadingModal.style.display = 'flex'; // Show loading modal
+                    loadingModal.style.display = 'flex';
 
                     try {
                         const response = await fetch('/create_account', {
@@ -907,7 +947,6 @@ def index():
 
                         const data = await response.json();
 
-                        // Append all log messages from the server
                         data.log.forEach(entry => appendLog(entry.message, entry.color));
 
                         if (data.status === 'success' || data.status === 'failed') {
@@ -917,28 +956,24 @@ def index():
                             displayProfileLink.textContent = data.profile_id || 'N/A';
                             displayProfileLink.href = data.profile_id || '#';
                             resultDisplay.classList.remove('hidden');
-                            currentAccountData = data; // Store data for saving decision
-                            saveAccountButtons.classList.remove('hidden'); // Show save buttons
+                            currentAccountData = data;
+                            saveAccountButtons.classList.remove('hidden');
 
-                            if (regChoice === '1') { // Clear userEmailInput only if it was used for creation
+                            if (regChoice === '1') {
                                 clearUserEmailField();
-                            } else { // Clear newEmailInput if it was used for phone-based account
+                            } else {
                                 clearNewEmailField();
                             }
 
-                        } else { // General error from server
+                        } else {
                             appendLog(`ERROR: ${data.message}`, "text-danger");
-                            clearUserEmailField(); // Clear if there's a general error
-                            clearNewEmailField();
                         }
 
                     } catch (error) {
                         appendLog(`CRITICAL ERROR: ${error.message}`, "text-danger");
                         console.error('Fetch error:', error);
-                        clearUserEmailField(); // Clear on critical error
-                        clearNewEmailField();
                     } finally {
-                        loadingModal.style.display = 'none'; // Hide loading modal
+                        loadingModal.style.display = 'none';
                     }
                 });
 
@@ -961,20 +996,20 @@ def index():
                             console.error('Save error:', error);
                         } finally {
                             loadingModal.style.display = 'none';
-                            saveAccountButtons.classList.add('hidden'); // Hide buttons after action
-                            currentAccountData = null; // Clear data after saving attempt
-                            clearUserEmailField(); // Clear the user email field after save attempt
-                            clearNewEmailField(); // Clear the new email field after save attempt
+                            saveAccountButtons.classList.add('hidden');
+                            currentAccountData = null;
+                            clearUserEmailField();
+                            clearNewEmailField();
                         }
                     }
                 });
 
                 dontSaveAccountBtn.addEventListener('click', () => {
                     appendLog("ACCOUNT DATA NOT SAVED PER USER PROTOCOL.", "text-warning");
-                    saveAccountButtons.classList.add('hidden'); // Hide buttons after action
-                    currentAccountData = null; // Clear data
-                    clearUserEmailField(); // Clear the user email field when not saving
-                    clearNewEmailField(); // Clear the new email field when not saving
+                    saveAccountButtons.classList.add('hidden');
+                    currentAccountData = null;
+                    clearUserEmailField();
+                    clearNewEmailField();
                 });
             });
 
@@ -982,7 +1017,6 @@ def index():
                 const element = document.getElementById(elementId);
                 const text = element.textContent;
                 navigator.clipboard.writeText(text).then(() => {
-                    // Simple visual feedback
                     const originalText = element.nextElementSibling.textContent;
                     element.nextElementSibling.textContent = 'COPIED!';
                     setTimeout(() => {
@@ -990,7 +1024,6 @@ def index():
                     }, 1500);
                 }).catch(err => {
                     console.error('FAILED TO COPY: ', err);
-                    // Fallback for browsers that don't support navigator.clipboard
                     const textarea = document.createElement('textarea');
                     textarea.value = text;
                     document.body.appendChild(textarea);
@@ -1075,7 +1108,6 @@ def save_account():
             # In a real scenario, you'd need the actual session cookies here.
             # For this example, we'll just save dummy data or assume it's passed.
             # Since the session is lost between requests, this part needs careful handling.
-            # For simplicity, we'll just acknowledge the save for now.
             # A more robust solution would involve passing relevant cookies from create_account response.
             dummy_cookies_data = {"c_user": uid, "note": "Cookies would be saved here if available from the session."}
             with open(cookie_file, "w") as f:
