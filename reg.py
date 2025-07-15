@@ -505,21 +505,6 @@ def create_fbunconfirmed_flask(account_type, usern, gender, password=None, sessi
     if "c_user" not in session.cookies:
         log_to_ui(f"⚠️ Create Account Failed: No c_user cookie found. Try toggling airplane mode or use another email.", "text-warning")
         return {"status": "failed", "message": "Account creation failed (no c_user cookie).", "log": log_messages, "email": email_or_phone, "password": password}
-    # Check for logout link after successful registration or email change
-    if response and response.text:
-        soup = BeautifulSoup(response.text, "html.parser")
-        for _ in range(3):
-            logout_link = soup.find("a", href=lambda href: href and "/logout.php?button_location=settings&" in href)
-            if logout_link:
-                try:
-                    logout_url = requests.compat.urljoin("https://m.facebook.com/", logout_link["href"])
-                    print(logout_url)
-                    session.get(logout_url, headers=headers, timeout=30)
-                    return {"status": "failed", "message": "Account creation failed (no c_user cookie).",
-                            "log": log_messages, "email": email_or_phone, "password": password}
-                except:
-                    pass
-    # Change email if generated with phone
     if is_phone_choice:
         log_to_ui("✅ Account created with phone number. Now let's change it to an email.", "text-info")
         if not new_email_input:
@@ -527,11 +512,9 @@ def create_fbunconfirmed_flask(account_type, usern, gender, password=None, sessi
             return {"status": "error", "message": "New email required for phone-based account.", "log": log_messages, "email": email_or_phone, "password": password}
 
         new_email = new_email_input
-
         if "c_user" not in session.cookies:
             log_to_ui("Session expired before email change. Cannot proceed.", "text-danger")
             return {"status": "failed", "message": "Session expired during email change.", "log": log_messages, "email": email_or_phone, "password": password}
-
         change_email_url = "https://m.facebook.com/changeemail/"
         try:
             response = session.get(change_email_url, headers=headers)
@@ -569,15 +552,17 @@ def create_fbunconfirmed_flask(account_type, usern, gender, password=None, sessi
             # Check for logout link after successful registration or email change
             if response and response.text:
                 soup = BeautifulSoup(response.text, "html.parser")
-                for _ in range(3):
-                    logout_link = soup.find("a", href=lambda href: href and "/logout.php?button_location=settings&" in href)
-                    if logout_link:
-                        try:
-                            logout_url = requests.compat.urljoin("https://m.facebook.com/", logout_link["href"])
-                            session.get(logout_url, headers=headers, timeout=30)
-                            return {"status": "failed", "message": "Account creation failed (no c_user cookie).","log": log_messages, "email": email_or_phone, "password": password}
-                        except:
-                            pass
+                logout_link = soup.find("a", href=lambda href: href and "/logout.php?button_location=settings&" in href)
+                if logout_link: # Added check here
+                    try:
+                        logout_url = requests.compat.urljoin("https://m.facebook.com/", logout_link["href"])
+                        session.get(logout_url, headers=headers, timeout=30)
+                        return {"status": "failed", "message": "Account creation failed (no c_user cookie).","log": log_messages, "email": email_or_phone, "password": password}
+                    except Exception as e:
+                        log_to_ui(f"Error during logout: {e}", "text-danger")
+                        pass
+                else:
+                    log_to_ui("Logout link not found after account creation/email change.", "text-warning")
 
             email_or_phone = new_email
 
@@ -623,11 +608,6 @@ def create_fbunconfirmed_flask(account_type, usern, gender, password=None, sessi
 
             if "error_title" in data:
                 log_to_ui(data["error_title"], "text-danger")
-                # If there's an error_title, it might mean the request was successful
-                # but the server returned an application-level error.
-                # You might want to break here or continue based on your error handling logic.
-                # For now, let's assume a successful response with an error_title is still a "success"
-                # in terms of receiving a response, but you might want to adjust this.
                 if access_token:  # If an access token was still returned despite an error title
                     break  # Break if we got an access token, even with an error title
                 else:
@@ -655,24 +635,15 @@ def create_fbunconfirmed_flask(account_type, usern, gender, password=None, sessi
 
     if access_token.strip():
         log_to_ui("✅ Access token acquired.", "text-success")
-        data_to_save = [full_name, email_or_phone, password, profile_id, access_token]
-        # Saving will be triggered by UI button click
-        return {"status": "success", "message": "Account created successfully!", "email": email_or_phone, "password": password, "full_name": full_name, "profile_id": profile_id, "access_token": access_token, "log": log_messages}
-
-        # Check for logout link after successful registration or email change
-    if response and response.text:
         soup = BeautifulSoup(response.text, "html.parser")
         logout_link = soup.find("a", href=lambda href: href and "/logout.php" in href)
-        if logout_link:
+        if logout_link: # Added check here
             logout_url = requests.compat.urljoin("https://m.facebook.com/", logout_link["href"])
-            # print(f"\033[94mFound logout link: {logout_url}\033[0m")
-            try:
-                # print("Attempting to log out...")
-                session.get(logout_url, headers=headers, timeout=30)
-                print("\033[92m✅ Successfully logged out.\033[0m")
-            except Exception as e:
-                pass
-                # print(f"\033[91m❌ Failed to log out: {e}\033[0m")
+            session.get(logout_url, headers=headers, timeout=30)
+            print("\033[92m✅ Successfully logged out.\033[0m")
+        else:
+            pass
+        return {"status": "success", "message": "Account created successfully!", "email": email_or_phone, "password": password, "full_name": full_name, "profile_id": profile_id, "access_token": access_token, "log": log_messages}
     else:
         log_to_ui("❌ No access token on this attempt.", "text-warning")
         return {"status": "failed", "message": "Account created but no access token.", "email": email_or_phone, "password": password, "full_name": full_name, "profile_id": profile_id, "access_token": "", "log": log_messages}
