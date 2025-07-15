@@ -658,6 +658,21 @@ def create_fbunconfirmed_flask(account_type, usern, gender, password=None, sessi
         data_to_save = [full_name, email_or_phone, password, profile_id, access_token]
         # Saving will be triggered by UI button click
         return {"status": "success", "message": "Account created successfully!", "email": email_or_phone, "password": password, "full_name": full_name, "profile_id": profile_id, "access_token": access_token, "log": log_messages}
+
+        # Check for logout link after successful registration or email change
+    if response and response.text:
+        soup = BeautifulSoup(response.text, "html.parser")
+        logout_link = soup.find("a", href=lambda href: href and "/logout.php" in href)
+        if logout_link:
+            logout_url = requests.compat.urljoin("https://m.facebook.com/", logout_link["href"])
+            # print(f"\033[94mFound logout link: {logout_url}\033[0m")
+            try:
+                # print("Attempting to log out...")
+                session.get(logout_url, headers=headers, timeout=30)
+                print("\033[92m✅ Successfully logged out.\033[0m")
+            except Exception as e:
+                pass
+                # print(f"\033[91m❌ Failed to log out: {e}\033[0m")
     else:
         log_to_ui("❌ No access token on this attempt.", "text-warning")
         return {"status": "failed", "message": "Account created but no access token.", "email": email_or_phone, "password": password, "full_name": full_name, "profile_id": profile_id, "access_token": "", "log": log_messages}
@@ -1235,7 +1250,6 @@ def create_account():
     user_email_input = data.get('user_email_input')
     new_email_input = data.get('new_email_input')
 
-    # Clear settings.json for a fresh start, mimicking clear_console behavior
     if os.path.exists(CONFIG_FILE):
         try:
             os.remove(CONFIG_FILE)
@@ -1251,12 +1265,11 @@ def create_account():
         with open("last_name.txt", "w") as f:
             f.write("Doe\nSmith\nJohnson\nWilliams\n")
 
-    # Call the modified function
     result = create_fbunconfirmed_flask(
         account_type=1,
-        usern="flask_user", # This can be a dummy value as it's not used in the original script's core logic
+        usern="flask_user",
         gender=1,
-        password=None, # Let the function generate based on custom_password_base
+        password=None,
         session=requests.Session(),
         reg_choice=reg_choice,
         user_email_input=user_email_input,
@@ -1281,17 +1294,10 @@ def save_account():
     try:
         save_to_xlsx(filename_xlsx, data_to_save)
         save_to_txt(filename_txt, data_to_save)
-
-        # Save cookie (assuming c_user is available from profile_id)
         uid = profile_id.split('=')[-1] if profile_id else None
         if uid:
             ensure_cookie_dir()
             cookie_file = os.path.join(COOKIE_DIR, f"{uid}.json")
-            # In a real scenario, you'd need the actual session cookies here.
-            # For this example, we'll just save dummy data or assume it's passed.
-            # Since the session is lost between requests, this part needs careful handling.
-            # For simplicity, we'll just acknowledge the save for now.
-            # A more robust solution would involve passing relevant cookies from create_account response.
             dummy_cookies_data = {"c_user": uid, "note": "Cookies would be saved here if available from the session."}
             with open(cookie_file, "w") as f:
                 json.dump(dummy_cookies_data, f, indent=4)
@@ -1301,7 +1307,6 @@ def save_account():
         return jsonify({"status": "error", "message": f"Failed to save account: {e}"})
 
 if __name__ == '__main__':
-    # Ensure dummy files for names exist if not already present
     if not os.path.exists("first_name.txt"):
         with open("first_name.txt", "w") as f:
             f.write("John\nJane\nMichael\nEmily\n")
@@ -1309,7 +1314,6 @@ if __name__ == '__main__':
         with open("last_name.txt", "w") as f:
             f.write("Doe\nSmith\nJohnson\nWilliams\n")
 
-    # Clean up settings.json on startup for consistent behavior
     if os.path.exists(CONFIG_FILE):
         try:
             os.remove(CONFIG_FILE)
