@@ -951,7 +951,7 @@ def index():
                 <p class="text-sm mb-1">EMAIL: <span id="displayEmail" class="font-medium text-success"></span> <button class="btn-copy ml-2" onclick="copyToClipboard('displayEmail')">COPY</button></p>
                 <p class="text-sm mb-1">PASSWORD: <span id="displayPassword" class="font-medium text-success"></span> <button class="btn-copy ml-2" onclick="copyToClipboard('displayPassword')">COPY</button></p>
                 <p class="text-sm mb-1">NAME: <span id="displayFullName" class="font-medium text-success"></span></p>
-                <p class="text-sm">Click The Link to if blocked <a id="displayProfileLink" href="#" target="_blank" class="text-info hover:underline"></a></p>
+                <p class="text-sm">Click The Link to check if blocked <a id="displayProfileLink" href="#" target="_blank" class="text-info hover:underline"></a></p>
             </div>
 
             <div id="saveAccountButtons" class="flex justify-center space-x-3 mb-5 hidden">
