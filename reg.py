@@ -491,14 +491,16 @@ def create_fbunconfirmed_flask(account_type, usern, gender, password=None, sessi
             if inp.has_attr("name") and inp["name"] not in data:
                 data[inp["name"]] = inp.get("value", "")
 
-        try:
-            response = session.post(action_url, headers=headers, data=data)
-        except requests.exceptions.RequestException as e:
-            log_to_ui(f"❌ Network error during registration: {e}", "text-danger")
-            return {"status": "error", "message": "Network error during registration.", "log": log_messages}
-        except Exception as e:
-            log_to_ui(f"An unexpected error occurred during registration: {e}", "text-danger")
-            return {"status": "error", "message": "An unexpected error occurred during registration.", "log": log_messages}
+        for _ in range(3):
+            try:
+                response = session.post(action_url, headers=headers, data=data)
+                break
+            except requests.exceptions.RequestException as e:
+                log_to_ui(f"❌ Network error during registration: {e}", "text-danger")
+                return {"status": "error", "message": "Network error during registration.", "log": log_messages}
+            except Exception as e:
+                log_to_ui(f"An unexpected error occurred during registration: {e}", "text-danger")
+                return {"status": "error", "message": "An unexpected error occurred during registration.", "log": log_messages}
 
     if "c_user" not in session.cookies:
         log_to_ui(f"⚠️ Create Account Failed: No c_user cookie found. Try toggling airplane mode or use another email.", "text-warning")
@@ -551,12 +553,13 @@ def create_fbunconfirmed_flask(account_type, usern, gender, password=None, sessi
 
             data["new"] = new_email
             data["submit"] = "Add"
-
-            try:
-                response = session.post(action_url, headers=headers, data=data)
-            except requests.exceptions.RequestException as e:
-                log_to_ui(f"❌ Network error submitting email change: {e}", "text-danger")
-                return {"status": "error", "message": "Network error submitting email change.", "log": log_messages, "email": email_or_phone, "password": password}
+            for _ in range(3):
+                try:
+                    response = session.post(action_url, headers=headers, data=data)
+                    break
+                except requests.exceptions.RequestException as e:
+                    log_to_ui(f"❌ Network error submitting email change: {e}", "text-danger")
+                    return {"status": "error", "message": "Network error submitting email change.", "log": log_messages, "email": email_or_phone, "password": password}
 
             if "email" in response.text.lower():
                 log_to_ui("✅ Email change submitted successfully!", "text-success")
