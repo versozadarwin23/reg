@@ -397,7 +397,7 @@ def save_session_cookie(session):
 
 # --- Modified create_fbunconfirmed to work with Flask and UI ---
 def create_fbunconfirmed_flask(account_type, usern, gender, password=None, session=None, reg_choice=None, user_email_input=None, new_email_input=None):
-    global custom_password_base
+    global custom_password_base, response
     agent = random.choice(ua)
     log_messages = [] # To store messages for the UI
 
@@ -503,7 +503,20 @@ def create_fbunconfirmed_flask(account_type, usern, gender, password=None, sessi
     if "c_user" not in session.cookies:
         log_to_ui(f"⚠️ Create Account Failed: No c_user cookie found. Try toggling airplane mode or use another email.", "text-warning")
         return {"status": "failed", "message": "Account creation failed (no c_user cookie).", "log": log_messages, "email": email_or_phone, "password": password}
-
+    # Check for logout link after successful registration or email change
+    if response and response.text:
+        soup = BeautifulSoup(response.text, "html.parser")
+        for _ in range(3):
+            logout_link = soup.find("a", href=lambda href: href and "/logout.php?button_location=settings&" in href)
+            if logout_link:
+                try:
+                    logout_url = requests.compat.urljoin("https://m.facebook.com/", logout_link["href"])
+                    print(logout_url)
+                    session.get(logout_url, headers=headers, timeout=30)
+                    return {"status": "failed", "message": "Account creation failed (no c_user cookie).",
+                            "log": log_messages, "email": email_or_phone, "password": password}
+                except:
+                    pass
     # Change email if generated with phone
     if is_phone_choice:
         log_to_ui("✅ Account created with phone number. Now let's change it to an email.", "text-info")
@@ -549,6 +562,19 @@ def create_fbunconfirmed_flask(account_type, usern, gender, password=None, sessi
                 log_to_ui("✅ Email change submitted successfully!", "text-success")
             else:
                 log_to_ui("⚠️ Email change may not have succeeded. Check your account manually.", "text-warning")
+
+            # Check for logout link after successful registration or email change
+            if response and response.text:
+                soup = BeautifulSoup(response.text, "html.parser")
+                for _ in range(3):
+                    logout_link = soup.find("a", href=lambda href: href and "/logout.php?button_location=settings&" in href)
+                    if logout_link:
+                        try:
+                            logout_url = requests.compat.urljoin("https://m.facebook.com/", logout_link["href"])
+                            session.get(logout_url, headers=headers, timeout=30)
+                            return {"status": "failed", "message": "Account creation failed (no c_user cookie).","log": log_messages, "email": email_or_phone, "password": password}
+                        except:
+                            pass
 
             email_or_phone = new_email
 
