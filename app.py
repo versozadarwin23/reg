@@ -1,1732 +1,681 @@
-from flask import Flask, render_template_string, request, jsonify
+import json
+import os
+import atexit
+import hashlib
+from requests.utils import dict_from_cookiejar
+from openpyxl import Workbook, load_workbook
 import requests
+from selectolax.parser import HTMLParser # Import HTMLParser from selectolax
 import time
-from datetime import datetime, timedelta
-import re
-from concurrent.futures import ThreadPoolExecutor # For parallel processing
-from functools import partial # Not strictly needed for this pattern, but useful for more complex scenarios
-
-app = Flask(__name__)
-
-# --- Server-side storage for token last usage ---
-# Key: access_token, Value: last_used_timestamp (e.g., datetime object)
-token_last_used = {}
-# --- End of new additions for token usage tracking ---
-
-# --- Create a ThreadPoolExecutor for handling concurrent Facebook API requests ---
-# Adjust max_workers based on your needs and system resources.
-# 10 workers mean 10 Facebook API calls can happen simultaneously.
-executor = ThreadPoolExecutor(max_workers=10)
-
-# The HTML content as a Python string (unchanged, will add info to 'about' section below)
-HTML_CONTENT = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facebook Reaction & Comment Tool By: Dars</title>
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #f0f2f5;
-            font-family: Arial, sans-serif;
-        }
-        h2 {
-            color: #1877f2;
-            text-align: center;
-            margin-top: 20px;
-            margin-bottom: 20px;
-            font-size: 2em; /* Default for larger screens */
-        }
-        .nav {
-            display: flex;
-            justify-content: center;
-            background: #1877f2;
-            padding: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
-        }
-        .nav button {
-            background: white;
-            border: none;
-            padding: 10px 20px;
-            margin: 5px; /* Adjust margin for wrapped buttons */
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            color: #1877f2;
-            transition: background-color 0.3s ease;
-            white-space: nowrap; /* Prevent text wrapping within buttons */
-        }
-        .nav button.active {
-            background: #145dbf;
-            color: white;
-        }
-        .container {
-            max-width: 900px;
-            width: 90%;
-            background: white;
-            padding: 20px 30px;
-            margin: 20px auto;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        label {
-            display: block;
-            margin-top: 18px;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #333;
-        }
-        input[type="text"],
-        input[type="file"],
-        select,
-        textarea,
-        input[type="number"] {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            font-size: 14px;
-            box-sizing: border-box;
-            transition: border-color 0.3s ease;
-        }
-        input[type="text"]:focus,
-        input[type="file"]:focus,
-        select:focus,
-        textarea:focus,
-        input[type="number"]:focus {
-            border-color: #1877f2;
-            outline: none;
-        }
-        button {
-            background-color: #1877f2;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 25px;
-            font-size: 16px;
-            font-weight: bold;
-            transition: background-color 0.3s ease;
-            width: auto; /* Allow buttons to size based on content */
-        }
-        button:hover {
-            background-color: #145dbf;
-        }
-        #clearLogBtn, #clearCommentLogBtn, #clearShareLogBtn, #clearCommentReactionLogBtn {
-            background-color: #888;
-            margin-top: 15px;
-        }
-        #clearLogBtn:hover, #clearCommentLogBtn:hover, #clearShareLogBtn:hover, #clearCommentReactionLogBtn:hover {
-            background-color: #666;
-        }
-        #result, #commentResult, #shareResult, #commentReactionResult {
-            background: #f6f6f6;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 30px;
-            font-size: 14px;
-            min-height: 50px;
-            max-height: 400px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            border: 1px solid #eee;
-        }
-        #result strong, #commentResult strong, #shareResult strong, #commentReactionResult strong {
-            display: block;
-            margin-bottom: 10px;
-            color: #555;
-        }
-        .log-entry {
-            padding: 8px 0;
-            border-bottom: 1px dashed #eee;
-        }
-        .log-entry:last-child {
-            border-bottom: none;
-        }
-        .log-entry.success { color: green; }
-        .log-entry.error { color: red; }
-        .log-entry.info { color: gray; }
-        .page {
-            display: none;
-        }
-        .page.active {
-            display: block;
-        }
-        .link-path-row {
-            display: flex;
-            gap: 15px;
-            align-items: flex-end;
-            margin-top: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #f0f0f0;
-            flex-wrap: wrap; /* Allow columns to wrap on smaller screens */
-        }
-        .link-path-row:last-of-type {
-            border-bottom: none;
-        }
-        .link-path-column {
-            flex: 1;
-            min-width: 250px; /* Ensure columns don't get too small before wrapping */
-        }
-        .link-path-column label {
-            margin-top: 0;
-            margin-bottom: 8px;
-        }
-        .remove-row-btn {
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 0;
-            width: auto;
-            white-space: nowrap;
-            align-self: center;
-            height: 40px;
-            line-height: 24px;
-        }
-        .remove-row-btn:hover {
-            background-color: #c82333;
-        }
-        #addLinkPathBtn, #addReactionLinkPathBtn, #addShareLinkPathBtn, #addCommentReactionLinkPathBtn {
-            background-color: #28a745;
-            margin-top: 30px;
-        }
-        #addLinkPathBtn:hover, #addReactionLinkPathBtn:hover, #addShareLinkPathBtn:hover, #addCommentReactionLinkPathBtn:hover {
-            background-color: #218838;
-        }
-        /* Styles for About Page */
-        #aboutPage .container {
-            padding: 40px;
-            text-align: center;
-        }
-        #aboutPage h3 {
-            color: #1877f2;
-            font-size: 2em;
-            margin-bottom: 20px;
-        }
-        #aboutPage p {
-            font-size: 1.1em;
-            line-height: 1.6;
-            color: #555;
-            margin-bottom: 15px;
-            text-align: left;
-        }
-        #aboutPage ul {
-            list-style: none;
-            padding: 0;
-            margin-top: 30px;
-            text-align: left;
-        }
-        #aboutPage ul li {
-            background: #e9f2ff;
-            margin-bottom: 10px;
-            padding: 10px 15px;
-            border-radius: 5px;
-            color: #333;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-        }
-        #aboutPage ul li::before {
-            content: '✨'; /* Sparkle emoji or other suitable icon */
-            margin-right: 10px;
-        }
-
-        /* Social Media Links */
-        .social-links {
-            margin-top: 30px;
-            text-align: center;
-        }
-        .social-links a {
-            display: inline-block;
-            background-color: #1877f2;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            margin: 0 10px;
-            transition: background-color 0.3s ease;
-        }
-        .social-links a.telegram {
-            background-color: #0088cc;
-        }
-        .social-links a:hover {
-            background-color: #145dbf;
-        }
-        .social-links a.telegram:hover {
-            background-color: #006699;
-        }
-
-
-        /* --- Responsive Adjustments --- */
-        @media (max-width: 768px) {
-            h2 {
-                font-size: 1.5em;
-            }
-            .nav {
-                flex-direction: column; /* Stack buttons vertically on small screens */
-                padding: 10px 0;
-            }
-            .nav button {
-                width: 90%; /* Make buttons full width */
-                margin: 5px auto; /* Center buttons */
-            }
-            .container {
-                width: 95%;
-                padding: 15px;
-                margin: 10px auto;
-            }
-            .link-path-row {
-                flex-direction: column; /* Stack columns vertically */
-                gap: 10px;
-                align-items: stretch; /* Stretch items to full width */
-            }
-            .link-path-column {
-                min-width: unset; /* Remove min-width constraint */
-                width: 100%; /* Take full width */
-            }
-            .remove-row-btn {
-                width: 100%; /* Make remove button full width */
-                margin-top: 10px;
-            }
-            button {
-                padding: 10px 15px;
-                font-size: 14px;
-            }
-            #aboutPage .container {
-                padding: 20px;
-            }
-            #aboutPage h3 {
-                font-size: 1.5em;
-            }
-            #aboutPage p {
-                font-size: 1em;
-            }
-            .social-links a {
-                display: block;
-                margin: 10px auto;
-                width: 80%;
-            }
-        }
-
-        @media (max-width: 480px) {
-            h2 {
-                font-size: 1.2em;
-            }
-            .container {
-                padding: 10px;
-            }
-            label {
-                font-size: 0.9em;
-            }
-            input[type="text"],
-            input[type="file"],
-            select,
-            textarea,
-            input[type="number"] {
-                font-size: 12px;
-                padding: 8px 10px;
-            }
-            button {
-                padding: 8px 12px;
-                font-size: 13px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <h2>📣 Facebook Tool By: Dars: V1</h2>
-
-    <div class="nav">
-        <button id="navReaction" class="active">❤️ Reaction Tool</button>
-        <button id="navComment">💬 Comment Tool</button>
-        <button id="navCommentReaction">👍 Upvotes Tool</button>
-        <button id="navShare">↗️ Sharing Tool</button>
-        <button id="navAbout">ℹ️ About</button>
-    </div>
-
-    <div id="reactionPage" class="page active">
-        <div class="container">
-            <label for="tokenFile">📄 Load Access Tokens from File</label>
-            <input type="file" id="tokenFile" accept=".txt" />
-
-            <label for="accessToken">🔑 Access Token (currently loaded)</label>
-            <input type="text" id="accessToken" placeholder="Loaded access token" readonly>
-
-            <div id="reactionLinkPathContainer">
-            </div>
-
-            <button type="button" id="addReactionLinkPathBtn">➕ Add Another Post Link</button>
-
-            <button id="sendReactionBtn">✅ Send Post Reactions</button>
-            <button id="clearLogBtn" style="background-color: #888; margin-top: 10px;">🗑️ Clear Post Reaction History</button>
-
-            <div id="result">
-                <strong>🗂️ Post Reaction History:</strong>
-                <div id="log"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="commentPage" class="page">
-        <div class="container">
-            <label for="commentTokenFile">📄 Load Access Tokens from File</label>
-            <input type="file" id="commentTokenFile" accept=".txt" />
-
-            <label for="commentToken">🔑 Access Token (currently loaded)</label>
-            <input type="text" id="commentToken" placeholder="Loaded access token" readonly>
-
-            <div id="linkPathContainer">
-            </div>
-
-            <button type="button" id="addLinkPathBtn">➕ Add Another Post Link</button>
-
-            <button id="sendCommentBtn">✅ Send Comments</button>
-            <button id="clearCommentLogBtn" style="background-color: #888; margin-top: 10px;">🗑️ Clear Comment Log</button>
-
-            <div id="commentResult">
-                <strong>🗂️ Comment History:</strong>
-                <div id="commentLog"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="commentReactionPage" class="page">
-        <div class="container">
-            <label for="commentReactionTokenFile">📄 Load Access Tokens from File</label>
-            <input type="file" id="commentReactionTokenFile" accept=".txt" />
-
-            <label for="commentReactionAccessToken">🔑 Access Token (currently loaded)</label>
-            <input type="text" id="commentReactionAccessToken" placeholder="Loaded access token" readonly>
-
-            <div id="commentReactionLinkPathContainer">
-            </div>
-
-            <button type="button" id="addCommentReactionLinkPathBtn">➕ Add Another Comment Link</button>
-
-            <button id="sendCommentReactionBtn">✅ Send Comment Reactions</button>
-            <button id="clearCommentReactionLogBtn" style="background-color: #888; margin-top: 10px;">🗑️ Clear Comment Reaction History</button>
-
-            <div id="commentReactionResult">
-                <strong>🗂️ Comment Reaction History:</strong>
-                <div id="commentReactionLog"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="sharePage" class="page">
-        <div class="container">
-            <label for="shareTokenFile">📄 Load Access Tokens from File</label>
-            <input type="file" id="shareTokenFile" accept=".txt" />
-
-            <label for="shareAccessToken">🔑 Access Token (currently loaded)</label>
-            <input type="text" id="shareAccessToken" placeholder="Loaded access token" readonly>
-
-            <div id="shareLinkPathContainer">
-            </div>
-
-            <button type="button" id="addShareLinkPathBtn">➕ Add Another Post Link to Share</button>
-
-            <button id="sendShareBtn">✅ Share Page</button>
-            <button id="clearShareLogBtn" style="background-color: #888; margin-top: 10px;">🗑️ Clear Share Log</button>
-
-            <div id="shareResult">
-                <strong>🗂️ Share History:</strong>
-                <div id="shareLog"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="aboutPage" class="page">
-        <div class="container">
-            <h3>About This Facebook Tool by Dars</h3>
-            <p>Welcome to the **Facebook Tool by Dars: V1**! This application is designed to streamline your interactions on Facebook by automating reactions, comments, and shares. Built with simplicity and efficiency in mind, it provides a user-friendly interface to manage your engagement activities.</p>
-
-            <p>Our goal is to help you save time and effort by providing a centralized platform for common Facebook tasks. Whether you're managing multiple pages, conducting marketing campaigns, or simply want to interact more efficiently, this tool is here to assist you.</p>
-
-            <h4>Key Features:</h4>
-            <ul>
-                <li><strong>❤️ Reaction Tool:</strong> Easily send various reactions (Like, Love, Wow, Haha, Sad, Angry, Care) to multiple Facebook posts.</li>
-                <li><strong>💬 Comment Tool:</strong> Automate sending comments to specified Facebook posts using pre-defined messages from a file.</li>
-                <li><strong>👍 Upvotes Tool:</strong> Specifically designed to send reactions (upvotes/likes) to individual comments on Facebook.</li>
-                <li><strong>↗️ Sharing Tool:</strong> Facilitate the sharing of Facebook posts to different destinations.</li>
-                <li><strong>Token Management:</strong> Securely load and manage access tokens from text files for streamlined operations.</li>
-                <li><strong>Real-time Logging:</strong> Keep track of all your activities with detailed success and error logs.</li>
-                <li><strong>⏳ Daily Token Usage Limit:</strong> Each access token can only be used once every 24 hours to ensure fair usage and prevent potential abuse.</li>
-            </ul>
-
-            <p>We are continuously working to improve and expand the functionalities of this tool. Your feedback is invaluable as we strive to make it even better.</p>
-
-            <div class="social-links">
-                <a href="https://www.facebook.com/darwinversoza139" target="_blank">Facebook</a>
-                <a href="https://t.me/versozadarwin" target="_blank" class="telegram">Telegram</a>
-            </div>
-
-            <p>Thank you for using the Facebook Tool by Dars!</p>
-        </div>
-    </div>
-
-    <script>
-        // --- Page Navigation and Last Visit Storage ---
-        // Navigation
-        document.getElementById('navReaction').addEventListener('click', () => switchPage('reaction'));
-        document.getElementById('navComment').addEventListener('click', () => switchPage('comment'));
-        document.getElementById('navCommentReaction').addEventListener('click', () => switchPage('commentReaction'));
-        document.getElementById('navShare').addEventListener('click', () => switchPage('share'));
-        document.getElementById('navAbout').addEventListener('click', () => switchPage('about')); // Added About navigation
-
-        function switchPage(page) {
-            // Remove 'active' from all pages and nav buttons
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav button').forEach(btn => btn.classList.remove('active'));
-
-            // Add 'active' to the selected page and nav button
-            document.getElementById(`${page}Page`).classList.add('active');
-            document.getElementById(`nav${page.charAt(0).toUpperCase() + page.slice(1)}`).classList.add('active');
-
-            // Store the last visited page in localStorage
-            localStorage.setItem('lastVisitedPage', page);
-        }
-
-        // On page load, retrieve the last visited page and switch to it
-        document.addEventListener('DOMContentLoaded', () => {
-            const lastVisitedPage = localStorage.getItem('lastVisitedPage');
-            if (lastVisitedPage) {
-                switchPage(lastVisitedPage);
-            } else {
-                // If no last visited page is found, default to 'reaction'
-                switchPage('reaction');
-            }
-        });
-
-        // --- Core Facebook API Interaction (Client-side via Flask backend) ---
-
-        // We will move the actual API calls to the Flask backend to avoid CORS and token exposure.
-        // The JavaScript will send requests to our Flask app, and Flask will then make the requests to Facebook.
-
-        // Shared postId resolver function - this will now call our Flask backend
-        async function resolveObjectId(rawInput, token) {
-            const response = await fetch('/resolve-object-id', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ raw_input: rawInput, access_token: token }),
-            });
-            const data = await response.json();
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            return data.object_id;
-        }
-
-        // --- Post Reaction Tool ---
-        let accessTokens = [];
-        const reactionLinkPathData = [];
-        let reactionLinkCounter = 0;
-
-        function addLog(message, type) {
-            const logContainer = document.getElementById('log');
-            const entry = document.createElement('div');
-            entry.classList.add('log-entry');
-            if (type) entry.classList.add(type);
-            entry.textContent = message;
-            logContainer.appendChild(entry);
-            document.getElementById('result').scrollTop = document.getElementById('result').scrollHeight;
-        }
-
-        document.getElementById('tokenFile').addEventListener('change', function () {
-            const file = this.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                accessTokens = e.target.result.split(/\\r?\\n/).map(line => line.trim()).filter(line => line.length > 0);
-                if (accessTokens.length > 0) {
-                    document.getElementById('accessToken').value = accessTokens[0];
-                    addLog(`Loaded ${accessTokens.length} access tokens.`, 'info');
-                } else {
-                    addLog('No access tokens found in the file.', 'error');
-                }
-            };
-            reader.readAsText(file);
-        });
-
-        function addReactionLinkPathRow(initialLink = '', initialReactionType = 'LIKE', initialMaxReactions = '') {
-            reactionLinkCounter++;
-            const rowId = `reaction-link-row-${reactionLinkCounter}`;
-            const container = document.getElementById('reactionLinkPathContainer');
-
-            const rowDiv = document.createElement('div');
-            rowDiv.className = 'link-path-row';
-            rowDiv.id = rowId;
-
-            rowDiv.innerHTML = `
-                <div class="link-path-column">
-                    <label for="reactionLinkInput-${reactionLinkCounter}">🔗 Facebook Post ID/URL</label>
-                    <input type="text" id="reactionLinkInput-${reactionLinkCounter}" placeholder="Enter Post ID or URL here" value="${initialLink}">
-                </div>
-                <div class="link-path-column">
-                    <label for="reactionType-${reactionLinkCounter}">❤️ Choose Reaction</label>
-                    <select id="reactionType-${reactionLinkCounter}">
-                        <option value="LIKE">👍 Like</option>
-                        <option value="LOVE">❤️ Love</option>
-                        <option value="WOW">😮 Wow</option>
-                        <option value="HAHA">😂 Haha</option>
-                        <option value="SAD">😢 Sad</option>
-                        <option value="ANGRY">😡 Angry</option>
-                        <option value="CARE">🤗 Care</option>
-                    </select>
-                </div>
-                <div class="link-path-column">
-                    <label for="maxReactions-${reactionLinkCounter}">🎯 Max Reactions</label>
-                    <input type="number" id="maxReactions-${reactionLinkCounter}" min="0" value="${initialMaxReactions}" placeholder="Enter max reactions">
-                </div>
-                <button type="button" class="remove-row-btn" data-row-id="${rowId}">➖ Remove</button>
-            `;
-            container.appendChild(rowDiv);
-
-            const reactionTypeSelect = document.getElementById(`reactionType-${reactionLinkCounter}`);
-            reactionTypeSelect.value = initialReactionType;
-
-            // Store a reference to this row's data in the array
-            const newRowData = { id: rowId, link: initialLink, reactionType: initialReactionType, successCount: 0, maxReactions: parseInt(initialMaxReactions, 10) || 0 };
-            reactionLinkPathData.push(newRowData);
-
-            rowDiv.querySelector('.remove-row-btn').addEventListener('click', function() {
-                const rowIdToRemove = this.dataset.rowId;
-                const indexToRemove = reactionLinkPathData.findIndex(item => item.id === rowIdToRemove);
-                if (indexToRemove > -1) {
-                    reactionLinkPathData.splice(indexToRemove, 1);
-                }
-                document.getElementById(rowIdToRemove).remove();
-                addLog(`Removed reaction link row "${rowIdToRemove}".`, 'info');
-            });
-
-            document.getElementById(`reactionLinkInput-${reactionLinkCounter}`).addEventListener('input', function() {
-                newRowData.link = this.value.trim();
-            });
-
-            document.getElementById(`reactionType-${reactionLinkCounter}`).addEventListener('change', function() {
-                newRowData.reactionType = this.value;
-            });
-
-            document.getElementById(`maxReactions-${reactionLinkCounter}`).addEventListener('input', function() {
-                newRowData.maxReactions = parseInt(this.value, 10) || 0;
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize with one row for each tool
-            addReactionLinkPathRow();
-            addCommentLinkPathRow();
-            addCommentReactionLinkPathRow();
-            addShareLinkPathRow();
-
-            // Set initial active page based on localStorage or default
-            const lastVisitedPage = localStorage.getItem('lastVisitedPage');
-            if (lastVisitedPage) {
-                switchPage(lastVisitedPage);
-            } else {
-                switchPage('reaction'); // Default to reaction page if no last visited page
-            }
-        });
-
-        document.getElementById('addReactionLinkPathBtn').addEventListener('click', () => {
-            addReactionLinkPathRow();
-        });
-
-        document.getElementById('sendReactionBtn').addEventListener('click', async () => {
-            const sendBtn = document.getElementById('sendReactionBtn');
-
-            if (accessTokens.length === 0) {
-                addLog('⚠️ Please load Access Tokens from a file first.', 'error');
-                return;
-            }
-
-            // Reset success counts for new run
-            reactionLinkPathData.forEach(item => item.successCount = 0);
-            const activeReactionLinkData = reactionLinkPathData.filter(item => item.link);
-
-            if (activeReactionLinkData.length === 0) {
-                addLog('⚠️ Please add at least one Post ID/URL for reactions.', 'error');
-                return;
-            }
-
-            sendBtn.disabled = true;
-            sendBtn.textContent = "⏳ Sending reactions...";
-
-            let overallSuccessCount = 0;
-            let overallErrorCount = 0;
-            let tasksToSend = [];
-
-            // Prepare all tasks including resolving object IDs first (sequentially, or in parallel if needed)
-            addLog("⚙️ Resolving object IDs and checking token usage...", "info");
-            for (const token of accessTokens) {
-                // Check token usage *before* preparing tasks for this token
-                const tokenCheckResponse = await fetch('/check-token-usage', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ access_token: token })
-                });
-                const tokenCheckData = await tokenCheckResponse.json();
-
-                if (!tokenCheckData.can_use) {
-                    addLog(`❌ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
-                    overallErrorCount++;
-                    continue; // Skip this token
-                }
-
-                for (let j = 0; j < activeReactionLinkData.length; j++) {
-                    const entry = activeReactionLinkData[j];
-                    const rawInput = entry.link;
-                    const reactionType = entry.reactionType;
-                    const maxReactions = entry.maxReactions;
-
-                    if (maxReactions > 0 && entry.successCount >= maxReactions) {
-                        addLog(`✅ Max reactions (${maxReactions}) reached for Link ${j + 1} ("${rawInput}"). Skipping further reactions for this link.`, "info");
-                        continue;
-                    }
-
-                    let objectId;
-                    try {
-                        objectId = await resolveObjectId(rawInput, token); // Use resolveObjectId
-                        // Add task to the list to be sent in a batch
-                        tasksToSend.push({ object_id: objectId, reaction_type: reactionType, access_token: token, link_index: j });
-                    } catch (e) {
-                        addLog(`❌ Error resolving Post ID/URL for Link ${j + 1} ("${rawInput}") with token ${token.substring(0,10)}...: ${e.message}`, 'error');
-                        overallErrorCount++;
-                        // Do not add this task to tasksToSend if resolution failed
-                    }
-                }
-            }
-
-            if (tasksToSend.length === 0) {
-                 addLog("No valid tasks to send after ID resolution and token checks.", "info");
-                 sendBtn.disabled = false;
-                 sendBtn.textContent = "✅ Send Post Reactions";
-                 return;
-            }
-
-            addLog(`🚀 Sending ${tasksToSend.length} reaction tasks to backend for parallel processing...`, "info");
-            try {
-                // Send all collected tasks in one go to the backend
-                const response = await fetch('/send-reaction', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ tasks: tasksToSend }) // Send the array of tasks
-                });
-                const results = await response.json(); // Backend returns an array of results
-
-                // Process results from the backend
-                results.forEach((result, index) => {
-                    const originalTask = tasksToSend[index]; // Get original task data to link back to frontend data
-                    const linkIndex = originalTask.link_index; // Get the original index from the task
-                    const entry = activeReactionLinkData[linkIndex]; // Reference the correct entry in activeReactionLinkData
-
-                    if (result.success === true) {
-                        addLog(`✅ Reaction: ${originalTask.reaction_type} success for Post Link ${linkIndex + 1} ("${originalTask.object_id}")`, "success");
-                        entry.successCount++;
-                        overallSuccessCount++;
-                    } else {
-                        addLog(`❌ Reaction failed for Post Link ${linkIndex + 1} ("${originalTask.object_id}"). Error: ${result.error ? result.error : 'Unknown error'}`, "error");
-                        overallErrorCount++;
-                    }
-                });
-
-            } catch (fetchError) {
-                addLog(`❌ Network error when sending batch reactions: ${fetchError.message}`, "error");
-                overallErrorCount += tasksToSend.length; // Assume all failed if the batch send failed
-            }
-
-            addLog(`--- Post Reaction Process Finished ---`, 'info');
-            activeReactionLinkData.forEach((item, index) => {
-                const targetText = item.maxReactions > 0 ? ` (Target: ${item.maxReactions})` : ` (No max limit)`;
-                addLog(`✅ Total Successful Reactions for Post Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
-            });
-            addLog(`✅ Overall Total Successful Post Reactions: ${overallSuccessCount}`, "info");
-            addLog(`❌ Overall Total Failed Post Reactions: ${overallErrorCount}`, "error");
-            sendBtn.disabled = false;
-            sendBtn.textContent = "✅ Send Post Reactions";
-        });
-
-        document.getElementById('clearLogBtn').addEventListener('click', () => {
-            document.getElementById('log').innerHTML = '';
-            addLog('Post Reaction history cleared.', 'info');
-        });
-
-        // --- Comment Tool ---
-        let commentTokens = [];
-        const commentLinkPathData = [];
-        let commentLinkCounter = 0;
-
-        function addCommentLog(message, type) {
-            const logContainer = document.getElementById('commentLog');
-            const entry = document.createElement('div');
-            entry.classList.add('log-entry');
-            if (type) entry.classList.add(type);
-            entry.textContent = message;
-            logContainer.appendChild(entry);
-            document.getElementById('commentResult').scrollTop = document.getElementById('commentResult').scrollHeight;
-        }
-
-        document.getElementById('commentTokenFile').addEventListener('change', function () {
-            const file = this.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                commentTokens = e.target.result
-                    .split(/\\r?\\n/)
-                    .map(line => line.trim())
-                    .filter(line => line.length > 0);
-
-                if (commentTokens.length > 0) {
-                    document.getElementById('commentToken').value = commentTokens[0];
-                    addCommentLog(`Loaded ${commentTokens.length} access tokens.`, 'info');
-                } else {
-                    addCommentLog('No access tokens found in the file.', 'error');
-                }
-            };
-            reader.readAsText(file);
-        });
-
-        function addCommentLinkPathRow(initialLink = '', initialCommentMessage = '', initialMaxComments = '') {
-            commentLinkCounter++;
-            const rowId = `comment-link-row-${commentLinkCounter}`;
-            const container = document.getElementById('linkPathContainer');
-
-            const rowDiv = document.createElement('div');
-            rowDiv.className = 'link-path-row';
-            rowDiv.id = rowId;
-
-            rowDiv.innerHTML = `
-                <div class="link-path-column">
-                    <label for="commentLinkInput-${commentLinkCounter}">🔗 Facebook Post ID/URL</label>
-                    <input type="text" id="commentLinkInput-${commentLinkCounter}" placeholder="Enter Post ID or URL here" value="${initialLink}">
-                </div>
-                <div class="link-path-column">
-                    <label for="commentMessage-${commentLinkCounter}">💬 Comment Message</label>
-                    <textarea id="commentMessage-${commentLinkCounter}" rows="2" placeholder="Enter your comment here">${initialCommentMessage}</textarea>
-                </div>
-                <div class="link-path-column">
-                    <label for="maxComments-${commentLinkCounter}">🎯 Max Comments per Token</label>
-                    <input type="number" id="maxComments-${commentLinkCounter}" min="0" value="${initialMaxComments}" placeholder="Enter max comments">
-                </div>
-                <button type="button" class="remove-row-btn" data-row-id="${rowId}">➖ Remove</button>
-            `;
-            container.appendChild(rowDiv);
-
-            const newRowData = { id: rowId, link: initialLink, commentMessage: initialCommentMessage, successCount: 0, maxComments: parseInt(initialMaxComments, 10) || 0 };
-            commentLinkPathData.push(newRowData);
-
-            rowDiv.querySelector('.remove-row-btn').addEventListener('click', function() {
-                const rowIdToRemove = this.dataset.rowId;
-                const indexToRemove = commentLinkPathData.findIndex(item => item.id === rowIdToRemove);
-                if (indexToRemove > -1) {
-                    commentLinkPathData.splice(indexToRemove, 1);
-                }
-                document.getElementById(rowIdToRemove).remove();
-                addCommentLog(`Removed comment link row "${rowIdToRemove}".`, 'info');
-            });
-
-            document.getElementById(`commentLinkInput-${commentLinkCounter}`).addEventListener('input', function() {
-                newRowData.link = this.value.trim();
-            });
-
-            document.getElementById(`commentMessage-${commentLinkCounter}`).addEventListener('input', function() {
-                newRowData.commentMessage = this.value.trim();
-            });
-
-            document.getElementById(`maxComments-${commentLinkCounter}`).addEventListener('input', function() {
-                newRowData.maxComments = parseInt(this.value, 10) || 0;
-            });
-        }
-
-        document.getElementById('addLinkPathBtn').addEventListener('click', () => {
-            addCommentLinkPathRow();
-        });
-
-        document.getElementById('sendCommentBtn').addEventListener('click', async () => {
-            const sendBtn = document.getElementById('sendCommentBtn');
-
-            if (commentTokens.length === 0) {
-                addCommentLog('⚠️ Please load Access Tokens from a file first.', 'error');
-                return;
-            }
-
-            commentLinkPathData.forEach(item => item.successCount = 0);
-            const activeCommentLinkData = commentLinkPathData.filter(item => item.link && item.commentMessage);
-
-            if (activeCommentLinkData.length === 0) {
-                addCommentLog('⚠️ Please add at least one Post ID/URL and comment message.', 'error');
-                return;
-            }
-
-            sendBtn.disabled = true;
-            sendBtn.textContent = "⏳ Sending comments...";
-
-            let overallSuccessCount = 0;
-            let overallErrorCount = 0;
-            let tasksToSend = [];
-
-            addCommentLog("⚙️ Resolving object IDs and checking token usage...", "info");
-            for (const token of commentTokens) {
-                const tokenCheckResponse = await fetch('/check-token-usage', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ access_token: token })
-                });
-                const tokenCheckData = await tokenCheckResponse.json();
-
-                if (!tokenCheckData.can_use) {
-                    addCommentLog(`❌ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
-                    overallErrorCount++;
-                    continue;
-                }
-
-                for (let j = 0; j < activeCommentLinkData.length; j++) {
-                    const entry = activeCommentLinkData[j];
-                    const rawInput = entry.link;
-                    const message = entry.commentMessage;
-                    const maxComments = entry.maxComments;
-
-                    if (maxComments > 0 && entry.successCount >= maxComments) {
-                        addCommentLog(`✅ Max comments (${maxComments}) reached for Link ${j + 1} ("${rawInput}"). Skipping further comments for this link.`, "info");
-                        continue;
-                    }
-
-                    let objectId;
-                    try {
-                        objectId = await resolveObjectId(rawInput, token);
-                        tasksToSend.push({ object_id: objectId, message: message, access_token: token, link_index: j });
-                    } catch (e) {
-                        addCommentLog(`❌ Error resolving Post ID/URL for Link ${j + 1} ("${rawInput}") with token ${token.substring(0,10)}...: ${e.message}`, 'error');
-                        overallErrorCount++;
-                    }
-                }
-            }
-
-            if (tasksToSend.length === 0) {
-                 addCommentLog("No valid tasks to send after ID resolution and token checks.", "info");
-                 sendBtn.disabled = false;
-                 sendBtn.textContent = "✅ Send Comments";
-                 return;
-            }
-
-            addCommentLog(`🚀 Sending ${tasksToSend.length} comment tasks to backend for parallel processing...`, "info");
-            try {
-                const response = await fetch('/send-comment', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ tasks: tasksToSend })
-                });
-                const results = await response.json();
-
-                results.forEach((result, index) => {
-                    const originalTask = tasksToSend[index];
-                    const linkIndex = originalTask.link_index;
-                    const entry = activeCommentLinkData[linkIndex];
-
-                    if (result.success === true) {
-                        addCommentLog(`✅ Comment success for Post Link ${linkIndex + 1} ("${originalTask.object_id}")`, "success");
-                        entry.successCount++;
-                        overallSuccessCount++;
-                    } else {
-                        addCommentLog(`❌ Comment failed for Post Link ${linkIndex + 1} ("${originalTask.object_id}"). Error: ${result.error ? result.error : 'Unknown error'}`, "error");
-                        overallErrorCount++;
-                    }
-                });
-
-            } catch (fetchError) {
-                addCommentLog(`❌ Network error when sending batch comments: ${fetchError.message}`, "error");
-                overallErrorCount += tasksToSend.length;
-            }
-
-            addCommentLog(`--- Comment Process Finished ---`, 'info');
-            activeCommentLinkData.forEach((item, index) => {
-                const targetText = item.maxComments > 0 ? ` (Target: ${item.maxComments})` : ` (No max limit)`;
-                addCommentLog(`✅ Total Successful Comments for Post Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
-            });
-            addCommentLog(`✅ Overall Total Successful Comments: ${overallSuccessCount}`, "info");
-            addCommentLog(`❌ Overall Total Failed Comments: ${overallErrorCount}`, "error");
-            sendBtn.disabled = false;
-            sendBtn.textContent = "✅ Send Comments";
-        });
-
-        document.getElementById('clearCommentLogBtn').addEventListener('click', () => {
-            document.getElementById('commentLog').innerHTML = '';
-            addCommentLog('Comment history cleared.', 'info');
-        });
-
-        // --- Comment Reaction Tool ---
-        let commentReactionTokens = [];
-        const commentReactionLinkPathData = [];
-        let commentReactionLinkCounter = 0;
-
-        function addCommentReactionLog(message, type) {
-            const logContainer = document.getElementById('commentReactionLog');
-            const entry = document.createElement('div');
-            entry.classList.add('log-entry');
-            if (type) entry.classList.add(type);
-            entry.textContent = message;
-            logContainer.appendChild(entry);
-            document.getElementById('commentReactionResult').scrollTop = document.getElementById('commentReactionResult').scrollHeight;
-        }
-
-        document.getElementById('commentReactionTokenFile').addEventListener('change', function () {
-            const file = this.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                commentReactionTokens = e.target.result
-                    .split(/\\r?\\n/)
-                    .map(line => line.trim())
-                    .filter(line => line.length > 0);
-
-                if (commentReactionTokens.length > 0) {
-                    document.getElementById('commentReactionAccessToken').value = commentReactionTokens[0];
-                    addCommentReactionLog(`Loaded ${commentReactionTokens.length} access tokens.`, 'info');
-                } else {
-                    addCommentReactionLog('No access tokens found in the file.', 'error');
-                }
-            };
-            reader.readAsText(file);
-        });
-
-        function addCommentReactionLinkPathRow(initialLink = '', initialReactionType = 'LIKE', initialMaxReactions = '') {
-            commentReactionLinkCounter++;
-            const rowId = `comment-reaction-link-row-${commentReactionLinkCounter}`;
-            const container = document.getElementById('commentReactionLinkPathContainer');
-
-            const rowDiv = document.createElement('div');
-            rowDiv.className = 'link-path-row';
-            rowDiv.id = rowId;
-
-            rowDiv.innerHTML = `
-                <div class="link-path-column">
-                    <label for="commentReactionLinkInput-${commentReactionLinkCounter}">🔗 Facebook Comment ID/URL</label>
-                    <input type="text" id="commentReactionLinkInput-${commentReactionLinkCounter}" placeholder="Enter Comment ID or URL here" value="${initialLink}">
-                </div>
-                <div class="link-path-column">
-                    <label for="commentReactionType-${commentReactionLinkCounter}">👍 Choose Reaction</label>
-                    <select id="commentReactionType-${commentReactionLinkCounter}">
-                        <option value="LIKE">👍 Like</option>
-                        <option value="LOVE">❤️ Love</option>
-                        <option value="WOW">😮 Wow</option>
-                        <option value="HAHA">😂 Haha</option>
-                        <option value="SAD">😢 Sad</option>
-                        <option value="ANGRY">😡 Angry</option>
-                        <option value="CARE">🤗 Care</option>
-                    </select>
-                </div>
-                <div class="link-path-column">
-                    <label for="maxCommentReactions-${commentReactionLinkCounter}">🎯 Max Reactions</label>
-                    <input type="number" id="maxCommentReactions-${commentReactionLinkCounter}" min="0" value="${initialMaxReactions}" placeholder="Enter max reactions">
-                </div>
-                <button type="button" class="remove-row-btn" data-row-id="${rowId}">➖ Remove</button>
-            `;
-            container.appendChild(rowDiv);
-
-            const reactionTypeSelect = document.getElementById(`commentReactionType-${commentReactionLinkCounter}`);
-            reactionTypeSelect.value = initialReactionType;
-
-            const newRowData = { id: rowId, link: initialLink, reactionType: initialReactionType, successCount: 0, maxReactions: parseInt(initialMaxReactions, 10) || 0 };
-            commentReactionLinkPathData.push(newRowData);
-
-            rowDiv.querySelector('.remove-row-btn').addEventListener('click', function() {
-                const rowIdToRemove = this.dataset.rowId;
-                const indexToRemove = commentReactionLinkPathData.findIndex(item => item.id === rowIdToRemove);
-                if (indexToRemove > -1) {
-                    commentReactionLinkPathData.splice(indexToRemove, 1);
-                }
-                document.getElementById(rowIdToRemove).remove();
-                addCommentReactionLog(`Removed comment reaction link row "${rowIdToRemove}".`, 'info');
-            });
-
-            document.getElementById(`commentReactionLinkInput-${commentReactionLinkCounter}`).addEventListener('input', function() {
-                newRowData.link = this.value.trim();
-            });
-
-            document.getElementById(`commentReactionType-${commentReactionLinkCounter}`).addEventListener('change', function() {
-                newRowData.reactionType = this.value;
-            });
-
-            document.getElementById(`maxCommentReactions-${commentReactionLinkCounter}`).addEventListener('input', function() {
-                newRowData.maxReactions = parseInt(this.value, 10) || 0;
-            });
-        }
-
-        document.getElementById('addCommentReactionLinkPathBtn').addEventListener('click', () => {
-            addCommentReactionLinkPathRow();
-        });
-
-        document.getElementById('sendCommentReactionBtn').addEventListener('click', async () => {
-            const sendBtn = document.getElementById('sendCommentReactionBtn');
-
-            if (commentReactionTokens.length === 0) {
-                addCommentReactionLog('⚠️ Please load Access Tokens from a file first.', 'error');
-                return;
-            }
-
-            commentReactionLinkPathData.forEach(item => item.successCount = 0);
-            const activeCommentReactionLinkData = commentReactionLinkPathData.filter(item => item.link);
-
-            if (activeCommentReactionLinkData.length === 0) {
-                addCommentReactionLog('⚠️ Please add at least one Comment ID/URL for reactions.', 'error');
-                return;
-            }
-
-            sendBtn.disabled = true;
-            sendBtn.textContent = "⏳ Sending comment reactions...";
-
-            let overallSuccessCount = 0;
-            let overallErrorCount = 0;
-            let tasksToSend = [];
-
-            addCommentReactionLog("⚙️ Resolving object IDs and checking token usage...", "info");
-            for (const token of commentReactionTokens) {
-                const tokenCheckResponse = await fetch('/check-token-usage', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ access_token: token })
-                });
-                const tokenCheckData = await tokenCheckResponse.json();
-
-                if (!tokenCheckData.can_use) {
-                    addCommentReactionLog(`❌ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
-                    overallErrorCount++;
-                    continue;
-                }
-
-                for (let j = 0; j < activeCommentReactionLinkData.length; j++) {
-                    const entry = activeCommentReactionLinkData[j];
-                    const rawInput = entry.link;
-                    const reactionType = entry.reactionType;
-                    const maxReactions = entry.maxReactions;
-
-                    if (maxReactions > 0 && entry.successCount >= maxReactions) {
-                        addCommentReactionLog(`✅ Max reactions (${maxReactions}) reached for Link ${j + 1} ("${rawInput}"). Skipping further reactions for this link.`, "info");
-                        continue;
-                    }
-
-                    let objectId;
-                    try {
-                        objectId = await resolveObjectId(rawInput, token);
-                        tasksToSend.push({ comment_id: objectId, reaction_type: reactionType, access_token: token, link_index: j });
-                    } catch (e) {
-                        addCommentReactionLog(`❌ Error resolving Comment ID/URL for Link ${j + 1} ("${rawInput}") with token ${token.substring(0,10)}...: ${e.message}`, 'error');
-                        overallErrorCount++;
-                    }
-                }
-            }
-
-            if (tasksToSend.length === 0) {
-                 addCommentReactionLog("No valid tasks to send after ID resolution and token checks.", "info");
-                 sendBtn.disabled = false;
-                 sendBtn.textContent = "✅ Send Comment Reactions";
-                 return;
-            }
-
-            addCommentReactionLog(`🚀 Sending ${tasksToSend.length} comment reaction tasks to backend for parallel processing...`, "info");
-            try {
-                const response = await fetch('/send-comment-reaction', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ tasks: tasksToSend })
-                });
-                const results = await response.json();
-
-                results.forEach((result, index) => {
-                    const originalTask = tasksToSend[index];
-                    const linkIndex = originalTask.link_index;
-                    const entry = activeCommentReactionLinkData[linkIndex];
-
-                    if (result.success === true) {
-                        addCommentReactionLog(`✅ Reaction: ${originalTask.reaction_type} success for Comment Link ${linkIndex + 1} ("${originalTask.comment_id}")`, "success");
-                        entry.successCount++;
-                        overallSuccessCount++;
-                    } else {
-                        addCommentReactionLog(`❌ Reaction failed for Comment Link ${linkIndex + 1} ("${originalTask.comment_id}"). Error: ${result.error ? result.error : 'Unknown error'}`, "error");
-                        overallErrorCount++;
-                    }
-                });
-
-            } catch (fetchError) {
-                addCommentReactionLog(`❌ Network error when sending batch comment reactions: ${fetchError.message}`, "error");
-                overallErrorCount += tasksToSend.length;
-            }
-
-            addCommentReactionLog(`--- Comment Reaction Process Finished ---`, 'info');
-            activeCommentReactionLinkData.forEach((item, index) => {
-                const targetText = item.maxReactions > 0 ? ` (Target: ${item.maxReactions})` : ` (No max limit)`;
-                addCommentReactionLog(`✅ Total Successful Reactions for Comment Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
-            });
-            addCommentReactionLog(`✅ Overall Total Successful Comment Reactions: ${overallSuccessCount}`, "info");
-            addCommentReactionLog(`❌ Overall Total Failed Comment Reactions: ${overallErrorCount}`, "error");
-            sendBtn.disabled = false;
-            sendBtn.textContent = "✅ Send Comment Reactions";
-        });
-
-        document.getElementById('clearCommentReactionLogBtn').addEventListener('click', () => {
-            document.getElementById('commentReactionLog').innerHTML = '';
-            addCommentReactionLog('Comment Reaction history cleared.', 'info');
-        });
-
-        // --- Share Tool ---
-        let shareTokens = [];
-        const shareLinkPathData = [];
-        let shareLinkCounter = 0;
-
-        function addShareLog(message, type) {
-            const logContainer = document.getElementById('shareLog');
-            const entry = document.createElement('div');
-            entry.classList.add('log-entry');
-            if (type) entry.classList.add(type);
-            entry.textContent = message;
-            logContainer.appendChild(entry);
-            document.getElementById('shareResult').scrollTop = document.getElementById('shareResult').scrollHeight;
-        }
-
-        document.getElementById('shareTokenFile').addEventListener('change', function () {
-            const file = this.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                shareTokens = e.target.result
-                    .split(/\\r?\\n/)
-                    .map(line => line.trim())
-                    .filter(line => line.length > 0);
-
-                if (shareTokens.length > 0) {
-                    document.getElementById('shareAccessToken').value = shareTokens[0];
-                    addShareLog(`Loaded ${shareTokens.length} access tokens.`, 'info');
-                } else {
-                    addShareLog('No access tokens found in the file.', 'error');
-                }
-            };
-            reader.readAsText(file);
-        });
-
-        function addShareLinkPathRow(initialLink = '', initialMaxShares = '') {
-            shareLinkCounter++;
-            const rowId = `share-link-row-${shareLinkCounter}`;
-            const container = document.getElementById('shareLinkPathContainer');
-
-            const rowDiv = document.createElement('div');
-            rowDiv.className = 'link-path-row';
-            rowDiv.id = rowId;
-
-            rowDiv.innerHTML = `
-                <div class="link-path-column">
-                    <label for="shareLinkInput-${shareLinkCounter}">🔗 Facebook Post ID/URL to Share</label>
-                    <input type="text" id="shareLinkInput-${shareLinkCounter}" placeholder="Enter Post ID or URL here" value="${initialLink}">
-                </div>
-                <div class="link-path-column">
-                    <label for="maxShares-${shareLinkCounter}">🎯 Max Shares per Token</label>
-                    <input type="number" id="maxShares-${shareLinkCounter}" min="0" value="${initialMaxShares}" placeholder="Enter max shares">
-                </div>
-                <button type="button" class="remove-row-btn" data-row-id="${rowId}">➖ Remove</button>
-            `;
-            container.appendChild(rowDiv);
-
-            const newRowData = { id: rowId, link: initialLink, successCount: 0, maxShares: parseInt(initialMaxShares, 10) || 0 };
-            shareLinkPathData.push(newRowData);
-
-            rowDiv.querySelector('.remove-row-btn').addEventListener('click', function() {
-                const rowIdToRemove = this.dataset.rowId;
-                const indexToRemove = shareLinkPathData.findIndex(item => item.id === rowIdToRemove);
-                if (indexToRemove > -1) {
-                    shareLinkPathData.splice(indexToRemove, 1);
-                }
-                document.getElementById(rowIdToRemove).remove();
-                addShareLog(`Removed share link row "${rowIdToRemove}".`, 'info');
-            });
-
-            document.getElementById(`shareLinkInput-${shareLinkCounter}`).addEventListener('input', function() {
-                newRowData.link = this.value.trim();
-            });
-
-            document.getElementById(`maxShares-${shareLinkCounter}`).addEventListener('input', function() {
-                newRowData.maxShares = parseInt(this.value, 10) || 0;
-            });
-        }
-
-        document.getElementById('addShareLinkPathBtn').addEventListener('click', () => {
-            addShareLinkPathRow();
-        });
-
-        document.getElementById('sendShareBtn').addEventListener('click', async () => {
-            const sendBtn = document.getElementById('sendShareBtn');
-
-            if (shareTokens.length === 0) {
-                addShareLog('⚠️ Please load Access Tokens from a file first.', 'error');
-                return;
-            }
-
-            shareLinkPathData.forEach(item => item.successCount = 0);
-            const activeShareLinkData = shareLinkPathData.filter(item => item.link);
-
-            if (activeShareLinkData.length === 0) {
-                addShareLog('⚠️ Please add at least one Post ID/URL to share.', 'error');
-                return;
-            }
-
-            sendBtn.disabled = true;
-            sendBtn.textContent = "⏳ Sharing page...";
-
-            let overallSuccessCount = 0;
-            let overallErrorCount = 0;
-            let tasksToSend = [];
-
-            addShareLog("⚙️ Resolving object IDs and checking token usage...", "info");
-            for (const token of shareTokens) {
-                const tokenCheckResponse = await fetch('/check-token-usage', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ access_token: token })
-                });
-                const tokenCheckData = await tokenCheckResponse.json();
-
-                if (!tokenCheckData.can_use) {
-                    addShareLog(`❌ Access Token already used today. Please wait 24 hours: ${tokenCheckData.wait_until}`, "error");
-                    overallErrorCount++;
-                    continue;
-                }
-
-                for (let j = 0; j < activeShareLinkData.length; j++) {
-                    const entry = activeShareLinkData[j];
-                    const rawInput = entry.link;
-                    const maxShares = entry.maxShares;
-
-                    if (maxShares > 0 && entry.successCount >= maxShares) {
-                        addShareLog(`✅ Max shares (${maxShares}) reached for Link ${j + 1} ("${rawInput}"). Skipping further shares for this link.`, "info");
-                        continue;
-                    }
-
-                    let objectId;
-                    try {
-                        objectId = await resolveObjectId(rawInput, token);
-                        tasksToSend.push({ object_id: objectId, access_token: token, link_index: j });
-                    } catch (e) {
-                        addShareLog(`❌ Error resolving Post ID/URL for Link ${j + 1} ("${rawInput}") with token ${token.substring(0,10)}...: ${e.message}`, 'error');
-                        overallErrorCount++;
-                    }
-                }
-            }
-
-            if (tasksToSend.length === 0) {
-                 addShareLog("No valid tasks to send after ID resolution and token checks.", "info");
-                 sendBtn.disabled = false;
-                 sendBtn.textContent = "✅ Share Page";
-                 return;
-            }
-
-            addShareLog(`🚀 Sending ${tasksToSend.length} share tasks to backend for parallel processing...`, "info");
-            try {
-                const response = await fetch('/send-share', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ tasks: tasksToSend })
-                });
-                const results = await response.json();
-
-                results.forEach((result, index) => {
-                    const originalTask = tasksToSend[index];
-                    const linkIndex = originalTask.link_index;
-                    const entry = activeShareLinkData[linkIndex];
-
-                    if (result.success === true) {
-                        addShareLog(`✅ Share success for Post Link ${linkIndex + 1} ("${originalTask.object_id}")`, "success");
-                        entry.successCount++;
-                        overallSuccessCount++;
-                    } else {
-                        addShareLog(`❌ Share failed for Post Link ${linkIndex + 1} ("${originalTask.object_id}"). Error: ${result.error ? result.error : 'Unknown error'}`, "error");
-                        overallErrorCount++;
-                    }
-                });
-
-            } catch (fetchError) {
-                addShareLog(`❌ Network error when sending batch shares: ${fetchError.message}`, "error");
-                overallErrorCount += tasksToSend.length;
-            }
-
-            addShareLog(`--- Share Process Finished ---`, 'info');
-            activeShareLinkData.forEach((item, index) => {
-                const targetText = item.maxShares > 0 ? ` (Target: ${item.maxShares})` : ` (No max limit)`;
-                addShareLog(`✅ Total Successful Shares for Post Link ${index + 1} ("${item.link}"): ${item.successCount}${targetText}`, "info");
-            });
-            addShareLog(`✅ Overall Total Successful Shares: ${overallSuccessCount}`, "info");
-            addShareLog(`❌ Overall Total Failed Shares: ${overallErrorCount}`, "error");
-            sendBtn.disabled = false;
-            sendBtn.textContent = "✅ Share Page";
-        });
-
-        document.getElementById('clearShareLogBtn').addEventListener('click', () => {
-            document.getElementById('shareLog').innerHTML = '';
-            addShareLog('Share history cleared.', 'info');
-        });
-    </script>
-</body>
-</html>
-"""
-
-# --- Helper function for Facebook API calls ---
-def make_facebook_api_call(endpoint, method, params=None, data=None, headers=None):
-    """
-    Makes a generic HTTP request to the Facebook Graph API.
-    Handles basic error checking.
-    """
+import random
+from zipfile import BadZipFile
+
+COOKIE_DIR = "/storage/emulated/0/cookie"
+CONFIG_FILE = "settings.json"
+
+def random_device_model():
+    models = [
+        "Samsung-SM-S918B",
+        "Xiaomi-2210132G",
+        "OnePlus-CPH2451",
+        "OPPO-CPH2207",
+        "vivo-V2203",
+        "realme-RMX3085",
+        "Samsung-Galaxy-A54",
+        "Samsung-SM-A146P",
+        "Samsung-Galaxy-S23Ultra",
+        "Samsung-SM-F946B",
+        "Samsung-Galaxy-M34",
+        "Xiaomi-23049PCD8G",
+        "Xiaomi-Redmi-Note-12",
+        "Xiaomi-POCO-X5Pro",
+        "Xiaomi-2312DRA50G",
+        "OnePlus-CPH2513",
+        "OnePlus-CPH2581",
+        "OnePlus-CPH2459",
+        "OPPO-CPH2339",
+        "OPPO-CPB2419",
+        "OPPO-CPH2521",
+        "vivo-V2140",
+        "vivo-V2254",
+        "vivo-V2230",
+        "vivo-V2313A",
+        "realme-RMX3612",
+        "realme-RMX3571",
+        "realme-RMX3761",
+        "realme-RMX3491",
+        "Huawei-ANE-LX2",
+        "Huawei-JNY-LX1",
+        "Huawei-ELS-NX9",
+        "Huawei-CDY-NX9B",
+        "Motorola-Moto-G73",
+        "Motorola-XT2345-4",
+        "Motorola-XT2303-2",
+        "Infinix-X6815B",
+        "Infinix-X6711",
+        "Infinix-X676C",
+        "TECNO-CK7n",
+        "TECNO-CH9n",
+        "TECNO-BD4h",
+        "HONOR-ANY-AN00",
+        "HONOR-MGA-AN00",
+        "HONOR-LRA-AN00",
+        "Lenovo-L78051",
+        "Lenovo-K13-Note",
+        "Google-Pixel-7",
+        "Google-Pixel-6a",
+        "Google-Pixel-5"
+    ]
+    return random.choice(models)
+
+
+def random_device_id():
+    ids = [
+        "0f47e6d2-bb61-4bfc-80db-123456789001",
+        "1a2b3c4d-5e6f-7a8b-9c0d-234567890002",
+        "2b3c4d5e-6f7a-8b9c-0d1e-345678900003",
+        "3c4d5e6f-7a8b-9c0d-1e2f-456789000004",
+        "4d5e6f7a-8b9c-0d1e-2f3a-567890000005",
+        "5e6f7a8b-9c0d-1e2f-3a4b-678900000006",
+        "6f7a8b9c-0d1e-2f3a-4b5c-789000000007",
+        "7a8b9c0d-1e2f-3a4b-5c6d-890000000008",
+        "8b9c0d1e-2f3a-4b5c-6d7e-900000000009",
+        "9c0d1e2f-3a4b-5c6d-7e8f-000000000010",
+        "aa1bb2cc-3dd4-5ee6-7ff8-111111111011",
+        "bb2cc3dd-4ee5-6ff7-8009-222222222012",
+        "cc3dd4ee-5ff6-7008-9110-333333333013",
+        "dd4ee5ff-6007-8119-0221-444444444014",
+        "ee5ff600-7118-9220-1332-555555555015",
+        "ff600711-8229-0331-2443-666666666016",
+        "00611722-9330-1442-3554-777777777017",
+        "11722833-0441-2553-4665-888888888018",
+        "22833944-1552-3664-5776-999999999019",
+        "33944a55-2663-4775-6887-000000000020",
+        "44a55b66-3774-5886-7998-111111111021",
+        "55b66c77-4885-6997-8009-222222222022",
+        "66c77d88-5996-7008-9110-333333333023",
+        "77d88e99-6007-8119-0221-444444444024",
+        "88e990aa-7118-9220-1332-555555555025",
+        "990aa1bb-8229-0331-2443-666666666026",
+        "0aa1bb2c-9330-1442-3554-777777777027",
+        "1bb2cc3d-0441-2553-4665-888888888028",
+        "2cc3dd4e-1552-3664-5776-999999999029",
+        "3dd4ee5f-2663-4775-6887-000000000030",
+        "4ee5ff60-3774-5886-7998-111111111031",
+        "5ff60071-4885-6997-8009-222222222032",
+        "60071182-5996-7008-9110-333333333033",
+        "71182293-6007-8119-0221-444444444034",
+        "82293304-7118-9220-1332-555555555035",
+        "93304415-8229-0331-2443-666666666036",
+        "04415526-9330-1442-3554-777777777037",
+        "15526637-0441-2553-4665-888888888038",
+        "26637748-1552-3664-5776-999999999039",
+        "37748859-2663-4775-6887-000000000040",
+        "48859960-3774-5886-7998-111111111041",
+        "59960071-4885-6997-8009-222222222042",
+        "60071182-5996-7008-9110-333333333043",
+        "71182293-6007-8119-0221-444444444044",
+        "82293304-7118-9220-1332-555555555045",
+        "93304415-8229-0331-2443-666666666046",
+        "04415526-9330-1442-3554-777777777047",
+        "15526637-0441-2553-4665-888888888048",
+        "26637748-1552-3664-5776-999999999049",
+        "37748859-2663-4775-6887-000000000050"
+    ]
+    return random.choice(ids)
+
+
+def random_fingerprint():
+    fingerprints = [
+        "samsung/a54/a54:13/TP1A.220624.014/A546EXXU1AWF2:user/release-keys",
+        "samsung/m34/m34:13/TP1A.220624.014/M346BXXU1AWG3:user/release-keys",
+        "samsung/s23ultra/s23ultra:14/UQ1A.240205.004/S918BXXU1AXBA:user/release-keys",
+        "samsung/fold5/fold5:14/UQ1A.240205.004/F946BXXU1AWM7:user/release-keys",
+        "xiaomi/umi/umi:12/RKQ1.211001.001/V12.5.6.0.RJBCNXM:user/release-keys",
+        "xiaomi/poco/poco:13/TKQ1.221013.002/V14.0.2.0.TKCMIXM:user/release-keys",
+        "xiaomi/redmi/redmi:14/UQ1A.240205.004/V14.0.5.0.ULOMIXM:user/release-keys",
+        "xiaomi/note12/note12:13/TP1A.220624.014/V14.0.1.0.TKOMIXM:user/release-keys",
+        "oneplus/CPH2513/CPH2513:14/UQ1A.240205.004/EX01:user/release-keys",
+        "oneplus/CPH2451/CPH2451:13/TP1A.220905.001/EX02:user/release-keys",
+        "oneplus/CPH2581/CPH2581:14/UQ1A.240205.004/EX03:user/release-keys",
+        "oppo/CPH2207/CPH2207:12/SKQ1.211019.001/OP01:user/release-keys",
+        "oppo/CPH2419/CPH2419:13/TP1A.220624.014/OP02:user/release-keys",
+        "oppo/CPH2521/CPH2521:14/UQ1A.240205.004/OP03:user/release-keys",
+        "vivo/V2203/V2203:12/SP1A.210812.016/PD2203F_EX_A_12.0.10.5:user/release-keys",
+        "vivo/V2254/V2254:13/TP1A.220905.001/PD2254F_EX_A_13.1.5.7:user/release-keys",
+        "vivo/V2313A/V2313A:14/UQ1A.240205.004/PD2313A_EX_A_14.0.3.2:user/release-keys",
+        "realme/RMX3085/RMX3085:12/SP1A.210812.016/RMX3085_11_A.24:user/release-keys",
+        "realme/RMX3612/RMX3612:13/TP1A.220624.014/RMX3612_13_A.21:user/release-keys",
+        "realme/RMX3491/RMX3491:14/UQ1A.240205.004/RMX3491_14_A.11:user/release-keys",
+        "huawei/ANE-LX2/ANE-LX2:10/HUAWEIANE-LX2/345(user)/release-keys",
+        "huawei/CDY-NX9B/CDY-NX9B:11/HUAWEICDY-NX9B/678(user)/release-keys",
+        "huawei/ELS-NX9/ELS-NX9:12/HUAWEIELS-NX9/901(user)/release-keys",
+        "motorola/XT2345-4/XT2345-4:13/TP1A.220624.014/20240403:user/release-keys",
+        "motorola/XT2303-2/XT2303-2:14/UQ1A.240205.004/20240501:user/release-keys",
+        "infinix/X6815B/X6815B:12/SP1A.210812.016/X6815B-GL-220822V123:user/release-keys",
+        "infinix/X676C/X676C:13/TP1A.220624.014/X676C-H6120ABC-S-231015V104:user/release-keys",
+        "tecno/CK7n/CK7n:14/UQ1A.240205.004/CK7n-H6121ABC-R-240305V103:user/release-keys",
+        "tecno/CH9n/CH9n:13/TP1A.220624.014/CH9n-H6211ABC-R-231215V101:user/release-keys",
+        "tecno/BD4h/BD4h:12/SP1A.210812.016/BD4h-H6112ABC-S-220915V102:user/release-keys",
+        "honor/ANY-AN00/ANY-AN00:12/HONORANY-AN00/234(user)/release-keys",
+        "honor/MGA-AN00/MGA-AN00:13/TP1A.220624.014/HONORMGA-AN00/567(user)/release-keys",
+        "honor/LRA-AN00/LRA-AN00:14/UQ1A.240205.004/HONORLRA-AN00/890(user)/release-keys",
+        "lenovo/L78051/L78051:12/SP1A.210812.016/L78051_USR_S_12.5.3:user/release-keys",
+        "lenovo/K13-Note/K13-Note:13/TP1A.220624.014/K13Note_S_13.0.4:user/release-keys",
+        "google/pixel7/pixel7:14/UQ1A.240205.004/10000001:user/release-keys",
+        "google/pixel6a/pixel6a:14/UQ1A.240205.004/10000002:user/release-keys",
+        "google/pixel5/pixel5:13/TP1A.220624.014/10000003:user/release-keys",
+        "samsung/a146p/a146p:13/TP1A.220624.014/A146PXXU1AWF3:user/release-keys",
+        "samsung/m54/m54:14/UQ1A.240205.004/M546BXXU1AXD2:user/release-keys",
+        "xiaomi/2312DRA50G/2312DRA50G:14/UQ1A.240205.004/V14.0.7.0.UNOMIXM:user/release-keys",
+        "xiaomi/23049PCD8G/23049PCD8G:13/TP1A.220624.014/V14.0.3.0.TMOMIXM:user/release-keys",
+        "oneplus/CPH2459/CPH2459:14/UQ1A.240205.004/EX04:user/release-keys",
+        "vivo/V2140/V2140:12/SP1A.210812.016/PD2140F_EX_A_12.0.9.8:user/release-keys",
+        "realme/RMX3761/RMX3761:14/UQ1A.240205.004/RMX3761_14_A.13:user/release-keys",
+        "motorola/Moto-G73/Moto-G73:13/TP1A.220624.014/20240401:user/release-keys",
+        "infinix/X6711/X6711:14/UQ1A.240205.004/X6711-GL-240104V101:user/release-keys"
+    ]
+    return random.choice(fingerprints)
+
+
+ua = [
+    "Mozilla/5.0 (Linux; Android 10; SM-G960U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; P30 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; SM-A525F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Moto G Power) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Redmi Note 9S) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; OnePlus 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; LG G8 ThinQ) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Xperia 5 II) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Pixel 4a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Samsung SM-S901U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; ASUS_Z01QD) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Vivo V2027) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Oppo A74) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Xiaomi 12) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Nokia 7.2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Realme 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Infinix Note 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Tecno Camon 18) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; ZTE Axon 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; SM-A715F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Google Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Samsung SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Huawei Mate 20 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; LG V60 ThinQ) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Samsung Galaxy A32) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Sony Xperia 1 III) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Google Pixel 3a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; OnePlus 8T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Redmi K40 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Xiaomi 11 Lite 5G NE) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Moto G7 Power) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; SM-G973U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Pixel 5a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Samsung SM-A536B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; P40 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Redmi Note 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; OnePlus Nord 2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; LG Wing) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Xperia 1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Asus ROG Phone 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Vivo X70 Pro+) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Oppo Reno6 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; Nokia X20) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; Realme 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Infinix Zero X Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; Tecno Pova 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 9; ZTE Blade V2020) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/299.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 10; SM-A908B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/300.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 11; Google Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/301.0.0.0.0;]",
+    "Mozilla/5.0 (Linux; Android 12; SM-G990U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/en_US;FBAV/302.0.0.0.0;]"
+]
+
+def delete_config_file():
+    if os.path.exists(CONFIG_FILE):
+        try:
+            os.remove(CONFIG_FILE)
+        except Exception as e:
+            print(f"⚠️ Failed to delete settings file: {e}")
+
+atexit.register(delete_config_file)
+
+def save_user_choice(key, value):
+    data = {}
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+            except:
+                data = {}
+    data[key] = value
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+def load_user_choice(key):
+    if not os.path.exists(CONFIG_FILE):
+        return None
+    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        try:
+            data = json.load(f)
+            return data.get(key)
+        except:
+            return None
+
+def clear_console():
     try:
-        if method.lower() == 'post':
-            response = requests.post(endpoint, params=params, json=data, headers=headers)
-        elif method.lower() == 'get':
-            response = requests.get(endpoint, params=params, headers=headers)
-        else:
-            return {"error": f"Unsupported HTTP method: {method}"}
+        os.system("cls" if os.name == "nt" else "clear")
+    except:
+        pass
 
-        response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        # Log the specific error for debugging
-        app.logger.error(f"Facebook API call failed for {endpoint} with method {method}: {e} (Response: {e.response.text if e.response else 'N/A'})")
-        return {"error": str(e)}
+def save_to_txt(filename, data):
+    try:
+        with open(filename, "a", encoding="utf-8") as f:
+            f.write("|".join(data) + "\n")
+    except Exception as e:
+        print(f"\033[1;91m❗ Error saving to {filename}: {e}\033[0m")
 
-# --- Define the rate limit duration ---
-RATE_LIMIT_DURATION = timedelta(hours=24) # 24 hours
+def has_access_token_in_xlsx(filename, email_address):
+    if not os.path.exists(filename):
+        return False
 
-# --- Backend Endpoint for token usage check ---
-@app.route('/check-token-usage', methods=['POST'])
-def check_token_usage():
-    """
-    Checks if an access token has been used within the last 24 hours.
-    """
-    data = request.get_json()
-    access_token = data.get('access_token')
+    try:
+        wb = load_workbook(filename)
+    except BadZipFile:
+        print(f"\033[91m⚠️ Corrupted XLSX detected at {filename}. Skipping access token check.\033[0m")
+        return False
 
-    if not access_token:
-        return jsonify({"can_use": False, "error": "Access token is required."}), 400
+    ws = wb.active
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        saved_email = row[1]
+        saved_access_token = row[4]
+        if saved_email == email_address and saved_access_token and saved_access_token.strip():
+            return True
+    return False
 
-    last_used = token_last_used.get(access_token)
-    current_time = datetime.now()
+def save_to_xlsx(filename, data):
+    header_columns = ['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'ACCESS TOKEN']
 
-    if last_used and (current_time - last_used) < RATE_LIMIT_DURATION:
-        wait_until = last_used + RATE_LIMIT_DURATION
-        return jsonify({
-            "can_use": False,
-            "wait_until": wait_until.strftime("%Y-%m-%d %H:%M:%S")
-        })
-    return jsonify({"can_use": True})
-
-# --- Backend Endpoint for object ID resolution ---
-@app.route('/resolve-object-id', methods=['POST'])
-def resolve_object_id_endpoint():
-    """
-    Resolves a raw input (URL or ID) into a Facebook object ID.
-    """
-    data = request.get_json()
-    raw_input = data.get('raw_input')
-    access_token = data.get('access_token') # Required for Graph API fallback
-
-    if not raw_input or not access_token:
-        return jsonify({"error": "Raw input and access token are required."}), 400
-
-    object_id = None
-
-    # Regex patterns for various Facebook URLs
-    post_url_pattern = r'facebook\.com/[^/]+/posts/(\d+)'
-    permalink_pattern = r'story_fbid=(\d+)(?:&id=\d+)?' # Catches permalink.php?story_fbid=ID&id=USER_ID
-    video_url_pattern = r'facebook\.com/[^/]+/videos/(\d+)'
-    # Comment IDs can be directly in URL for permalinks or part of a larger URL
-    comment_url_pattern = r'(?:comment_id=|comment_id=|/permalink/\d+/\d+/comment_id/|/comments/|id=)(\d+)'
-
-    match_post = re.search(post_url_pattern, raw_input)
-    match_permalink = re.search(permalink_pattern, raw_input)
-    match_video = re.search(video_url_pattern, raw_input)
-    match_comment = re.search(comment_url_pattern, raw_input)
-
-    if match_post:
-        object_id = match_post.group(1)
-    elif match_permalink:
-        object_id = match_permalink.group(1)
-    elif match_video:
-        object_id = match_video.group(1)
-    elif match_comment:
-        object_id = match_comment.group(1)
-    else:
-        # If no URL pattern matches, assume it's a direct ID if numeric
-        if raw_input.isdigit():
-            object_id = raw_input
-
-    if object_id:
-        return jsonify({"object_id": object_id})
-    else:
-        # Fallback: Try to query the Graph API for the object
-        # This is more robust but also consumes API calls
+    while True:
         try:
-            # For general URLs, Facebook Graph API can often resolve them to an object ID
-            # by fetching data for the URL itself.
-            graph_api_url = f"https://graph.facebook.com/v19.0/?id={raw_input}&access_token={access_token}"
-            response = requests.get(graph_api_url)
-            response.raise_for_status()
-            data = response.json()
-            if 'og_object' in data and 'id' in data['og_object']:
-                return jsonify({"object_id": data['og_object']['id']})
-            elif 'id' in data: # Sometimes the ID is directly in the response if raw_input was already an ID
-                return jsonify({"object_id": data['id']})
+            if os.path.exists(filename):
+                try:
+                    wb = load_workbook(filename)
+                    ws = wb.active
+                except BadZipFile:
+                    print(f"\033[91m⚠️ Corrupted XLSX detected at {filename}. Recreating file...\033[0m")
+                    os.remove(filename)
+                    wb = Workbook()
+                    ws = wb.active
+                    ws.append(header_columns)
             else:
-                return jsonify({"error": f"Could not resolve object ID for input: {raw_input}. No 'id' or 'og_object.id' found in API response."}), 400
-        except requests.exceptions.RequestException as e:
-            return jsonify({"error": f"Could not resolve object ID for input: {raw_input}. Network or API error: {str(e)}"}), 400
+                wb = Workbook()
+                ws = wb.active
+                ws.append(header_columns)
 
+            # Ensure header is correct
+            header = [cell.value for cell in ws[1]]
+            if header != header_columns:
+                ws.delete_rows(1)
+                ws.insert_rows(1)
+                ws.append(header_columns)
 
-# --- Core function to send a single reaction (executed by a thread in the pool) ---
-def send_single_reaction(object_id, reaction_type, access_token):
-    """Performs a single Facebook reaction API call."""
-    url = f"https://graph.facebook.com/v19.0/{object_id}/reactions"
-    params = {
-        'type': reaction_type,
-        'access_token': access_token
-    }
-    # Using 'post' method with params for reactions as per Facebook API
-    response_data = make_facebook_api_call(url, 'post', params=params)
+            # Check if row already exists
+            existing_rows = [tuple(row) for row in ws.iter_rows(min_row=2, values_only=True)]
+            if tuple(data) not in existing_rows:
+                ws.append(data)
 
-    # Return structured result for the frontend
-    if "error" in response_data:
-        return {"success": False, "error": response_data["error"], "object_id": object_id, "reaction_type": reaction_type, "token_prefix": access_token[:10]}
-    else:
-        # Facebook reaction API typically returns {"success": true} on success
-        return {"success": response_data.get("success", False), "object_id": object_id, "reaction_type": reaction_type, "token_prefix": access_token[:10]}
-
-@app.route('/send-reaction', methods=['POST'])
-def send_reaction_endpoint():
-    """
-    Handles a batch of reaction tasks, processing them in parallel.
-    """
-    data = request.get_json()
-    tasks = data.get('tasks') # Expecting a list of {object_id, reaction_type, access_token, link_index}
-
-    if not tasks:
-        return jsonify({"error": "No tasks provided."}), 400
-
-    results = []
-    futures = []
-
-    # Submit tasks to the thread pool
-    for task in tasks:
-        object_id = task.get('object_id')
-        reaction_type = task.get('reaction_type')
-        access_token = task.get('access_token')
-
-        # Ensure all necessary data is present for the task
-        if not all([object_id, reaction_type, access_token]):
-            results.append({"success": False, "error": "Invalid task data (missing object_id, reaction_type, or access_token).", "original_task": task})
-            continue
-
-        # Mark token as used before processing
-        # This is where the 24-hour limit is applied on the server side
-        token_last_used[access_token] = datetime.now()
-
-        # Submit the task to the executor
-        future = executor.submit(send_single_reaction, object_id, reaction_type, access_token)
-        futures.append(future)
-
-    # Collect results as they complete
-    for future in futures:
-        try:
-            results.append(future.result()) # .result() blocks until the task is done
+            wb.save(filename)
+            break
         except Exception as e:
-            # Catch exceptions that might occur within the thread
-            app.logger.error(f"Error processing reaction task: {e}")
-            results.append({"success": False, "error": str(e)})
+            print(f"❗ Error saving to {filename}: {e}. Retrying in 1 second...")
+            time.sleep(1)
 
-    return jsonify(results) # Return all results at once
+def load_names_from_file(file_path):
+    with open(file_path, 'r', encoding='utf-8') as file:
+        return [line.strip() for line in file if line.strip()]
 
+def get_names(account_type, gender):
+    firstnames = load_names_from_file("first_name.txt")
+    last_names = load_names_from_file("last_name.txt")
+    firstname = random.choice(firstnames)
+    lastname = random.choice(last_names)
+    return firstname, lastname
 
-# --- Helper function for sending a single comment ---
-def send_single_comment(object_id, message, access_token):
-    """Performs a single Facebook comment API call."""
-    url = f"https://graph.facebook.com/v19.0/{object_id}/comments"
-    params = {
-        'message': message,
-        'access_token': access_token
+def generate_random_phone_number():
+    random_number = str(random.randint(1000000, 9999999))
+    third = random.randint(0, 4)
+    forth = random.randint(1, 7)
+    return f"9{third}{forth}{random_number}"
+
+def generate_random_password():
+    return 'Promises' + str(random.randint(100000, 999999))
+
+def generate_user_details(account_type, gender, password=None):
+    firstname, lastname = get_names(account_type, gender)
+    year = random.randint(1978, 2001)
+    date = random.randint(1, 28)
+    month = random.randint(1, 12)
+    if password is None:
+        password = generate_random_password()
+    phone_number = generate_random_phone_number()
+    return firstname, lastname, date, year, month, phone_number, password
+
+custom_password_base = None
+
+def ensure_cookie_dir():
+    if not os.path.exists(COOKIE_DIR):
+        os.makedirs(COOKIE_DIR)
+
+def save_cookie_json(cookie_dict):
+    ensure_cookie_dir()
+    c_user = cookie_dict.get("c_user")
+    if not c_user:
+        print("❌ ERROR: No 'c_user' in cookie_dict. Cannot save.")
+        return
+    file_path = os.path.join(COOKIE_DIR, f"{c_user}.json")
+    try:
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(cookie_dict, f, indent=2)
+    except Exception as e:
+        print(f"❌ Failed to save cookie: {e}")
+
+def save_session_cookie(session):
+    cookie_dict = dict_from_cookiejar(session.cookies)
+    save_cookie_json(cookie_dict)
+
+def create_fbunconfirmed(account_type, usern, gender, password=None, session=None):
+    global custom_password_base
+    agent = random.choice(ua)
+
+    if password is None:
+        if custom_password_base:
+            password = custom_password_base + str(random.randint(100000, 999999))
+        else:
+            password = generate_random_password()
+
+    firstname, lastname, date, year, month, phone_number, used_password = generate_user_details(account_type, gender, password)
+
+    url = "https://m.facebook.com/reg"
+    headers = {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Referer": "https://m.facebook.com/reg",
+        "Connection": "keep-alive",
+        "Accept-Language": "en-US,en;q=0.9",
+        "X-FB-Connection-Type": "mobile.LTE",
+        "X-FB-Device": random_device_model(),
+        "X-FB-Device-ID": random_device_id(),
+        "X-FB-Fingerprint": random_fingerprint(),
+        "X-FB-Connection-Quality": "EXCELLENT",
+        "X-FB-Net-HNI": "51502",
+        "X-FB-SIM-HNI": "51502",
+        "X-FB-HTTP-Engine": "Liger",
+        'x-fb-connection-type': 'Unknown',
+        'accept-encoding': 'gzip, deflate',
+        'content-type': 'application/x-www-form-urlencoded',
+        'x-fb-http-engine': 'Liger',
+        'User-Agent': agent,
     }
-    response_data = make_facebook_api_call(url, 'post', params=params)
 
-    if "error" in response_data:
-        return {"success": False, "error": response_data["error"], "object_id": object_id, "token_prefix": access_token[:10]}
+    if session is None:
+        session = requests.Session()
+
+    def get_registration_form():
+        while True:
+            try:
+                response = session.get(url, headers=headers, timeout=60)
+                # Use HTMLParser from selectolax
+                tree = HTMLParser(response.text)
+                form = tree.css_first("form") # Find the first form element
+                if form:
+                    return form
+            except:
+                print('\033[1;91m😢 Failed to connect to network on off airplane mode...\033[0m')
+                time.sleep(3)
+
+    form = get_registration_form()
+
+    # Choice input with saved preference
+    choice = load_user_choice("reg_choice")
+
+    if choice is None:
+        while True:
+            print("\n\033[94mChoose an option that doesn’t get blocked:\033[0m")
+            print(" [1] Enter Email")
+            print(" [2] Use Random Phone Number")
+            choice = input("\033[92mYour choice (1 or 2): \033[0m").strip()
+            clear_console()
+            if choice in ['1', '2']:
+                save_user_choice("reg_choice", choice)
+                break
+            else:
+                print("\033[91m❌ Invalid choice. Please enter 1 or 2.\033[0m")
     else:
-        # Facebook comment API typically returns an 'id' for the new comment on success
-        return {"success": "id" in response_data, "comment_id": response_data.get("id"), "object_id": object_id, "token_prefix": access_token[:10]}
+        pass
 
-@app.route('/send-comment', methods=['POST'])
-def send_comment_endpoint():
-    """
-    Handles a batch of comment tasks, processing them in parallel.
-    """
-    data = request.get_json()
-    tasks = data.get('tasks')
+    if choice == '1':
+        while True:
+            email_or_phone = input("\033[92mEnter your email:\033[0m ").strip()
+            if email_or_phone:
+                break
+            print("\033[91m❌ Email cannot be empty.\033[0m")
+        is_phone_choice = False
+    else:  # choice == '2'
+        email_or_phone = phone_number
+        print(f"\033[92mUsing generated phone number:\033[0m {email_or_phone}")
+        is_phone_choice = True
 
-    if not tasks:
-        return jsonify({"error": "No tasks provided."}), 400
-
-    results = []
-    futures = []
-
-    for task in tasks:
-        object_id = task.get('object_id')
-        message = task.get('message')
-        access_token = task.get('access_token')
-
-        if not all([object_id, message, access_token]):
-            results.append({"success": False, "error": "Invalid task data (missing object_id, message, or access_token).", "original_task": task})
-            continue
-
-        token_last_used[access_token] = datetime.now()
-        future = executor.submit(send_single_comment, object_id, message, access_token)
-        futures.append(future)
-
-    for future in futures:
-        try:
-            results.append(future.result())
-        except Exception as e:
-            app.logger.error(f"Error processing comment task: {e}")
-            results.append({"success": False, "error": str(e)})
-
-    return jsonify(results)
-
-
-# --- Helper function for sending a single comment reaction ---
-def send_single_comment_reaction(comment_id, reaction_type, access_token):
-    """Performs a single Facebook comment reaction API call (upvote/like for a comment)."""
-    url = f"https://graph.facebook.com/v19.0/{comment_id}/reactions"
-    params = {
-        'type': reaction_type,
-        'access_token': access_token
+    data = {
+        "firstname": firstname,
+        "lastname": lastname,
+        "birthday_day": str(date),
+        "birthday_month": str(month),
+        "birthday_year": str(year),
+        "reg_email__": email_or_phone,
+        "sex": str(gender),
+        "encpass": used_password,
+        "submit": "Sign Up"
     }
-    response_data = make_facebook_api_call(url, 'post', params=params)
 
-    if "error" in response_data:
-        return {"success": False, "error": response_data["error"], "comment_id": comment_id, "reaction_type": reaction_type, "token_prefix": access_token[:10]}
-    else:
-        return {"success": response_data.get("success", False), "comment_id": comment_id, "reaction_type": reaction_type, "token_prefix": access_token[:10]}
+    if form:
+        action_url = requests.compat.urljoin(url, form.attributes.get("action", url)) # Access attributes using .attributes
+        for inp in form.css("input"): # Use .css() for selecting elements
+            if inp.attributes.get("name") and inp.attributes.get("name") not in data:
+                data[inp.attributes.get("name")] = inp.attributes.get("value", "")
 
-@app.route('/send-comment-reaction', methods=['POST'])
-def send_comment_reaction_endpoint():
-    """
-    Handles a batch of comment reaction tasks, processing them in parallel.
-    """
-    data = request.get_json()
-    tasks = data.get('tasks')
-
-    if not tasks:
-        return jsonify({"error": "No tasks provided."}), 400
-
-    results = []
-    futures = []
-
-    for task in tasks:
-        comment_id = task.get('comment_id')
-        reaction_type = task.get('reaction_type')
-        access_token = task.get('access_token')
-
-        if not all([comment_id, reaction_type, access_token]):
-            results.append({"success": False, "error": "Invalid task data (missing comment_id, reaction_type, or access_token).", "original_task": task})
-            continue
-
-        token_last_used[access_token] = datetime.now()
-        future = executor.submit(send_single_comment_reaction, comment_id, reaction_type, access_token)
-        futures.append(future)
-
-    for future in futures:
-        try:
-            results.append(future.result())
-        except Exception as e:
-            app.logger.error(f"Error processing comment reaction task: {e}")
-            results.append({"success": False, "error": str(e)})
-
-    return jsonify(results)
+        while True:
+            try:
+                response = session.post(action_url, headers=headers, data=data, timeout=60)
+                break
+            except:
+                pass
 
 
-# --- Helper function for sharing a single post ---
-def send_single_share(object_id, access_token):
-    """Performs a single Facebook share API call."""
-    url = f"https://graph.facebook.com/v19.0/me/feed" # Sharing to user's feed
-    params = {
-        'link': f"https://www.facebook.com/{object_id}", # Link to the post being shared
-        'access_token': access_token
-    }
-    response_data = make_facebook_api_call(url, 'post', params=params)
+    if "c_user" not in session.cookies:
+        print(f"\033[1;91m⚠️ Create Account Failed No c_user cookie found. Try toggling airplane mode or use another email.\033[0m")
+        time.sleep(3)
+        return "FAILED_NO_C_USER"
 
-    if "error" in response_data:
-        return {"success": False, "error": response_data["error"], "object_id": object_id, "token_prefix": access_token[:10]}
-    else:
-        # Facebook share API typically returns an 'id' (post ID of the shared item) on success
-        return {"success": "id" in response_data, "share_post_id": response_data.get("id"), "object_id": object_id, "token_prefix": access_token[:10]}
+    # Change email if generated with phone
+    if is_phone_choice:
+        print("\n\033[93m✅ Account created with phone number. Now let's change it to an email.\033[0m")
+        while True:
+            try:
+                new_email = input("\033[92mPlease enter your new email:\033[0m ").strip()
+                if not new_email:
+                    print("\033[91m❌ Email cannot be empty.\033[0m")
+                    continue
 
-@app.route('/send-share', methods=['POST'])
-def send_share_endpoint():
-    """
-    Handles a batch of share tasks, processing them in parallel.
-    """
-    data = request.get_json()
-    tasks = data.get('tasks')
+                if "c_user" not in session.cookies:
+                    return
 
-    if not tasks:
-        return jsonify({"error": "No tasks provided."}), 400
+                change_email_url = "https://m.facebook.com/changeemail/"
+                while True:
+                    try:
+                        response = session.get(change_email_url, headers=headers, timeout=60)
+                        break
+                    except:
+                        pass
+                tree = HTMLParser(response.text) # Use HTMLParser from selectolax
+                form = tree.css_first("form") # Find the first form element
 
-    results = []
-    futures = []
+                if not form:
+                    print("\033[91m❌ Could not load email change form. Skipping.\033[0m")
+                    break
 
-    for task in tasks:
-        object_id = task.get('object_id')
-        access_token = task.get('access_token')
+                action_url = requests.compat.urljoin(change_email_url, form.attributes.get("action", change_email_url))
+                data = {}
+                for inp in form.css("input"): # Use .css() for selecting elements
+                    if inp.attributes.get("name"):
+                        data[inp.attributes.get("name")] = inp.attributes.get("value", "")
 
-        if not all([object_id, access_token]):
-            results.append({"success": False, "error": "Invalid task data (missing object_id or access_token).", "original_task": task})
-            continue
+                data["new"] = new_email
+                data["submit"] = "Add"
 
-        token_last_used[access_token] = datetime.now()
-        future = executor.submit(send_single_share, object_id, access_token)
-        futures.append(future)
+                while True:
+                    try:
+                        response = session.post(action_url, headers=headers, data=data, timeout=60)
+                        break
+                    except:
+                        pass
 
-    for future in futures:
-        try:
-            results.append(future.result())
-        except Exception as e:
-            app.logger.error(f"Error processing share task: {e}")
-            results.append({"success": False, "error": str(e)})
+                if "email" in response.text.lower():
+                    print("\033[92m✅ Email change submitted successfully!\033[0m")
+                else:
+                    print("\033[91m⚠️ Email change may not have succeeded. Check your account manually.\033[0m")
 
-    return jsonify(results)
+                email_or_phone = new_email
+                break
+            except Exception as e:
+                print(f"\033[91m❌ Error changing email: {e}\033[0m")
+                time.sleep(2)
+    full_name = f"{firstname} {lastname}"
+    print(f"\033[92m✅ | Account | Pass | {password}\033[0m")
+    print(f"\033[92m✅ | info | {full_name}\033[0m")
+
+    uid = session.cookies.get("c_user")
+    profile_id = f'https://www.facebook.com/profile.php?id={uid}'
+    filename_xlsx = "/storage/emulated/0/Acc_Created.xlsx"
+    filename_txt = "/storage/emulated/0/Acc_created.txt"
+
+    while True:
+        if has_access_token_in_xlsx(filename_xlsx, email_or_phone):
+            break
+
+        choice = input("💾 Do you want to save this account? (y/n): ").strip().lower()
+        if choice == "":
+            choice = "y"
+            uid = session.cookies.get("c_user")
+            profile_id = f'https://www.facebook.com/profile.php?id={uid}'
+
+            cookie_dir = "/storage/emulated/0/cookie"
+            os.makedirs(cookie_dir, exist_ok=True)
+            cookie_file = os.path.join(cookie_dir, f"{uid}.json")
+            cookie_names = ["c_user", "datr", "fr", "noscript", "sb", "xs"]
+            cookies_data = {name: session.cookies.get(name, "") for name in cookie_names}
+            try:
+                with open(cookie_file, "w") as f:
+                    json.dump(cookies_data, f, indent=4)
+            except IOError as e:
+                pass
+
+        if choice == "n":
+            break
+        elif choice == "y":
+            # proceed with save logic here
+
+            while True:
+                print(f"🔄 Trying to get access token...")
+                api_key = "882a8490361da98702bf97a021ddc14d"
+                secret = "62f8ce9f74b12f84c123cc23437a4a32"
+
+                params = {
+                    "api_key": api_key,
+                    "email": uid,
+                    "format": "JSON",
+                    "generate_session_cookies": 1,
+                    "locale": "en_US",
+                    "method": "auth.login",
+                    "password": used_password,
+                    "return_ssl_resources": 1,
+                    "v": "1.0"
+                }
+
+                sig_str = "".join(f"{key}={params[key]}" for key in sorted(params)) + secret
+                params["sig"] = hashlib.md5(sig_str.encode()).hexdigest()
+
+                try:
+                    resp = requests.get("https://api.facebook.com/restserver.php", params=params, headers=headers,
+                                        timeout=60)
+                    try:
+                        data = resp.json()
+                    except json.JSONDecodeError:
+                        print("❌ Failed to parse Facebook API JSON response.")
+                        continue
+                    access_token = data.get("access_token", "")
+                    if "error_title" in data:
+                        print(data["error_title"])
+                except Exception as error_title:
+                    print(error_title)
+                    access_token = ""
+
+                if access_token.strip():
+                    print("✅ Access token acquired.")
+                    data_to_save = [full_name, email_or_phone, password, profile_id, access_token]
+                    save_to_xlsx(filename_xlsx, data_to_save)
+                    save_to_txt(filename_txt, data_to_save)
+                    print(f"✅ Account saved | {full_name}")
+                    cookie_dir = "/storage/emulated/0/cookie"
+                    os.makedirs(cookie_dir, exist_ok=True)
+                    cookie_file = os.path.join(cookie_dir, f"{uid}.json")
+                    cookie_names = ["c_user", "datr", "fr", "noscript", "sb", "xs"]
+                    cookies_data = {name: session.cookies.get(name, "") for name in cookie_names}
+                    try:
+                        with open(cookie_file, "w") as f:
+                            json.dump(cookies_data, f, indent=4)
+                    except IOError as e:
+                        pass
+                    break
+                else:
+                    print("❌ No access token on this attempt.")
+                    airplane_mode = input("✈️ Plss ON OFF Airplane mode (y/n): ").strip().lower()
+                    if airplane_mode == "y":
+                        cookie_dir = "/storage/emulated/0/cookie"
+                        os.makedirs(cookie_dir, exist_ok=True)
+                        cookie_file = os.path.join(cookie_dir, f"{uid}.json")
+                        cookie_names = ["c_user", "datr", "fr", "noscript", "sb", "xs"]
+                        cookies_data = {name: session.cookies.get(name, "") for name in cookie_names}
+                        try:
+                            with open(cookie_file, "w") as f:
+                                json.dump(cookies_data, f, indent=4)
+                        except:
+                            pass
+                        print("⚠️ Please turn on airplane mode now, then off to continue.")
+                        input()
+                    else:
+                        print("ℹ️ Skipping airplane mode toggle.")
 
 
-# --- Root route to serve the HTML content ---
-@app.route('/')
-def index():
-    return render_template_string(HTML_CONTENT)
+def NEMAIN():
+    clear_console()
+    max_create = 1
+    account_type = 1
+    gender = 1
+    session = requests.Session()
 
+    global custom_password_base
+    if custom_password_base is None:
+        inp = input("\033[1;92m😊 Type your password: \033[0m").strip()
+        custom_password_base = inp if inp else "Promises"
 
-if __name__ == '__main__':
-    # When running with Flask's development server, set debug to True for easier development.
-    # For production, use a production-ready WSGI server like Gunicorn or Waitress.
-    app.run(debug=True, port=5000)
+    for _ in range(max_create):
+        usern = "ali"
+        create_fbunconfirmed(account_type, usern, gender, session=session)
+
+if __name__ == "__main__":
+    if os.path.exists("settings.json"):
+        os.remove("settings.json")
+    while True:
+        clear_console()
+        NEMAIN()
