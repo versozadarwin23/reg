@@ -1,24 +1,27 @@
+import os
+import re
 import string
 import random
 import requests
 import hashlib
 
+# ANSI color codes
+RED = "\033[91m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+CYAN = "\033[96m"
+RESET = "\033[0m"
+
 api_key = "882a8490361da98702bf97a021ddc14d"
 secret = "62f8ce9f74b12f84c123cc23437a4a32"
+os.system("clear")  # Clear console when script starts
+
 
 while True:
     try:
-        # ====== INPUT ======
-        while True:
-            RAW_CREDENTIALS = input("\nPaste your email and password : ").strip()
-            if not RAW_CREDENTIALS:
-                pass
-            parts = RAW_CREDENTIALS.split()
-            if len(parts) < 2:
-                print("❌ Invalid input. Make sure you paste: email password")
-                continue
-            email, password = parts[0], parts[1]
-            break
+        print(f"{CYAN}\n📧 Enter Facebook Credentials:{RESET}")
+        email = input("✉️  Paste your Email: ").strip()
+        password = input("🔐 Paste your Password: ").strip()
 
         # ====== HEADERS (fresh adid) ======
         headers = {
@@ -55,23 +58,22 @@ while True:
         sig_str = "".join(f"{key}={params[key]}" for key in sorted(params)) + secret
         params["sig"] = hashlib.md5(sig_str.encode()).hexdigest()
 
+        print(f"{YELLOW}\n🔄 Sending request to Facebook API...{RESET}")
         try:
             response = requests.get("https://api.facebook.com/restserver.php", params=params, headers=headers, timeout=10)
             data = response.json()
         except Exception as e:
-            result = f"Request failed: {str(e)}"
+            print(f"{RED}❌ Request failed: {str(e)}{RESET}")
         else:
             if "access_token" in data:
-                result = data["access_token"]
+                print(f"{GREEN}✅ Success! Access Token:\n🔑 {data['access_token']}{RESET}")
             elif "error_msg" in data:
-                result = data["error_msg"]
+                print(f"{RED}❌ Error Message: {data['error_msg']}{RESET}")
             elif "error_title" in data:
-                result = data["error_title"]
+                print(f"{RED}❌ Error Title: {data['error_title']}{RESET}")
             else:
-                result = f"Unknown error: {data}"
-
-        print(f"\033[92m✅ | {result} |\033[0m")
+                print(f"{RED}❌ Unknown response:\n{data}{RESET}")
 
     except KeyboardInterrupt:
-        print("\nExiting by user request.")
+        print(f"\n\n{CYAN}👋 Exiting by user request. Goodbye!{RESET}")
         break
