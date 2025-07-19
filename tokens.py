@@ -26,7 +26,7 @@ def main():
         try:
             # ====== INPUT ======
             while True:
-                RAW_CREDENTIALS = input("\nPaste your email and password : ").strip()
+                RAW_CREDENTIALS = input(f"\n{GREEN}Paste your email and password: {RESET}").strip()
                 if not RAW_CREDENTIALS:
                     pass
                 parts = RAW_CREDENTIALS.split()
