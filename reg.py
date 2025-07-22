@@ -416,7 +416,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         'accept-encoding': 'gzip, deflate',
         'content-type': 'application/x-www-form-urlencoded',
         'x-fb-http-engine': 'Liger',
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 13; ANY-NX1 Build/HONORANY-N21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/129.0.6668.97 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/485.0.0.70.77;IABMV/1;]',
+        'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 14; T614SP Build/UP1A.231005.007) [FBAN/Orca-Android;FBAV/513.1.0.46.107;FBPN/com.facebook.orca;FBLC/en_US;FBBV/753632239;FBCR/HOME;FBMF/TCL;FBBD/TCL;FBDV/T614SP;FBSV/14;FBCA/arm64-v8a:null;FBDM/{density=2.0,width=720,height=1489};FB_FW/1;]',
     }
 
     if session is None:
