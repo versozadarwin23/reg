@@ -44,23 +44,20 @@ def add_app_log(msg, log_type='info'):
 
 
 # --- airplane_mode.py content ---
-AIRPLANE_MODE_SCRIPT = 'airplanemode.py'
-
-
 def toggle_airplane_mode():
     airplane_mode_enable = ['adb', 'shell', 'settings', 'put', 'global', 'airplane_mode_on 1']
     subprocess.run(airplane_mode_enable, check=True, capture_output=True, text=True, timeout=10)
 
     disable_data = ['adb', 'shell', 'svc', 'data', 'disable']
     subprocess.run(disable_data, check=True, capture_output=True, text=True, timeout=10)
+    time.sleep(5)
 
-    # airplane_mode_disable = ['adb', 'shell', 'settings', 'put', 'global', 'airplane_mode_on 0']
-    # subprocess.run(airplane_mode_disable, check=True, capture_output=True, text=True, timeout=10)
-    #
-    # data_enable = ['adb', 'shell', 'svc', 'data', 'enable']
-    # subprocess.run(data_enable, check=True, capture_output=True, text=True, timeout=10)
+    airplane_mode_disable = ['adb', 'shell', 'settings', 'put', 'global', 'airplane_mode_on 0']
+    subprocess.run(airplane_mode_disable, check=True, capture_output=True, text=True, timeout=10)
 
-    # Broadcast the change to the system
+    data_enable = ['adb', 'shell', 'svc', 'data', 'enable']
+    subprocess.run(data_enable, check=True, capture_output=True, text=True, timeout=10)
+
     # broadcast_command = [
     #     'adb', 'shell', 'am', 'broadcast', '-a', 'android.intent.action.AIRPLANE_MODE', '--ez',
     # ]
@@ -1256,10 +1253,20 @@ observer.observe(log, { childList: true });
 
   // Helper function to resolve post/page IDs from URLs (copied from original as requested)
   async function resolvePostId(input, token) {
-    // Check if it's already a numeric ID
-    if (/^\d+$/.test(input)) {
-      return input;
-    }
+  // Check if the input is already a numeric ID using a regular expression.
+  // The regex /^\d+$/ matches strings that consist solely of one or more digits.
+  if (/^\d+$/.test(input)) {
+    return input; // If it's a numeric ID, return it as is.
+  }
+
+  // If the input is not a simple numeric ID, you would typically add logic here
+  // to resolve it (e.g., by making an API call to look up the post by a slug or title).
+  // For now, we'll just return the original input if it's not a numeric ID.
+  // In a real application, you might throw an error or return null/undefined
+  // if the ID cannot be resolved.
+  console.warn(`Input "${input}" is not a direct numeric ID. Further resolution logic would be needed.`);
+  return input; // Placeholder: return original input if not a direct numeric ID
+}
 
     // Attempt to extract ID from common Facebook URL patterns
     const postMatch = input.match(/(?:(?:facebook\.com\/(?:[a-zA-Z0-9\.]+\/)?posts\/(\d+))|(?:facebook\.com\/photo\.php\?fbid=(\d+))|(?:facebook\.com\/videos\/(\d+))|(?:facebook\.com\/permalink\.php\?story_fbid=(\d+))|(?:facebook\.com\/story\.php\?story_fbid=(\d+))|^(?!.*\.(?:txt|png|jpg|jpeg|gif|bmp|svg|mp4|mov)$)([a-zA-Z0-9\._-]+)_(\d+)$)/i);
@@ -1296,10 +1303,21 @@ observer.observe(log, { childList: true });
   }
 
   // Helper function to resolve Page IDs from URLs (kept separate as it might be needed for other contexts)
-  async function resolvePageId(input, token) {
-    if (/^\d+$/.test(input)) {
-      return input;
-    }
+  async function resolvePostId(input, token) {
+  // Check if the input is already a numeric ID using a regular expression.
+  // The regex /^\d+$/ matches strings that consist solely of one or more digits.
+  if (/^\d+$/.test(input)) {
+    return input; // If it's a numeric ID, return it as is.
+  }
+
+  // If the input is not a simple numeric ID, you would typically add logic here
+  // to resolve it (e.g., by making an API call to look up the post by a slug or title).
+  // For now, we'll just return the original input if it's not a numeric ID.
+  // In a real application, you might throw an error or return null/undefined
+  // if the ID cannot be resolved.
+  console.warn(`Input "${input}" is not a direct numeric ID. Further resolution logic would be needed.`);
+  return input; // Placeholder: return original input if not a direct numeric ID
+}
 
     const pageMatch = input.match(/(?:facebook\.com\/pages\/[^\/]+\/(\d+))|(?:facebook\.com\/([a-zA-Z0-9\.]+)(?:\/.*)?$)/i);
     if (pageMatch) {
