@@ -54,11 +54,11 @@ def toggle_airplane_mode():
     disable_data = ['adb', 'shell', 'svc', 'data', 'disable']
     subprocess.run(disable_data, check=True, capture_output=True, text=True, timeout=10)
 
-    airplane_mode_disable = ['adb', 'shell', 'settings', 'put', 'global', 'airplane_mode_on 0']
-    subprocess.run(airplane_mode_disable, check=True, capture_output=True, text=True, timeout=10)
-
-    data_enable = ['adb', 'shell', 'svc', 'data', 'enable']
-    subprocess.run(data_enable, check=True, capture_output=True, text=True, timeout=10)
+    # airplane_mode_disable = ['adb', 'shell', 'settings', 'put', 'global', 'airplane_mode_on 0']
+    # subprocess.run(airplane_mode_disable, check=True, capture_output=True, text=True, timeout=10)
+    #
+    # data_enable = ['adb', 'shell', 'svc', 'data', 'enable']
+    # subprocess.run(data_enable, check=True, capture_output=True, text=True, timeout=10)
 
     # Broadcast the change to the system
     # broadcast_command = [
