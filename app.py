@@ -1345,15 +1345,6 @@ observer.observe(log, { childList: true });
     // e.g., https://www.facebook.com/photo.php?fbid=1234567890
     // e.g., https://www.facebook.com/permalink.php?story_fbid=1234567890
     // e.g., https://www.facebook.com/groups/groupId/posts/1234567890/
-    if (path.match(/(?:posts|videos|photos|permalink)\/(\d+)/)) {
-      id = path.match(/(?:posts|videos|photos|permalink)\/(\d+)/)[1];
-    } else if (searchParams.has('v')) {
-      id = searchParams.get('v');
-    } else if (searchParams.has('story_fbid')) {
-      id = searchParams.get('story_fbid');
-    } else if (searchParams.has('fbid')) {
-      id = searchParams.get('fbid');
-    }
 
     // Comment ID pattern
     // e.g., https://www.facebook.com/comment/replies/?ct=1234567890
