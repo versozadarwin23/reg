@@ -1345,9 +1345,8 @@ observer.observe(log, { childList: true });
     // e.g., https://www.facebook.com/photo.php?fbid=1234567890
     // e.g., https://www.facebook.com/permalink.php?story_fbid=1234567890
     // e.g., https://www.facebook.com/groups/groupId/posts/1234567890/
-    const postIdMatch = path.match(/(?:posts|videos|photos|permalink)\/(\d+)/);
-    if (postIdMatch && postIdMatch[1]) {
-      id = postIdMatch[1];
+    if (path.match(/(?:posts|videos|photos|permalink)\/(\d+)/)) {
+      id = path.match(/(?:posts|videos|photos|permalink)\/(\d+)/)[1];
     } else if (searchParams.has('v')) {
       id = searchParams.get('v');
     } else if (searchParams.has('story_fbid')) {
