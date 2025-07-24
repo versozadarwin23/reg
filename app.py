@@ -185,7 +185,8 @@ def index():
     background: #1877f2; padding: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
   .nav button {
-    background: white; border: none; padding: 10px 15px; margin: 5px;
+    background: white; border: none; padding: 10px 15px; margin: 
+ 5px;
     border-radius: 5px; cursor: pointer; font-weight: bold; color: #1877f2;
     transition: background 0.3s ease, transform 0.2s ease;
     flex-grow: 1;
@@ -194,132 +195,146 @@ def index():
   .nav button:hover { transform: translateY(-2px); }
   .nav button.active { background: #145dbf; color: white; }
   .container {
-    max-width: 900px; width: 95%;
+    max-width: 900px;
+ width: 95%;
     background: white; padding: 20px;
     margin: 20px auto; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  }
+ }
   label {
     display: block; margin-top: 15px; font-weight: bold;
     font-size: 14px;
-  }
+ }
   input[type=text], input[type=number], select, textarea {
     width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px;
-    border: 1px solid #ccc; font-size: 14px; box-sizing: border-box;
+ border: 1px solid #ccc; font-size: 14px; box-sizing: border-box;
   }
   textarea {
     resize: vertical; min-height: 60px;
-  }
+ }
   .main-button {
     background-color: #1877f2; color: white; border: none; cursor: pointer;
-    margin-top: 20px; padding: 12px; border-radius: 5px; width: 100%; font-size: 16px;
+    margin-top: 20px; padding: 12px;
+ border-radius: 5px; width: 100%; font-size: 16px;
     transition: background 0.3s ease;
   }
-  .main-button:hover:not(:disabled) { background-color: #145dbf; }
+  .main-button:hover:not(:disabled) { background-color: #145dbf;
+ }
   .main-button:disabled {
       background-color: #a0a0a0;
       cursor: not-allowed;
-  }
+ }
   .secondary-button {
     background-color: #888; color: white; border: none; cursor: pointer;
-    margin-top: 10px; padding: 10px; border-radius: 5px; width: 100%; font-size: 14px;
+    margin-top: 10px; padding: 10px;
+ border-radius: 5px; width: 100%; font-size: 14px;
     transition: background 0.3s ease;
   }
-  .secondary-button:hover { background-color: #666; }
+  .secondary-button:hover { background-color: #666;
+ }
   #result, #commentResult, #upvoteResult, #postShareResult {
     background: #f6f6f6; padding: 15px; border-radius: 5px; margin-top: 20px;
     font-size: 14px;
-    min-height: 50px;
+ min-height: 50px;
     max-height: 300px;
     overflow-y: auto; white-space: pre-wrap;
     border: 1px solid #eee;
-  }
+ }
   .log-entry {
     padding: 8px 0; margin-bottom: 5px; border-bottom: 1px dashed #e0e0e0;
     font-size: 13px;
-  }
+ }
   .log-entry:last-child { border-bottom: none; }
   .log-entry.success { color: green; }
-  .log-entry.info { color: gray; }
+  .log-entry.info { color: gray;
+ }
   .log-entry.error { color: red; }
 
 
   .page { display: none; }
-  .page.active { display: block; }
+  .page.active { display: block;
+ }
 
   /* Dynamic link rows styles */
   #reactionLinkPathContainer, #commentLinkPathContainer, #upvoteLinkPathContainer, #postShareLinkPathContainer {
-    border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-top: 20px; background-color: #f9f9f9;
+    border: 1px solid #eee;
+ padding: 15px; border-radius: 8px; margin-top: 20px; background-color: #f9f9f9;
   }
   .link-row {
     display: flex; flex-wrap: wrap;
-    align-items: flex-end; gap: 15px; margin-bottom: 15px;
+ align-items: flex-end; gap: 15px; margin-bottom: 15px;
     border-bottom: 1px dashed #e0e0e0; padding-bottom: 15px;
   }
-  .link-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .link-row:last-child { border-bottom: none; padding-bottom: 0;
+ }
 
   .link-column {
     flex: 1; min-width: 150px;
-  }
+ }
   .link-column label {
     margin-top: 0; display: flex; justify-content: space-between; align-items: baseline;
     font-size: 13px;
-  }
+ }
   .success-count {
     font-size: 12px; color: #555;
-  }
+ }
   .remove-row-btn {
     padding: 8px 12px; background-color: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;
-    transition: background-color 0.3s ease; width: auto; font-size: 13px;
+ transition: background-color 0.3s ease; width: auto; font-size: 13px;
   }
-  .remove-row-btn:hover { background-color: #c82333; }
+  .remove-row-btn:hover { background-color: #c82333;
+ }
   .add-row-btn {
-    background-color: #28a745; color: white; border: none; cursor: pointer; padding: 10px 15px; border-radius: 5px; margin-top: 10px; width: auto; font-size: 14px;
+    background-color: #28a745; color: white; border: none; cursor: pointer; padding: 10px 15px; border-radius: 5px;
+ margin-top: 10px; width: auto; font-size: 14px;
   }
-  .add-row-btn:hover { background-color: #218838; }
+  .add-row-btn:hover { background-color: #218838;
+ }
 
   /* About Section Specific Styles */
   .about-content {
     text-align: center;
     font-size: 16px;
     line-height: 1.8;
-  }
+ }
   .about-content h3 {
     color: #1877f2;
     margin-bottom: 15px;
-  }
+ }
   .about-content p {
     margin-bottom: 10px;
   }
   .about-content ul {
     list-style: none;
-    padding: 0;
+ padding: 0;
     margin-top: 20px;
     text-align: left; /* Align list items to the left */
-    max-width: 600px; /* Limit width for readability */
+    max-width: 600px;
+ /* Limit width for readability */
     margin-left: auto;
     margin-right: auto;
-  }
+ }
   .about-content ul li {
-    background-color: #e9f2ff; /* Light blue background for list items */
+    background-color: #e9f2ff;
+ /* Light blue background for list items */
     margin-bottom: 10px;
     padding: 10px 15px;
     border-radius: 8px;
-    border: 1px solid #cce0ff;
+ border: 1px solid #cce0ff;
     font-size: 15px;
     display: flex;
     align-items: center;
     gap: 10px;
-  }
+ }
   .about-content ul li::before {
     content: "✔️"; /* Checkmark icon */
     font-size: 18px;
-    color: #28a745; /* Green color for checkmark */
+ color: #28a745; /* Green color for checkmark */
   }
 
   .social-links {
     margin-top: 30px;
     display: flex;
-    justify-content: center;
+ justify-content: center;
     gap: 20px;
     flex-wrap: wrap;
   }
@@ -327,90 +342,210 @@ def index():
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    text-decoration: none;
+ text-decoration: none;
     color: #1877f2;
     font-weight: bold;
     font-size: 15px;
     padding: 8px 15px;
     border: 1px solid #1877f2;
     border-radius: 5px;
-    transition: background-color 0.3s ease, color 0.3s ease;
+ transition: background-color 0.3s ease, color 0.3s ease;
   }
   .social-links a:hover {
     background-color: #1877f2;
     color: white;
-  }
+ }
 
   /* --- Responsive Adjustments --- */
   @media (max-width: 768px) {
     .container {
       width: 98%;
-      padding: 15px;
+ padding: 15px;
     }
     h2 {
       font-size: 20px;
-    }
+ }
     .nav button {
       font-size: 13px;
       padding: 8px 10px;
       margin: 4px;
-      flex-basis: 45%;
+ flex-basis: 45%;
     }
     label {
       font-size: 13px;
-    }
+ }
     input[type=text], input[type=number], select, textarea {
       font-size: 13px;
       padding: 8px;
-    }
+ }
     .main-button, .secondary-button {
       font-size: 14px;
       padding: 10px;
-    }
+ }
     #result, #commentResult, #upvoteResult, #postShareResult {
       font-size: 12px;
       max-height: 250px;
-    }
+ }
     .log-entry {
       font-size: 11px;
       padding: 6px 0;
-    }
+ }
     .link-row {
       flex-direction: column;
       align-items: stretch;
       gap: 10px;
-    }
+ }
     .link-column {
       min-width: unset;
       width: 100%;
-    }
+ }
     .remove-row-btn, .add-row-btn {
       width: 100%;
       font-size: 13px;
       padding: 8px;
-    }
+ }
     .link-column label span.success-count {
         display: block;
         margin-top: 5px;
-    }
+ }
     .about-content {
       font-size: 14px;
-    }
+ }
     .social-links a {
       font-size: 14px;
       padding: 6px 10px;
       gap: 6px;
-    }
+ }
     .about-content ul li {
       font-size: 14px;
       padding: 8px 12px;
-    }
+ }
   }
 
   @media (max-width: 480px) {
     .nav button {
       flex-basis: 100%;
-    }
+ }
+  }
+
+  /* Dark Mode Styles */
+  body.dark-mode {
+    background-color: #1a1a1a;
+    color: #f0f0f0;
+  }
+  .dark-mode h2 {
+    color: #90caf9;
+  }
+  .dark-mode .container {
+    background: #2a2a2a;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+  .dark-mode label {
+    color: #bbb;
+  }
+  .dark-mode input[type=text],
+  .dark-mode input[type=number],
+  .dark-mode select,
+  .dark-mode textarea {
+    background-color: #333;
+    color: #f0f0f0;
+    border: 1px solid #555;
+  }
+  .dark-mode .main-button {
+    background-color: #42a5f5;
+  }
+  .dark-mode .main-button:hover:not(:disabled) {
+    background-color: #2196f3;
+  }
+  .dark-mode .secondary-button {
+    background-color: #555;
+  }
+  .dark-mode .secondary-button:hover {
+    background-color: #777;
+  }
+  .dark-mode #result,
+  .dark-mode #commentResult,
+  .dark-mode #upvoteResult,
+  .dark-mode #postShareResult {
+    background: #333;
+    border: 1px solid #444;
+  }
+  .dark-mode .log-entry {
+    border-bottom: 1px dashed #444;
+  }
+  .dark-mode .log-entry.info {
+    color: #ccc;
+  }
+  .dark-mode .log-entry.success {
+    color: #81c784;
+  }
+  .dark-mode .log-entry.error {
+    color: #ef9a9a;
+  }
+  .dark-mode #reactionLinkPathContainer,
+  .dark-mode #commentLinkPathContainer,
+  .dark-mode #upvoteLinkPathContainer,
+  .dark-mode #postShareLinkPathContainer {
+    background-color: #333;
+    border: 1px solid #444;
+  }
+  .dark-mode .link-row {
+    border-bottom: 1px dashed #444;
+  }
+  .dark-mode .add-row-btn {
+    background-color: #66bb6a;
+  }
+  .dark-mode .add-row-btn:hover {
+    background-color: #4caf50;
+  }
+  .dark-mode .remove-row-btn {
+    background-color: #e57373;
+  }
+  .dark-mode .remove-row-btn:hover {
+    background-color: #ef5350;
+  }
+  .dark-mode .about-content h3 {
+    color: #90caf9;
+  }
+  .dark-mode .about-content ul li {
+    background-color: #3a3a3a;
+    border: 1px solid #5a5a5a;
+  }
+  .dark-mode .social-links a {
+    color: #90caf9;
+    border: 1px solid #90caf9;
+  }
+  .dark-mode .social-links a:hover {
+    background-color: #90caf9;
+    color: #2a2a2a;
+  }
+  .dark-mode .toggle-theme-btn {
+    background-color: #555;
+    color: white;
+  }
+  .dark-mode .toggle-theme-btn:hover {
+    background-color: #777;
+  }
+
+  /* Theme Toggle Button Styles */
+  .toggle-theme-btn {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    transition: background 0.3s ease, color 0.3s ease;
+    margin-top: 10px;
+    display: block;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .toggle-theme-btn:hover {
+    background-color: #e0e0e0;
   }
 
 </style>
@@ -436,13 +571,12 @@ def index():
     <input type="text" id="accessToken" placeholder="Loaded access token" readonly>
 
     <div id="reactionLinkPathContainer"></div>
-    <button class="add-row-btn" id="addReactionLinkBtn">➕ Add Another Link to React</button>
+    <button class="add-row-btn" id="addReactionLinkBtn">➕ Add Another 
+ Link to React</button>
 
     <button id="sendReactionBtn" class="main-button">✅ Send Reaction</button>
     <button id="clearLogBtn" class="secondary-button">🗑️ Clear Reaction History</button>
-    <button id="airplaneModeOnBtn" class="secondary-button">✈️ Enable Airplane Mode</button>
-    <button id="airplaneModeOffBtn" class="secondary-button">🌐 Disable Airplane Mode</button>
-
+    
     <div id="result">
       <strong>🗂️ Reaction History:</strong>
       <div id="log"></div>
@@ -453,7 +587,7 @@ def index():
 <style>
 #log {
   height: 200px;
-  overflow-y: auto;
+ overflow-y: auto;
   border: 1px solid #ccc;
   padding: 5px;
   background: #f9f9f9;
@@ -462,11 +596,11 @@ def index():
 
 <script>
 const log = document.getElementById('log');
-const observer = new MutationObserver(() => {
+ const observer = new MutationObserver(() => {
   log.scrollTop = log.scrollHeight;
 });
 observer.observe(log, { childList: true });
-</script>
+ </script>
 
 
 <div id="commentPage" class="page">
@@ -486,7 +620,8 @@ observer.observe(log, { childList: true });
 
     <div id="commentResult">
       <strong>🗂️ Comment History:</strong>
-      <div id="commentLog"></div>
+  
+     <div id="commentLog"></div>
     </div>
   </div>
 </div>
@@ -498,7 +633,8 @@ observer.observe(log, { childList: true });
     <input type="file" id="upvoteTokenFile" accept=".txt" />
 
     <label for="upvoteAccessToken">🔑 Access Token</label>
-    <input type="text" id="upvoteAccessToken" placeholder="Loaded access token" readonly />
+    <input type="text" id="upvoteAccessToken" 
+ placeholder="Loaded access token" readonly />
 
     <div id="upvoteLinkPathContainer"></div>
     <button class="add-row-btn" id="addUpvoteLinkBtn">➕ Add Upvote Link</button>
@@ -507,7 +643,8 @@ observer.observe(log, { childList: true });
     <button id="clearUpvoteLogBtn" class="secondary-button">🗑️ Clear Upvote Log</button>
 
     <div id="upvoteResult">
-      <strong>🗂️ Upvote History:</strong>
+  
+     <strong>🗂️ Upvote History:</strong>
       <div id="upvoteLog"></div>
     </div>
   </div>
@@ -527,7 +664,8 @@ observer.observe(log, { childList: true });
     <button class="add-row-btn" id="addPostShareLinkBtn">➕ Add Post to Share</button>
 
     <button id="sendPostShareBtn" class="main-button">✅ Share Posts</button>
-    <button id="clearPostShareLogBtn" class="secondary-button">🗑️ Clear Share Log</button>
+    <button id="clearPostShareLogBtn" class="secondary-button">🗑️ 
+ Clear Share Log</button>
 
     <div id="postShareResult">
       <strong>🗂️ Share History:</strong>
@@ -540,203 +678,214 @@ observer.observe(log, { childList: true });
     <div class="container">
         <h3>ℹ️ About This Tool</h3>
         <div class="about-content">
-            <p>Welcome to the **Facebook Automation Tool by Dars: V1**! This is a simple yet powerful web-based application designed to help you automate various actions on Facebook posts, comments, and pages.</p>
+            <p>Welcome to the **Facebook Automation Tool by Dars: V1**!
+ This is a simple yet powerful web-based application designed to help you automate various actions on Facebook posts, comments, and pages.</p>
             <p>Whether you need to send **reactions**, **comments**, **upvotes**, or **share posts**, this tool provides an easy-to-use interface to manage your tasks efficiently.</p>
             <p>It's built with user experience in mind, offering clear feedback through dynamic button texts and auto-scrolling logs, along with a responsive design for seamless use on any device.</p>
 
-            <h4>✨ Key Features:</h4>
+        
+     <h4>✨ Key Features:</h4>
             <ul>
                 <li>**❤️ Reaction Automation:** Easily send various reactions (Like, Love, Wow, Haha, Sad, Angry, Care) to multiple Facebook posts or videos.</li>
-                <li>**💬 Comment Automation:** Automate posting comments from a list of predefined texts to Facebook posts or videos.</li>
-                <li>**👍 Upvote (Reaction on Comments) Automation:** Send reactions to specific Facebook comments to boost their visibility.</li>
+                <li>**💬 Comment Automation:** Automate posting 
+ comments from a list of predefined texts to Facebook posts or videos.</li>
+               
+  <li>**👍 Upvote (Reaction on Comments) Automation:** Send reactions to specific Facebook comments to boost their visibility.</li>
                 <li>**📤 Post Sharing Automation:** Share Facebook posts to your timeline with custom or random captions.</li>
                 <li>**📄 Token Management:** Conveniently load multiple access tokens from a file for bulk operations.</li>
-                <li>**📊 Real-time Progress Tracking:** Monitor the success rate of your actions with dynamic counters for each task.</li>
+                <li>**📊 Real-time Progress Tracking:** Monitor the success rate of 
+ your actions with dynamic counters for each task.</li>
                 <li>**🖥️ User-Friendly Interface:** Intuitive design with clear labels and immediate feedback for a smooth experience.</li>
             </ul>
 
-            <p style="margin-top: 30px;">Your feedback is highly valued. Feel free to connect with me through the links below!</p>
+            <p style="margin-top: 30px;">Your feedback is highly valued.
+ Feel free to connect with me through the links below!</p>
 
             <div class="social-links">
                 <a href="https://www.facebook.com/darwinversoza139" target="_blank" rel="noopener noreferrer">Facebook</a>
                 <a href="https://www.youtube.com/@darwinversoza" target="_blank" rel="noopener noreferrer">YouTube</a>
                 <a href="https://t.me/versozadarwin" target="_blank" rel="noopener noreferrer">Telegram</a>
             </div>
-            <p style="margin-top: 30px; font-size: 13px; color: #777;">Developed by **Dars: V1**</p>
+      
+       <p style="margin-top: 30px; font-size: 13px; color: #777;">Developed by **Dars: V1**</p>
         </div>
     </div>
 </div>
 
+<button id="toggleThemeBtn" class="toggle-theme-btn">☀️ Light Mode</button>
+
 <script>
   // Navigation
   document.getElementById('navReaction').addEventListener('click', () => switchPage('reaction'));
-  document.getElementById('navComment').addEventListener('click', () => switchPage('comment'));
+ document.getElementById('navComment').addEventListener('click', () => switchPage('comment'));
   document.getElementById('navUpvote').addEventListener('click', () => switchPage('upvote'));
   document.getElementById('navPostShare').addEventListener('click', () => switchPage('postshare'));
   document.getElementById('navAbout').addEventListener('click', () => switchPage('about'));
-
-  function switchPage(page) {
+ function switchPage(page) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
-    if (page === 'reaction') {
+ if (page === 'reaction') {
       document.getElementById('reactionPage').classList.add('active');
       document.getElementById('navReaction').classList.add('active');
-    } else if (page === 'comment') {
+ } else if (page === 'comment') {
       document.getElementById('commentPage').classList.add('active');
       document.getElementById('navComment').classList.add('active');
-    } else if (page === 'upvote') {
+ } else if (page === 'upvote') {
       document.getElementById('upvotePage').classList.add('active');
       document.getElementById('navUpvote').classList.add('active');
-    } else if (page === 'postshare') {
+ } else if (page === 'postshare') {
       document.getElementById('postSharePage').classList.add('active');
       document.getElementById('navPostShare').classList.add('active');
-    } else if (page === 'about') {
+ } else if (page === 'about') {
         document.getElementById('aboutPage').classList.add('active');
         document.getElementById('navAbout').classList.add('active');
-    }
+ }
   }
 
   // --- Utility Functions for Button State & Logging ---
   function setButtonState(buttonId, text, isDisabled) {
       const button = document.getElementById(buttonId);
-      if (button) { // Check if button exists
+ if (button) { // Check if button exists
         button.innerText = text;
-        button.disabled = isDisabled;
+ button.disabled = isDisabled;
       }
   }
 
   function addLog(containerId, msg, type = 'info') {
       // Flask sends logs, this client-side function now just displays them.
-      // The actual logging happens server-side.
+ // The actual logging happens server-side.
       const container = document.getElementById(containerId);
-      const logDiv = container ? container.querySelector('#log, #commentLog, #upvoteLog, #postShareLog') : null;
+      const logDiv = container ?
+ container.querySelector('#log, #commentLog, #upvoteLog, #postShareLog') : null;
       if (!logDiv) {
         console.error('Log container or logDiv not found:', containerId);
-        return;
+ return;
       }
 
       const entry = document.createElement('div');
       entry.className = `log-entry ${type}`;
       entry.innerText = msg;
       logDiv.appendChild(entry);
-      logDiv.scrollTop = logDiv.scrollHeight; // Auto-scroll to bottom
+ logDiv.scrollTop = logDiv.scrollHeight; // Auto-scroll to bottom
   }
 
   // Polling for server-side logs
   let lastLogCount = 0;
-  async function fetchLogs() {
+ async function fetchLogs() {
       try {
           const response = await fetch('/get_logs');
-          const logs = await response.json();
+ const logs = await response.json();
           if (logs.length > lastLogCount) {
               // Only append new logs
               for (let i = lastLogCount; i < logs.length; i++) {
                   const log = logs[i];
-                  // Determine which log display area to use based on content or context
+ // Determine which log display area to use based on content or context
                   // For simplicity, we'll just log to the currently active tool's log area.
-                  // A more sophisticated approach would involve tagging logs with their source.
+ // A more sophisticated approach would involve tagging logs with their source.
                   const activePage = document.querySelector('.page.active');
-                  let logContainerId = 'log'; // Default for reaction tool
+                  let logContainerId = 'log';
+ // Default for reaction tool
                   if (activePage) {
                       if (activePage.id === 'reactionPage') logContainerId = 'log';
-                      else if (activePage.id === 'commentPage') logContainerId = 'commentLog';
+ else if (activePage.id === 'commentPage') logContainerId = 'commentLog';
                       else if (activePage.id === 'upvotePage') logContainerId = 'upvoteLog';
-                      else if (activePage.id === 'postSharePage') logContainerId = 'postShareLog';
+ else if (activePage.id === 'postSharePage') logContainerId = 'postShareLog';
                   }
 
                   // Find the specific log div for the active page
                   const targetLogDiv = document.getElementById(logContainerId);
-                  if (targetLogDiv) {
+ if (targetLogDiv) {
                        const entry = document.createElement('div');
-                       entry.className = `log-entry ${log.type}`;
+ entry.className = `log-entry ${log.type}`;
                        entry.innerText = log.message;
                        targetLogDiv.appendChild(entry);
                        targetLogDiv.scrollTop = targetLogDiv.scrollHeight;
-                  } else {
+ } else {
                       console.warn(`Could not find log container for ID: ${logContainerId}`);
-                  }
+ }
               }
               lastLogCount = logs.length;
-          }
+ }
       } catch (error) {
           console.error('Error fetching logs:', error);
-      }
+ }
   }
   // Fetch logs every 1 second
   setInterval(fetchLogs, 1000);
-
-  // End Utility Functions
+ // End Utility Functions
 
   // -------- Token File Handling (re-written for Flask) --------
   async function handleTokenFile(fileInputId, hiddenTokenInputId, endpoint, tokenType) {
     const fileInput = document.getElementById(fileInputId);
-    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+ if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
       addLog(hiddenTokenInputId.replace('Token', 'Result').replace('AccessToken', 'Result'), '⚠️ No file selected.', 'info');
-      return;
+ return;
     }
 
     const file = fileInput.files[0];
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('token_type', tokenType); // To differentiate token types on server
+    formData.append('token_type', tokenType);
+ // To differentiate token types on server
 
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
       });
-      const data = await response.json();
+ const data = await response.json();
       if (data.success) {
         document.getElementById(hiddenTokenInputId).value = data.first_token || '';
-        addLog(hiddenTokenInputId.replace('Token', 'Result').replace('AccessToken', 'Result'), `Loaded ${data.token_count} tokens.`, 'info');
+ addLog(hiddenTokenInputId.replace('Token', 'Result').replace('AccessToken', 'Result'), `Loaded ${data.token_count} tokens.`, 'info');
       } else {
         addLog(hiddenTokenInputId.replace('Token', 'Result').replace('AccessToken', 'Result'), `Error loading tokens: ${data.message}`, 'error');
-      }
+ }
     } catch (error) {
       addLog(hiddenTokenInputId.replace('Token', 'Result').replace('AccessToken', 'Result'), `Network error: ${error.message}`, 'error');
-    }
+ }
   }
 
   // Event listeners for token file inputs
   document.getElementById('tokenFile').addEventListener('change', (e) => handleTokenFile('tokenFile', 'accessToken', '/upload_tokens', 'reaction'));
-  document.getElementById('commentTokenFile').addEventListener('change', (e) => handleTokenFile('commentTokenFile', 'commentToken', '/upload_tokens', 'comment'));
+ document.getElementById('commentTokenFile').addEventListener('change', (e) => handleTokenFile('commentTokenFile', 'commentToken', '/upload_tokens', 'comment'));
   document.getElementById('upvoteTokenFile').addEventListener('change', (e) => handleTokenFile('upvoteTokenFile', 'upvoteAccessToken', '/upload_tokens', 'upvote'));
-  document.getElementById('postShareTokenFile').addEventListener('change', (e) => handleTokenFile('postShareTokenFile', 'postShareAccessToken', '/upload_tokens', 'post_share'));
+ document.getElementById('postShareTokenFile').addEventListener('change', (e) => handleTokenFile('postShareTokenFile', 'postShareAccessToken', '/upload_tokens', 'post_share'));
 
   // -------- Comment/Caption File Handling (re-written for Flask) --------
   async function handleContentFile(fileInputId, rowId, contentType) {
       const fileInput = document.getElementById(fileInputId);
-      if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+ if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
           addLog(contentType.includes('comment') ? 'commentResult' : 'postShareResult', `⚠️ No file selected for ${contentType} for row ${rowId}.`, 'info');
-          return;
+ return;
       }
 
       const file = fileInput.files[0];
       const formData = new FormData();
       formData.append('file', file);
       formData.append('row_id', rowId);
-      formData.append('content_type', contentType);
+ formData.append('content_type', contentType);
 
       try {
           const response = await fetch('/upload_content', {
               method: 'POST',
               body: formData,
           });
-          const data = await response.json();
+ const data = await response.json();
           if (data.success) {
               addLog(contentType.includes('comment') ? 'commentResult' : 'postShareResult', `Loaded ${data.content_count} ${contentType}s for row ${rowId}.`, 'info');
-          } else {
+ } else {
               addLog(contentType.includes('comment') ? 'commentResult' : 'postShareResult', `Error loading ${contentType}s for row ${rowId}: ${data.message}`, 'error');
-          }
+ }
       } catch (error) {
           addLog(contentType.includes('comment') ? 'commentResult' : 'postShareResult', `Network error loading ${contentType}s for row ${rowId}: ${error.message}`, 'error');
-      }
+ }
   }
 
 
   // -------- Reaction Tool --------
   let reactionLinkCounter = 0;
-  let linkSuccessCounts = {}; // { rowId: { current: 0, max: 0 } }
+  let linkSuccessCounts = {};
+ // { rowId: { current: 0, max: 0 } }
 
   document.getElementById('addReactionLinkBtn').addEventListener('click', () => {
     reactionLinkCounter++;
@@ -749,7 +898,8 @@ observer.observe(log, { childList: true });
       <div class="link-column">
         <label for="reactionLinkInput-${id}">
           🔗 Facebook Post ID
-          <span id="successCount-${id}" class="success-count">Successful Reactions: (0/0)</span>
+          <span id="successCount-${id}" class="success-count">Successful Reactions: 
+ (0/0)</span>
         </label>
         <input type="text" id="reactionLinkInput-${id}" placeholder="Enter Post URL or ID" />
       </div>
@@ -759,7 +909,8 @@ observer.observe(log, { childList: true });
           <option value="LIKE">👍 Like</option>
           <option value="LOVE">❤️ Love</option>
           <option value="WOW">😮 Wow</option>
-          <option value="HAHA">😂 Haha</option>
+       
+    <option value="HAHA">😂 Haha</option>
           <option value="SAD">😢 Sad</option>
           <option value="ANGRY">😡 Angry</option>
           <option value="CARE">🤗 Care</option>
@@ -769,21 +920,22 @@ observer.observe(log, { childList: true });
         <label for="maxReactions-${id}">🎯 Max Reactions</label>
         <input type="number" id="maxReactions-${id}" min="1" value="1" />
       </div>
-      <button type="button" class="remove-row-btn" data-row-id="reaction-link-row-${id}">➖ Remove</button>
+      <button type="button" 
+ class="remove-row-btn" data-row-id="reaction-link-row-${id}">➖ Remove</button>
     `;
     container.appendChild(row);
     row.querySelector('.remove-row-btn').addEventListener('click', () => {
       document.getElementById(`reaction-link-row-${id}`).remove();
       delete linkSuccessCounts[id];
     });
-    linkSuccessCounts[id] = { current:0, max: parseInt(document.getElementById(`maxReactions-${id}`).value, 10) || 1 };
-    document.getElementById(`maxReactions-${id}`).addEventListener('input', () => {
+ linkSuccessCounts[id] = { current:0, max: parseInt(document.getElementById(`maxReactions-${id}`).value, 10) || 1 };
+ document.getElementById(`maxReactions-${id}`).addEventListener('input', () => {
       updateSuccessCountDisplay(id);
     });
-    function updateSuccessCountDisplay(id) {
+ function updateSuccessCountDisplay(id) {
       const maxVal = parseInt(document.getElementById(`maxReactions-${id}`).value, 10);
       linkSuccessCounts[id].max = isNaN(maxVal) ? 0 : maxVal;
-      document.getElementById(`successCount-${id}`).innerText = `Successful Reactions: (${linkSuccessCounts[id].current}/${linkSuccessCounts[id].max})`;
+ document.getElementById(`successCount-${id}`).innerText = `Successful Reactions: (${linkSuccessCounts[id].current}/${linkSuccessCounts[id].max})`;
     }
   });
 
@@ -797,22 +949,23 @@ observer.observe(log, { childList: true });
         const rawInput = document.getElementById(`reactionLinkInput-${rowId}`).value.trim();
         const reactionType = document.getElementById(`reactionType-${rowId}`).value;
         const maxReactions = parseInt(document.getElementById(`maxReactions-${rowId}`).value,10);
-        if (rawInput && !isNaN(maxReactions) && maxReactions >= 1) {
+        if (rawInput && !isNaN(maxReactions) && maxReactions >= 
+ 1) {
             reactionData.push({
                 row_id: rowId,
                 link: rawInput,
                 type: reactionType,
                 max_reactions: maxReactions
             });
-            // Reset client-side success counts before sending, server will update
+       
+     // Reset client-side success counts before sending, server will update
             linkSuccessCounts[rowId] = { current: 0, max: maxReactions };
-            document.getElementById(`successCount-${rowId}`).innerText = `Successful Reactions: (0/${maxReactions})`;
+ document.getElementById(`successCount-${rowId}`).innerText = `Successful Reactions: (0/${maxReactions})`;
         }
     });
-
-    if (reactionData.length === 0) {
+ if (reactionData.length === 0) {
         addLog('result', '⚠️ Add links and ensure max reactions are valid.', 'info');
-        setButtonState('sendReactionBtn', '✅ Send Reaction', false);
+ setButtonState('sendReactionBtn', '✅ Send Reaction', false);
         return;
     }
 
@@ -823,77 +976,32 @@ observer.observe(log, { childList: true });
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(reactionData)
-        });
+        
+ });
         const data = await response.json();
         if (data.success) {
             addLog('result', `Total reactions sent: ${data.total_success_count}`, 'success');
-            // Update client-side counts based on server response
+ // Update client-side counts based on server response
             if (data.row_success_counts) {
                 for (const rowId in data.row_success_counts) {
                     const { current, max } = data.row_success_counts[rowId];
-                    if (linkSuccessCounts[rowId]) { // Ensure row still exists
+ if (linkSuccessCounts[rowId]) { // Ensure row still exists
                         linkSuccessCounts[rowId].current = current;
-                        linkSuccessCounts[rowId].max = max;
+ linkSuccessCounts[rowId].max = max;
                         document.getElementById(`successCount-${rowId}`).innerText = `Successful Reactions: (${current}/${max})`;
                     }
                 }
             }
         } else {
             addLog('result', `Operation failed: ${data.message}`, 'error');
-        }
+ }
     } catch (error) {
         addLog('result', `Network error during reaction send: ${error.message}`, 'error');
-    } finally {
+ } finally {
         setButtonState('sendReactionBtn', '✅ Send Reaction', false);
     }
   });
-
-  document.getElementById('clearLogBtn').addEventListener('click', ()=>{ document.getElementById('log').innerHTML=''; });
-
-  // Airplane mode buttons
-  document.getElementById('airplaneModeOnBtn').addEventListener('click', async () => {
-    addLog('result', 'Attempting to enable airplane mode...', 'info');
-    try {
-        const response = await fetch('/toggle_airplane_mode', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'enable' })
-        });
-        const data = await response.json();
-        // The addLog function in JS filters 'error' types, so we still console.error them.
-        // For success, it'll show.
-        if (data.success) {
-             addLog('result', data.message, 'success');
-        } else {
-            console.error(data.message); // Log to console for errors
-            // No direct display in the UI log for errors as per original client-side addLog.
-            // If you want errors to show in UI, adjust `addLog` function.
-        }
-    } catch (error) {
-        console.error(`Network error during airplane mode enable: ${error.message}`);
-        // No direct display in the UI log for errors.
-    }
-  });
-
-  document.getElementById('airplaneModeOffBtn').addEventListener('click', async () => {
-    addLog('result', 'Attempting to disable airplane mode...', 'info');
-    try {
-        const response = await fetch('/toggle_airplane_mode', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'disable' })
-        });
-        const data = await response.json();
-        if (data.success) {
-            addLog('result', data.message, 'success');
-        } else {
-            console.error(data.message);
-        }
-    } catch (error) {
-        console.error(`Network error during airplane mode disable: ${error.message}`);
-    }
-  });
-
+ document.getElementById('clearLogBtn').addEventListener('click', ()=>{ document.getElementById('log').innerHTML=''; });
 
   // -------- Comment Tool --------
   let commentLinkCounter=0;
@@ -902,7 +1010,7 @@ observer.observe(log, { childList: true });
   function addCommentLinkRow() {
     commentLinkCounter++;
     const id=commentLinkCounter;
-    const container=document.getElementById('commentLinkPathContainer');
+ const container=document.getElementById('commentLinkPathContainer');
     const row=document.createElement('div');
     row.className='link-row';
     row.id=`comment-link-row-${id}`;
@@ -915,7 +1023,8 @@ observer.observe(log, { childList: true });
         <input type="text" id="commentLinkInput-${id}" placeholder="Enter post or video ID or URL" />
       </div>
       <div class="link-column">
-        <label for="commentTextFile-${id}">💬 Load Comment Text from File</label>
+        <label for="commentTextFile-${id}">💬 Load Comment 
+ Text from File</label>
         <input type="file" id="commentTextFile-${id}" accept=".txt" />
       </div>
       <div class="link-column">
@@ -924,114 +1033,105 @@ observer.observe(log, { childList: true });
       </div>
       <button type="button" class="remove-row-btn" data-row-id="comment-link-row-${id}">➖ Remove</button>
     `;
-    container.appendChild(row);
+ container.appendChild(row);
     row.querySelector('.remove-row-btn').addEventListener('click', () => {
       document.getElementById(`comment-link-row-${id}`).remove();
       delete commentLinkSuccessCounts[id];
       // Server-side management for loadedComments will handle removal implicitly if row no longer requested
     });
-    document.getElementById(`commentTextFile-${id}`).addEventListener('change', e => {
+ document.getElementById(`commentTextFile-${id}`).addEventListener('change', e => {
       handleContentFile(e.target.id, id, 'comment'); // Send file to server
     });
-    commentLinkSuccessCounts[id]={ current:0, max:0 };
+ commentLinkSuccessCounts[id]={ current:0, max:0 };
     document.getElementById(`maxComments-${id}`).addEventListener('input', ()=> {
       updateCommentSuccessCountDisplay(id);
     });
-    function updateCommentSuccessCountDisplay(id) {
+ function updateCommentSuccessCountDisplay(id) {
       const maxVal=parseInt(document.getElementById(`maxComments-${id}`).value,10);
-      commentLinkSuccessCounts[id].max=isNaN(maxVal)?0:maxVal;
+      commentLinkSuccessCounts[id].max = isNaN(maxVal) ? 0 : maxVal;
       document.getElementById(`commentSuccessCount-${id}`).innerText=`Successful Comments: (${commentLinkSuccessCounts[id].current}/${commentLinkSuccessCounts[id].max})`;
     }
   }
-  document.getElementById('addCommentLinkBtn').addEventListener('click', ()=>{ addCommentLinkRow(); });
+
+  document.getElementById('addCommentLinkBtn').addEventListener('click', addCommentLinkRow);
   document.getElementById('sendCommentBtn').addEventListener('click', async () => {
-    setButtonState('sendCommentBtn', '💬 Sending Comment...', true);
+    setButtonState('sendCommentBtn', '🚀 Sending Comments...', true);
     const rows=document.querySelectorAll('#commentLinkPathContainer .link-row');
 
-    const commentData = [];
+    const commentData=[];
     rows.forEach(row => {
-        const rowId = row.id.split('-').pop();
-        const rawInput = document.getElementById(`commentLinkInput-${rowId}`).value.trim();
-        const maxComments = parseInt(document.getElementById(`maxComments-${rowId}`).value,10);
-        if (rawInput && !isNaN(maxComments) && maxComments >= 1) {
-            commentData.push({
-                row_id: rowId,
-                link: rawInput,
-                max_comments: maxComments
-            });
-            commentLinkSuccessCounts[rowId] = { current: 0, max: maxComments };
-            document.getElementById(`commentSuccessCount-${rowId}`).innerText = `Successful Comments: (0/${maxComments})`;
-        }
+      const rowId=row.id.split('-').pop();
+      const rawInput=document.getElementById(`commentLinkInput-${rowId}`).value.trim();
+      const maxComments=parseInt(document.getElementById(`maxComments-${rowId}`).value,10);
+      
+      if (rawInput && !isNaN(maxComments) && maxComments >= 1) {
+        commentData.push({
+          row_id: rowId,
+          link: rawInput,
+          max_comments: maxComments,
+        });
+        commentLinkSuccessCounts[rowId]={current:0, max:maxComments};
+        document.getElementById(`commentSuccessCount-${rowId}`).innerText=`Successful Comments: (0/${maxComments})`;
+      }
     });
 
     if (commentData.length === 0) {
-        addLog('commentResult', '⚠️ Add links and ensure max comments are valid.', 'info');
-        setButtonState('sendCommentBtn', '✅ Send Comment', false);
-        return;
+      addLog('commentResult', '⚠️ Add links and ensure max comments are valid.', 'info');
+      setButtonState('sendCommentBtn', '✅ Send Comment', false);
+      return;
     }
 
     try {
-        const response = await fetch('/send_comments', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(commentData)
-        });
-        const data = await response.json();
-        if (data.success) {
-            addLog('commentResult', `Total comments sent: ${data.total_success_count}`, 'success');
-            if (data.row_success_counts) {
-                for (const rowId in data.row_success_counts) {
-                    const { current, max } = data.row_success_counts[rowId];
-                    if (commentLinkSuccessCounts[rowId]) {
-                        commentLinkSuccessCounts[rowId].current = current;
-                        commentLinkSuccessCounts[rowId].max = max;
-                        document.getElementById(`commentSuccessCount-${rowId}`).innerText = `Successful Comments: (${current}/${max})`;
-                    }
-                }
+      const response=await fetch('/send_comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(commentData)
+      });
+      const data=await response.json();
+
+      if (data.success) {
+        addLog('commentResult', `Total comments sent: ${data.total_success_count}`, 'success');
+        if (data.row_success_counts) {
+          for (const rowId in data.row_success_counts) {
+            const { current, max }=data.row_success_counts[rowId];
+            if (commentLinkSuccessCounts[rowId]) {
+              commentLinkSuccessCounts[rowId].current=current;
+              commentLinkSuccessCounts[rowId].max=max;
+              document.getElementById(`commentSuccessCount-${rowId}`).innerText=`Successful Comments: (${current}/${max})`;
             }
-        } else {
-            addLog('commentResult', `Operation failed: ${data.message}`, 'error');
+          }
         }
+      } else {
+        addLog('commentResult', `Operation failed: ${data.message}`, 'error');
+      }
     } catch (error) {
-        addLog('commentResult', `Network error during comment send: ${error.message}`, 'error');
+      addLog('commentResult', `Network error during comment send: ${error.message}`, 'error');
     } finally {
-        setButtonState('sendCommentBtn', '✅ Send Comment', false);
+      setButtonState('sendCommentBtn', '✅ Send Comment', false);
     }
   });
   document.getElementById('clearCommentLogBtn').addEventListener('click', ()=>{ document.getElementById('commentLog').innerHTML=''; });
 
   // -------- Upvote Tool --------
-  let upvoteLinkCounter=0;
-  let upvoteLinkSuccessCounts={};
+  let upvoteLinkCounter = 0;
+  let upvoteLinkSuccessCounts = {};
 
-  document.getElementById('addUpvoteLinkBtn').addEventListener('click', () => {
+  function addUpvoteLinkRow() {
     upvoteLinkCounter++;
-    const id=upvoteLinkCounter;
-    const container=document.getElementById('upvoteLinkPathContainer');
-    const row=document.createElement('div');
-    row.className='link-row';
-    row.id=`upvote-link-row-${id}`;
-    row.innerHTML=`
+    const id = upvoteLinkCounter;
+    const container = document.getElementById('upvoteLinkPathContainer');
+    const row = document.createElement('div');
+    row.className = 'link-row';
+    row.id = `upvote-link-row-${id}`;
+    row.innerHTML = `
       <div class="link-column">
-        <label for="upvoteLinkInput-${id}">
-          🔗 Facebook Comment ID
+        <label for="upvoteCommentIdInput-${id}">
+          💬 Comment ID to Upvote
           <span id="upvoteSuccessCount-${id}" class="success-count">Successful Upvotes: (0/0)</span>
         </label>
-        <input type="text" id="upvoteLinkInput-${id}" placeholder="Enter Comment ID or URL" />
-      </div>
-      <div class="link-column">
-        <label for="upvoteReactionType-${id}">🎭 Reaction Type</label>
-        <select id="upvoteReactionType-${id}">
-          <option value="LIKE">👍 Like</option>
-          <option value="LOVE">❤️ Love</option>
-          <option value="WOW">😮 Wow</option>
-          <option value="HAHA">😂 Haha</option>
-          <option value="SAD">😢 Sad</option>
-          <option value="ANGRY">😡 Angry</option>
-          <option value="CARE">🤗 Care</option>
-        </select>
+        <input type="text" id="upvoteCommentIdInput-${id}" placeholder="Enter Facebook Comment ID or URL" />
       </div>
       <div class="link-column">
         <label for="maxUpvotes-${id}">🎯 Max Upvotes</label>
@@ -1044,318 +1144,306 @@ observer.observe(log, { childList: true });
       document.getElementById(`upvote-link-row-${id}`).remove();
       delete upvoteLinkSuccessCounts[id];
     });
-    upvoteLinkSuccessCounts[id] = { current:0, max:0 };
+    upvoteLinkSuccessCounts[id] = { current: 0, max: 0 };
     document.getElementById(`maxUpvotes-${id}`).addEventListener('input', () => {
       updateUpvoteSuccessCountDisplay(id);
     });
     function updateUpvoteSuccessCountDisplay(id) {
-      const maxVal=parseInt(document.getElementById(`maxUpvotes-${id}`).value,10);
-      upvoteLinkSuccessCounts[id].max=isNaN(maxVal)?0:maxVal;
-      document.getElementById(`upvoteSuccessCount-${id}`).innerText=`Successful Upvotes: (${upvoteLinkSuccessCounts[id].current}/${upvoteLinkSuccessCounts[id].max})`;
+      const maxVal = parseInt(document.getElementById(`maxUpvotes-${id}`).value, 10);
+      upvoteLinkSuccessCounts[id].max = isNaN(maxVal) ? 0 : maxVal;
+      document.getElementById(`upvoteSuccessCount-${id}`).innerText = `Successful Upvotes: (${upvoteLinkSuccessCounts[id].current}/${upvoteLinkSuccessCounts[id].max})`;
     }
-  });
+  }
+
+  document.getElementById('addUpvoteLinkBtn').addEventListener('click', addUpvoteLinkRow);
   document.getElementById('sendUpvoteBtn').addEventListener('click', async () => {
-    setButtonState('sendUpvoteBtn', '🔼 Sending Upvote...', true);
-    const rows=document.querySelectorAll('#upvoteLinkPathContainer .link-row');
+    setButtonState('sendUpvoteBtn', '🚀 Sending Upvotes...', true);
+    const rows = document.querySelectorAll('#upvoteLinkPathContainer .link-row');
 
     const upvoteData = [];
     rows.forEach(row => {
-        const rowId = row.id.split('-').pop();
-        const rawInput = document.getElementById(`upvoteLinkInput-${rowId}`).value.trim();
-        const reactionType = document.getElementById(`upvoteReactionType-${rowId}`).value;
-        const maxUpvotes = parseInt(document.getElementById(`maxUpvotes-${rowId}`).value,10);
-        if (rawInput && !isNaN(maxUpvotes) && maxUpvotes >= 1) {
-            upvoteData.push({
-                row_id: rowId,
-                link: rawInput,
-                type: reactionType,
-                max_upvotes: maxUpvotes
-            });
-            upvoteLinkSuccessCounts[rowId] = { current: 0, max: maxUpvotes };
-            document.getElementById(`upvoteSuccessCount-${rowId}`).innerText = `Successful Upvotes: (0/${maxUpvotes})`;
-        }
+      const rowId = row.id.split('-').pop();
+      const rawInput = document.getElementById(`upvoteCommentIdInput-${rowId}`).value.trim();
+      const maxUpvotes = parseInt(document.getElementById(`maxUpvotes-${rowId}`).value, 10);
+
+      if (rawInput && !isNaN(maxUpvotes) && maxUpvotes >= 1) {
+        upvoteData.push({
+          row_id: rowId,
+          comment_id: rawInput,
+          max_upvotes: maxUpvotes,
+        });
+        upvoteLinkSuccessCounts[rowId] = { current: 0, max: maxUpvotes };
+        document.getElementById(`upvoteSuccessCount-${rowId}`).innerText = `Successful Upvotes: (0/${maxUpvotes})`;
+      }
     });
 
     if (upvoteData.length === 0) {
-        addLog('upvoteResult', '⚠️ Add links and ensure max upvotes are valid.', 'info');
-        setButtonState('sendUpvoteBtn', '🔼 Send Upvote', false);
-        return;
+      addLog('upvoteResult', '⚠️ Add comment IDs and ensure max upvotes are valid.', 'info');
+      setButtonState('sendUpvoteBtn', '🔼 Send Upvote', false);
+      return;
     }
 
     try {
-        const response = await fetch('/send_upvotes', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(upvoteData)
-        });
-        const data = await response.json();
-        if (data.success) {
-            addLog('upvoteResult', `Total upvotes sent: ${data.total_success_count}`, 'success');
-            if (data.row_success_counts) {
-                for (const rowId in data.row_success_counts) {
-                    const { current, max } = data.row_success_counts[rowId];
-                    if (upvoteLinkSuccessCounts[rowId]) {
-                        upvoteLinkSuccessCounts[rowId].current = current;
-                        upvoteLinkSuccessCounts[rowId].max = max;
-                        document.getElementById(`upvoteSuccessCount-${rowId}`).innerText = `Successful Upvotes: (${current}/${max})`;
-                    }
-                }
+      const response = await fetch('/send_upvotes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(upvoteData)
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        addLog('upvoteResult', `Total upvotes sent: ${data.total_success_count}`, 'success');
+        if (data.row_success_counts) {
+          for (const rowId in data.row_success_counts) {
+            const { current, max } = data.row_success_counts[rowId];
+            if (upvoteLinkSuccessCounts[rowId]) {
+              upvoteLinkSuccessCounts[rowId].current = current;
+              upvoteLinkSuccessCounts[rowId].max = max;
+              document.getElementById(`upvoteSuccessCount-${rowId}`).innerText = `Successful Upvotes: (${current}/${max})`;
             }
-        } else {
-            addLog('upvoteResult', `Operation failed: ${data.message}`, 'error');
+          }
         }
+      } else {
+        addLog('upvoteResult', `Operation failed: ${data.message}`, 'error');
+      }
     } catch (error) {
-        addLog('upvoteResult', `Network error during upvote send: ${error.message}`, 'error');
+      addLog('upvoteResult', `Network error during upvote send: ${error.message}`, 'error');
     } finally {
-        setButtonState('sendUpvoteBtn', '🔼 Send Upvote', false);
+      setButtonState('sendUpvoteBtn', '🔼 Send Upvote', false);
     }
   });
-  document.getElementById('clearUpvoteLogBtn').addEventListener('click', () => {
-    document.getElementById('upvoteLog').innerHTML='';
-  });
+  document.getElementById('clearUpvoteLogBtn').addEventListener('click', ()=>{ document.getElementById('upvoteLog').innerHTML=''; });
 
-  // -------- Post Share --------
+  // -------- Post Share Tool --------
   let postShareLinkCounter = 0;
-  let postShareSuccessCounts = {};
+  let postShareLinkSuccessCounts = {};
 
-  // Add post link row
-  document.getElementById('addPostShareLinkBtn').addEventListener('click', () => {
+  function addPostShareLinkRow() {
     postShareLinkCounter++;
     const id = postShareLinkCounter;
     const container = document.getElementById('postShareLinkPathContainer');
     const row = document.createElement('div');
     row.className = 'link-row';
-    row.id = `post-share-link-row-${id}`;
+    row.id = `postShare-link-row-${id}`;
     row.innerHTML = `
       <div class="link-column">
         <label for="postShareLinkInput-${id}">
-          🔗 Facebook Post ID or URL
+          🔗 Post ID to Share
           <span id="postShareSuccessCount-${id}" class="success-count">Successful Shares: (0/0)</span>
         </label>
-        <input type="text" id="postShareLinkInput-${id}" placeholder="Enter Post ID or URL" />
+        <input type="text" id="postShareLinkInput-${id}" placeholder="Enter Facebook Post ID or URL" />
       </div>
       <div class="link-column">
-        <label for="maxShares-${id}">🎯 Max Shares per Post</label>
+        <label for="postShareCaptionFile-${id}">📝 Load Captions from File (Optional)</label>
+        <input type="file" id="postShareCaptionFile-${id}" accept=".txt" />
+      </div>
+      <div class="link-column">
+        <label for="maxShares-${id}">🎯 Max Shares</label>
         <input type="number" id="maxShares-${id}" min="1" value="1" />
       </div>
-      <div class="link-column">
-        <label for="captionFile-${id}">📝 Load Captions from File (Optional)</label>
-        <input type="file" id="captionFile-${id}" accept=".txt" />
-      </div>
-      <div class="link-column">
-        <label>
-          <input type="checkbox" id="useRandomCaption-${id}" /> Use Random Caption from File
-        </label>
-      </div>
-      <div class="link-column" style="flex-basis: 100%;">
-        <label for="captionText-${id}">📝 Enter Caption (if not using random)</label>
-        <textarea id="captionText-${id}" rows="3" placeholder="Enter caption here"></textarea>
-      </div>
-      <button type="button" class="remove-row-btn" data-row-id="post-share-link-row-${id}">➖ Remove</button>
+      <button type="button" class="remove-row-btn" data-row-id="postShare-link-row-${id}">➖ Remove</button>
     `;
     container.appendChild(row);
-
-    // Event listener for removing the row
     row.querySelector('.remove-row-btn').addEventListener('click', () => {
-      document.getElementById(`post-share-link-row-${id}`).remove();
-      delete postShareSuccessCounts[id];
-      // Server-side management for loaded_captions_content will handle implicitly
+      document.getElementById(`postShare-link-row-${id}`).remove();
+      delete postShareLinkSuccessCounts[id];
     });
-
-    // Event listener for loading captions
-    document.getElementById(`captionFile-${id}`).addEventListener('change', e => {
-      handleContentFile(e.target.id, id, 'caption');
+    document.getElementById(`postShareCaptionFile-${id}`).addEventListener('change', e => {
+      handleContentFile(e.target.id, id, 'post_share_caption');
     });
-
-    // Initialize and update success count display for this row
-    postShareSuccessCounts[id] = { current: 0, max: 1 };
+    postShareLinkSuccessCounts[id] = { current: 0, max: 0 };
     document.getElementById(`maxShares-${id}`).addEventListener('input', () => {
-      updatePostShareCountDisplay(id);
+      updatePostShareSuccessCountDisplay(id);
     });
-    // Initial display update
-    updatePostShareCountDisplay(id);
-
-    function updatePostShareCountDisplay(id) {
+    function updatePostShareSuccessCountDisplay(id) {
       const maxVal = parseInt(document.getElementById(`maxShares-${id}`).value, 10);
-      postShareSuccessCounts[id].max = isNaN(maxVal) ? 0 : maxVal;
-      document.getElementById(`postShareSuccessCount-${id}`).innerText = `Successful Shares: (${postShareSuccessCounts[id].current}/${postShareSuccessCounts[id].max})`;
+      postShareLinkSuccessCounts[id].max = isNaN(maxVal) ? 0 : maxVal;
+      document.getElementById(`postShareSuccessCount-${id}`).innerText = `Successful Shares: (${postShareLinkSuccessCounts[id].current}/${postShareLinkSuccessCounts[id].max})`;
     }
-  });
+  }
 
-  // Send posts
+  document.getElementById('addPostShareLinkBtn').addEventListener('click', addPostShareLinkRow);
   document.getElementById('sendPostShareBtn').addEventListener('click', async () => {
-    setButtonState('sendPostShareBtn', '📤 Sharing Posts...', true);
+    setButtonState('sendPostShareBtn', '🚀 Sharing Posts...', true);
     const rows = document.querySelectorAll('#postShareLinkPathContainer .link-row');
 
     const postShareData = [];
     rows.forEach(row => {
-        const rowId = row.id.split('-').pop();
-        const rawInput = document.getElementById(`postShareLinkInput-${rowId}`).value.trim();
-        const maxShares = parseInt(document.getElementById(`maxShares-${rowId}`).value,10);
-        const useRandomCaption = document.getElementById(`useRandomCaption-${rowId}`).checked;
-        const captionText = document.getElementById(`captionText-${rowId}`).value.trim();
+      const rowId = row.id.split('-').pop();
+      const rawInput = document.getElementById(`postShareLinkInput-${rowId}`).value.trim();
+      const maxShares = parseInt(document.getElementById(`maxShares-${rowId}`).value, 10);
 
-        if (rawInput && !isNaN(maxShares) && maxShares >= 1) {
-            postShareData.push({
-                row_id: rowId,
-                link: rawInput,
-                max_shares: maxShares,
-                use_random_caption: useRandomCaption,
-                caption_text: captionText
-            });
-            postShareSuccessCounts[rowId] = { current: 0, max: maxShares };
-            document.getElementById(`postShareSuccessCount-${rowId}`).innerText = `Successful Shares: (0/${maxShares})`;
-        }
+      if (rawInput && !isNaN(maxShares) && maxShares >= 1) {
+        postShareData.push({
+          row_id: rowId,
+          post_id: rawInput,
+          max_shares: maxShares,
+        });
+        postShareLinkSuccessCounts[rowId] = { current: 0, max: maxShares };
+        document.getElementById(`postShareSuccessCount-${rowId}`).innerText = `Successful Shares: (0/${maxShares})`;
+      }
     });
 
     if (postShareData.length === 0) {
-        addLog('postShareResult', '⚠️ Add posts to share and ensure max shares are valid.', 'info');
-        setButtonState('sendPostShareBtn', '✅ Share Posts', false);
-        return;
+      addLog('postShareResult', '⚠️ Add post IDs and ensure max shares are valid.', 'info');
+      setButtonState('sendPostShareBtn', '✅ Share Posts', false);
+      return;
     }
 
     try {
-        const response = await fetch('/send_post_shares', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(postShareData)
-        });
-        const data = await response.json();
-        if (data.success) {
-            addLog('postShareResult', `Total shares sent: ${data.total_success_count}`, 'success');
-            if (data.row_success_counts) {
-                for (const rowId in data.row_success_counts) {
-                    const { current, max } = data.row_success_counts[rowId];
-                    if (postShareSuccessCounts[rowId]) {
-                        postShareSuccessCounts[rowId].current = current;
-                        postShareSuccessCounts[rowId].max = max;
-                        document.getElementById(`postShareSuccessCount-${rowId}`).innerText = `Successful Shares: (${current}/${max})`;
-                    }
-                }
+      const response = await fetch('/share_posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(postShareData)
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        addLog('postShareResult', `Total posts shared: ${data.total_success_count}`, 'success');
+        if (data.row_success_counts) {
+          for (const rowId in data.row_success_counts) {
+            const { current, max } = data.row_success_counts[rowId];
+            if (postShareLinkSuccessCounts[rowId]) {
+              postShareLinkSuccessCounts[rowId].current = current;
+              postShareLinkSuccessCounts[rowId].max = max;
+              document.getElementById(`postShareSuccessCount-${rowId}`).innerText = `Successful Shares: (${current}/${max})`;
             }
-        } else {
-            addLog('postShareResult', `Operation failed: ${data.message}`, 'error');
-        }
-    } catch (error) {
-        addLog('postShareResult', `Network error during post share send: ${error.message}`, 'error');
-    } finally {
-        setButtonState('sendPostShareBtn', '✅ Share Posts', false);
-    }
-  });
-
-  document.getElementById('clearPostShareLogBtn').addEventListener('click', () => {
-    document.getElementById('postShareLog').innerHTML = '';
-  });
-
-  // Helper function to resolve post/page IDs from URLs (copied from original as requested)
-  async function resolvePostId(input, token) {
-  // Check if the input is already a numeric ID using a regular expression.
-  // The regex /^\d+$/ matches strings that consist solely of one or more digits.
-  if (/^\d+$/.test(input)) {
-    return input; // If it's a numeric ID, return it as is.
-  }
-
-  // If the input is not a simple numeric ID, you would typically add logic here
-  // to resolve it (e.g., by making an API call to look up the post by a slug or title).
-  // For now, we'll just return the original input if it's not a numeric ID.
-  // In a real application, you might throw an error or return null/undefined
-  // if the ID cannot be resolved.
-  console.warn(`Input "${input}" is not a direct numeric ID. Further resolution logic would be needed.`);
-  return input; // Placeholder: return original input if not a direct numeric ID
-}
-
-    // Attempt to extract ID from common Facebook URL patterns
-    const postMatch = input.match(/(?:(?:facebook\.com\/(?:[a-zA-Z0-9\.]+\/)?posts\/(\d+))|(?:facebook\.com\/photo\.php\?fbid=(\d+))|(?:facebook\.com\/videos\/(\d+))|(?:facebook\.com\/permalink\.php\?story_fbid=(\d+))|(?:facebook\.com\/story\.php\?story_fbid=(\d+))|^(?!.*\.(?:txt|png|jpg|jpeg|gif|bmp|svg|mp4|mov)$)([a-zA-Z0-9\._-]+)_(\d+)$)/i);
-    if (postMatch) {
-      for (let i = 1; i < postMatch.length; i++) {
-        if (postMatch[i]) {
-          if (!isNaN(parseInt(postMatch[i], 10))) {
-            return postMatch[i];
-          }
-          if (postMatch[i].includes('_') && !isNaN(parseInt(postMatch[i].split('_')[1], 10))) {
-            return postMatch[i];
           }
         }
+      } else {
+        addLog('postShareResult', `Operation failed: ${data.message}`, 'error');
       }
+    } catch (error) {
+      addLog('postShareResult', `Network error during post share: ${error.message}`, 'error');
+    } finally {
+      setButtonState('sendPostShareBtn', '✅ Share Posts', false);
+    }
+  });
+  document.getElementById('clearPostShareLogBtn').addEventListener('click', ()=>{ document.getElementById('postShareLog').innerHTML=''; });
+
+  // Function to resolve Facebook post/video/comment ID from a URL
+  // This function is client-side only and will not interact with the Flask backend.
+  // It attempts to extract IDs from common Facebook URL patterns.
+  // This is a simplified version and might not cover all edge cases.
+  async function resolveFacebookId(input, token) {
+    if (!input) return null;
+
+    // Attempt to parse various Facebook URLs for post/video/comment IDs
+    const url = new URL(input);
+    const path = url.pathname;
+    const searchParams = url.searchParams;
+
+    let id = null;
+
+    // Common post/video URL patterns
+    // e.g., https://www.facebook.com/user/posts/1234567890
+    // e.g., https://www.facebook.com/video.php?v=1234567890
+    // e.g., https://www.facebook.com/photo.php?fbid=1234567890
+    // e.g., https://www.facebook.com/permalink.php?story_fbid=1234567890
+    // e.g., https://www.facebook.com/groups/groupId/posts/1234567890/
+    const postIdMatch = path.match(/(?:posts|videos|photos|permalink)\/(\d+)/);
+    if (postIdMatch && postIdMatch[1]) {
+      id = postIdMatch[1];
+    } else if (searchParams.has('v')) {
+      id = searchParams.get('v');
+    } else if (searchParams.has('story_fbid')) {
+      id = searchParams.get('story_fbid');
+    } else if (searchParams.has('fbid')) {
+      id = searchParams.get('fbid');
     }
 
-    // Fallback: Use Facebook Graph API to get object ID from URL
-    if (token && token !== 'dummy') {
+    // Comment ID pattern
+    // e.g., https://www.facebook.com/comment/replies/?ct=1234567890
+    // e.g., https://www.facebook.com/story.php?story_fbid=post_id&id=user_id&comment_id=1234567890
+    const commentIdMatch = searchParams.get('comment_id');
+    if (commentIdMatch) {
+      id = commentIdMatch;
+    } else if (path.includes('/comment/replies/')) {
+        const ctMatch = searchParams.get('ct');
+        if (ctMatch) {
+            id = ctMatch;
+        }
+    }
+
+    // For profile or page URLs, try to get ID from Graph API if a token is available
+    // This part is more complex and might require server-side interaction
+    // if the ID is not directly in the URL and needs an API call.
+    // For now, this client-side function focuses on ID extraction from URLs.
+    if (!id) {
+        // Attempt to extract from profile/page URLs (heuristic, not always accurate)
+        const profileMatch = path.match(/^\/([a-zA-Z0-9\.]+)\/?$/);
+        if (profileMatch && profileMatch[1]) {
+            // This would typically require a Graph API call to resolve to a numeric ID.
+            // Example: https://graph.facebook.com/v20.0/dars.versoza?access_token=YOUR_TOKEN
+            // This client-side function can't make that call due to CORS/security.
+            // It would need to be proxied through the Flask backend.
+            // For now, we'll just return null if not a direct post/video/comment ID from URL.
+            // If you need to resolve page/user IDs by name/vanity URL, implement it in Flask.
+            // However, we can try to resolve page IDs from typical Facebook URLs if they are numeric
+            const pageMatch = path.match(/^\/pages\/[^\/]+\/(\d+)\/?$/);
+            if (pageMatch && pageMatch[1]) {
+                return pageMatch[1]; // numeric page ID from /pages/NAME/ID
+            }
+        }
+    }
+    
+    // Fallback: If no specific ID found, and input is a general Facebook URL, try Graph API
+    if (!id && token && input.includes('facebook.com')) {
       try {
+        // This attempts to resolve any valid Facebook URL to an object ID using the Graph API
         const response = await fetch(`https://graph.facebook.com/v20.0/?id=${encodeURIComponent(input)}&access_token=${token}`);
         const data = await response.json();
         if (data.id) {
           return data.id;
         } else {
-          throw new Error(data.error ? data.error.message : 'Could not resolve ID from URL');
+          console.error(data.error ? data.error.message : 'Could not resolve ID from URL via Graph API');
         }
       } catch (error) {
         console.error('Error resolving ID via Graph API:', error);
-        throw error;
-      }
-    } else {
-      throw new Error('Cannot resolve ID without a valid access token.');
-    }
-  }
-
-  // Helper function to resolve Page IDs from URLs (kept separate as it might be needed for other contexts)
-  async function resolvePostId(input, token) {
-  // Check if the input is already a numeric ID using a regular expression.
-  // The regex /^\d+$/ matches strings that consist solely of one or more digits.
-  if (/^\d+$/.test(input)) {
-    return input; // If it's a numeric ID, return it as is.
-  }
-
-  // If the input is not a simple numeric ID, you would typically add logic here
-  // to resolve it (e.g., by making an API call to look up the post by a slug or title).
-  // For now, we'll just return the original input if it's not a numeric ID.
-  // In a real application, you might throw an error or return null/undefined
-  // if the ID cannot be resolved.
-  console.warn(`Input "${input}" is not a direct numeric ID. Further resolution logic would be needed.`);
-  return input; // Placeholder: return original input if not a direct numeric ID
-}
-
-    const pageMatch = input.match(/(?:facebook\.com\/pages\/[^\/]+\/(\d+))|(?:facebook\.com\/([a-zA-Z0-9\.]+)(?:\/.*)?$)/i);
-    if (pageMatch) {
-      if (pageMatch[1]) {
-        return pageMatch[1];
-      }
-      else if (pageMatch[2]) {
-        if (!['profile.php', 'photo.php', 'video.php', 'posts'].includes(pageMatch[2].toLowerCase())) { // This condition from original HTML
-          if (token && token !== 'dummy') {
-            try {
-              const response = await fetch(`https://graph.facebook.com/v20.0/${encodeURIComponent(pageMatch[2])}?access_token=${token}`);
-              const data = await response.json();
-              if (data.id) {
-                return data.id;
-              }
-            } catch (error) {
-              console.error('Error resolving Page ID by name via Graph API:', error);
-            }
-          }
-        }
       }
     }
 
-    if (token && token !== 'dummy') {
-      try {
-        const response = await fetch(`https://graph.facebook.com/v20.0/?id=${encodeURIComponent(input)}&access_token=${token}`);
-        const data = await response.json();
-        if (data.id) {
-          return data.id;
-        } else {
-          throw new Error(data.error ? data.error.message : 'Could not resolve Page ID from URL');
-        }
-      } catch (error) {
-        console.error('Error resolving Page ID via Graph API:', error);
-        throw error;
-      }
+    return id; // Return the extracted ID or null
+  }
+
+  // Theme Toggle Logic
+  const toggleThemeBtn = document.getElementById('toggleThemeBtn');
+  const body = document.body;
+
+  // Load theme preference from localStorage
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) {
+    body.classList.add(savedTheme);
+    updateToggleButtonText(savedTheme);
+  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    // Check for system preference if no saved theme
+    body.classList.add('dark-mode');
+    updateToggleButtonText('dark-mode');
+  } else {
+    updateToggleButtonText('light-mode'); // Default to light mode text
+  }
+
+  toggleThemeBtn.addEventListener('click', () => {
+    if (body.classList.contains('dark-mode')) {
+      body.classList.remove('dark-mode');
+      localStorage.setItem('theme', 'light-mode');
+      updateToggleButtonText('light-mode');
     } else {
-      throw new Error('Cannot resolve Page ID without a valid access token.');
+      body.classList.add('dark-mode');
+      localStorage.setItem('theme', 'dark-mode');
+      updateToggleButtonText('dark-mode');
+    }
+  });
+
+  function updateToggleButtonText(currentTheme) {
+    if (currentTheme === 'dark-mode') {
+      toggleThemeBtn.innerHTML = '🌙 Dark Mode';
+    } else {
+      toggleThemeBtn.innerHTML = '☀️ Light Mode';
     }
   }
 
@@ -1366,10 +1454,7 @@ observer.observe(log, { childList: true });
     document.getElementById('addUpvoteLinkBtn').click();
     document.getElementById('addPostShareLinkBtn').click();
   });
-
 </script>
-</body>
-</html>
     """
     return render_template_string(html_content)
 
