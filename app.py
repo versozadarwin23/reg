@@ -1363,24 +1363,6 @@ observer.observe(log, { childList: true });
     // This part is more complex and might require server-side interaction
     // if the ID is not directly in the URL and needs an API call.
     // For now, this client-side function focuses on ID extraction from URLs.
-    if (!id) {
-        // Attempt to extract from profile/page URLs (heuristic, not always accurate)
-        const profileMatch = path.match(/^\/([a-zA-Z0-9\.]+)\/?$/);
-        if (profileMatch && profileMatch[1]) {
-            // This would typically require a Graph API call to resolve to a numeric ID.
-            // Example: https://graph.facebook.com/v20.0/dars.versoza?access_token=YOUR_TOKEN
-            // This client-side function can't make that call due to CORS/security.
-            // It would need to be proxied through the Flask backend.
-            // For now, we'll just return null if not a direct post/video/comment ID from URL.
-            // If you need to resolve page/user IDs by name/vanity URL, implement it in Flask.
-            // However, we can try to resolve page IDs from typical Facebook URLs if they are numeric
-            const pageMatch = path.match(/^\/pages\/[^\/]+\/(\d+)\/?$/);
-            if (pageMatch && pageMatch[1]) {
-                return pageMatch[1]; // numeric page ID from /pages/NAME/ID
-            }
-        }
-    }
-    
     // Fallback: If no specific ID found, and input is a general Facebook URL, try Graph API
     if (!id && token && input.includes('facebook.com')) {
       try {
