@@ -58,9 +58,7 @@ def toggle_airplane_mode():
     data_enable = ['adb', 'shell', 'svc', 'data', 'enable']
     subprocess.run(data_enable, check=True, capture_output=True, text=True, timeout=10)
 
-    # broadcast_command = [
-    #     'adb', 'shell', 'am', 'broadcast', '-a', 'android.intent.action.AIRPLANE_MODE', '--ez',
-    # ]
+    # broadcast_command = ['adb', 'shell', 'am', 'broadcast', '-a', 'android.intent.action.AIRPLANE_MODE', '--ez state true',]
     # subprocess.run(broadcast_command, check=True, capture_output=True, text=True, timeout=10)
 
 # --- Core Facebook API Functions (translated from JS) ---
