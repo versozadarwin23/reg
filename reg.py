@@ -558,104 +558,10 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     profile_id = f'https://www.facebook.com/profile.php?id={uid}'
     filename_xlsx = "/storage/emulated/0/Acc_Created.xlsx"
     filename_txt = "/storage/emulated/0/Acc_created.txt"
-
-    while True:
-        if has_access_token_in_xlsx(filename_xlsx, email_or_phone):
-            break
-
-        choice = input("💾 Do you want to save this account? (y/n): ").strip().lower()
-        if choice == "":
-            choice = "y"
-            uid = session.cookies.get("c_user")
-            profile_id = f'https://www.facebook.com/profile.php?id={uid}'
-
-            cookie_dir = "/storage/emulated/0/cookie"
-            os.makedirs(cookie_dir, exist_ok=True)
-            cookie_file = os.path.join(cookie_dir, f"{uid}.json")
-            cookie_names = ["c_user", "datr", "fr", "noscript", "sb", "xs"]
-            cookies_data = {name: session.cookies.get(name, "") for name in cookie_names}
-            try:
-                with open(cookie_file, "w") as f:
-                    json.dump(cookies_data, f, indent=4)
-            except IOError as e:
-                pass
-
-        if choice == "n":
-            break
-        elif choice == "y":
-            # proceed with save logic here
-
-            while True:
-                print(f"🔄 Trying to get access token...")
-                api_key = "882a8490361da98702bf97a021ddc14d"
-                secret = "62f8ce9f74b12f84c123cc23437a4a32"
-
-                params = {
-                    "api_key": api_key,
-                    "email": uid,
-                    "format": "JSON",
-                    "generate_session_cookies": 1,
-                    "locale": "en_US",
-                    "method": "auth.login",
-                    "password": used_password,
-                    "return_ssl_resources": 1,
-                    "v": "1.0"
-                }
-
-                sig_str = "".join(f"{key}={params[key]}" for key in sorted(params)) + secret
-                params["sig"] = hashlib.md5(sig_str.encode()).hexdigest()
-
-                try:
-                    resp = requests.get("https://api.facebook.com/restserver.php", params=params, headers=headers,
-                                        timeout=60)
-                    try:
-                        data = resp.json()
-                    except json.JSONDecodeError:
-                        print("❌ Failed to parse Facebook API JSON response.")
-                        continue
-                    access_token = data.get("access_token", "")
-                    if "error_title" in data:
-                        print(data["error_title"])
-                except Exception as error_title:
-                    print(error_title)
-                    access_token = ""
-
-                if access_token.strip():
-                    print("✅ Access token acquired.")
-                    data_to_save = [full_name, email_or_phone, password, profile_id, access_token]
-                    save_to_xlsx(filename_xlsx, data_to_save)
-                    save_to_txt(filename_txt, data_to_save)
-                    print(f"✅ Account saved | {full_name}")
-                    cookie_dir = "/storage/emulated/0/cookie"
-                    os.makedirs(cookie_dir, exist_ok=True)
-                    cookie_file = os.path.join(cookie_dir, f"{uid}.json")
-                    cookie_names = ["c_user", "datr", "fr", "noscript", "sb", "xs"]
-                    cookies_data = {name: session.cookies.get(name, "") for name in cookie_names}
-                    try:
-                        with open(cookie_file, "w") as f:
-                            json.dump(cookies_data, f, indent=4)
-                    except IOError as e:
-                        pass
-                    break
-                else:
-                    print("❌ No access token on this attempt.")
-                    airplane_mode = input("✈️ Plss ON OFF Airplane mode (y/n): ").strip().lower()
-                    if airplane_mode == "y":
-                        cookie_dir = "/storage/emulated/0/cookie"
-                        os.makedirs(cookie_dir, exist_ok=True)
-                        cookie_file = os.path.join(cookie_dir, f"{uid}.json")
-                        cookie_names = ["c_user", "datr", "fr", "noscript", "sb", "xs"]
-                        cookies_data = {name: session.cookies.get(name, "") for name in cookie_names}
-                        try:
-                            with open(cookie_file, "w") as f:
-                                json.dump(cookies_data, f, indent=4)
-                        except:
-                            pass
-                        print("⚠️ Please turn on airplane mode now, then off to continue.")
-                        input()
-                    else:
-                        print("ℹ️ Skipping airplane mode toggle.")
-
+    data_to_save = [full_name, email_or_phone, password, profile_id]
+    save_to_xlsx(filename_xlsx, data_to_save)
+    save_to_txt(filename_txt, data_to_save)
+    print(f"✅ Account saved | {full_name}")
 
 def NEMAIN():
     clear_console()
