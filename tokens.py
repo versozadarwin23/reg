@@ -94,9 +94,28 @@ while True:
         print(f'{COLOR_CYAN}Exiting the program. Goodbye!{COLOR_RESET}')
         break  # Exit the while loop
 
-    try:
-        email, password = user_input.split('\t')
-        Login(email=email, password=password)
-    except ValueError:
+    email = ""
+    password = ""
+    # Try splitting by tab first
+    if '\t' in user_input:
+        try:
+            email, password = user_input.split('\t', 1)  # Split only on the first tab
+        except ValueError:
+            pass  # This case should ideally not happen if a tab is present, but good for robustness
+    # If no tab, try splitting by the first space
+    elif ' ' in user_input:
+        try:
+            email, password = user_input.split(' ', 1)  # Split only on the first space
+        except ValueError:
+            pass  # Same as above
+    elif '	' in user_input:
+        try:
+            email, password = user_input.split(' ', 1)  # Split only on the first space
+        except ValueError:
+            pass  # Same as above
+
+    if email and password:
+        Login(email=email.strip(), password=password.strip())  # Use .strip() to remove leading/trailing whitespace
+    else:
         print(
-            f'{COLOR_RED}Invalid input format. Please use "email@example.com\\tpassword" or type "exit".{COLOR_RESET}')
+            f'{COLOR_RED}Invalid input format. Please use "email@example.com\\tpassword" or "email@example.com password" or type "exit".{COLOR_RESET}')
