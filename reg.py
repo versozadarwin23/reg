@@ -558,10 +558,20 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     profile_id = f'https://www.facebook.com/profile.php?id={uid}'
     filename_xlsx = "/storage/emulated/0/Acc_Created.xlsx"
     filename_txt = "/storage/emulated/0/Acc_created.txt"
-    data_to_save = [full_name, email_or_phone, password, profile_id]
-    save_to_xlsx(filename_xlsx, data_to_save)
-    save_to_txt(filename_txt, data_to_save)
-    print(f"✅ Account saved | {full_name}")
+
+    while True:
+        save_confirm = input("Do you want to save this account information? (y/n): ").lower()
+        if save_confirm == 'y':
+            data_to_save = [full_name, email_or_phone, password, profile_id]  # Assuming these variables are defined elsewhere in your code
+            save_to_xlsx(filename_xlsx, data_to_save)  # Assuming filename_xlsx and save_to_xlsx are defined
+            save_to_txt(filename_txt, data_to_save)  # Assuming filename_txt and save_to_txt are defined
+            print(f"✅ Account saved | {full_name}")
+            break
+        elif save_confirm == 'n':
+            print("Account not saved.")
+            break
+        else:
+            print("Invalid input. Please enter 'y' or 'n'.")
 
 def NEMAIN():
     clear_console()
