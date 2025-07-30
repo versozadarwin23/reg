@@ -32,7 +32,19 @@ def Login(email: str, password: str):
         'X-Fb-Http-Engine': 'Liger',
         'X-Fb-Client-Ip': 'true',
         'X-Fb-Server-Cluster': 'true',
-        'Content-Length': str(random.randrange(1500, 2000))
+        'Content-Length': str(random.randrange(1500, 2000)),
+        'cache-control': "private, no-cache, no-store, must-revalidate",
+        "facebook-api-version": "v1.0",
+        "pragma": "no-cache",
+        "priority": "u=0,i",
+        "strict-transport-security": "max-age=15552000; preload",
+        "vary": "Accept-Encoding",
+        "x-fb-connection-quality": "GOOD; q=0.7, rtt=73, rtx=0, c=23, mss=1232, tbw=5012, tp=10, tpl=0, uplat=405, ullat=0",
+        "x-fb-debug": "g/lwUlHD6vXZly0pnMoWnhifQ8PoyIuzDnUKVk5ZWru6+2XT2yaUB9Y/TSXbt0/637lElrllnUhGyXNJLheBKA==",
+        "x-fb-request-id": "AEJauAi2IHwyhd_zl3pC-4E",
+        "x-fb-rev": "1025308755",
+        "x-fb-trace-id": "C/GnaBOOeUa",
+        "x-frame-options": "DENY"
     }
 
     # Define data payload
@@ -57,8 +69,7 @@ def Login(email: str, password: str):
         'generate_session_cookies': '1',
         'error_detail_type': 'button_with_disabled',
         'source': 'login',
-        'machine_id': ''.join(
-            [random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') for i in range(24)]),
+        'machine_id': ''.join([random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') for i in range(24)]),
         'jazoest': str(random.randrange(22000, 23000)),
         'meta_inf_fbmeta': 'V2_UNTAGGED',
         'advertiser_id': str(uuid.uuid4()),
@@ -89,7 +100,6 @@ def Login(email: str, password: str):
 # Main loop
 while True:
     user_input = input(f'{COLOR_GREEN}Paste your email and password: {COLOR_RESET}')
-
     if user_input.lower() == 'exit':
         print(f'{COLOR_CYAN}Exiting the program. Goodbye!{COLOR_RESET}')
         break  # Exit the while loop
