@@ -16,8 +16,6 @@ def clear_console():
         os.system('clear')
 
 # Example usage:
-print("This is the first output.")
-input("Press Enter to clear the console...")
 
 clear_console()
 
