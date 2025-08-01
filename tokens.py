@@ -1,4 +1,5 @@
 import requests, random, json, hashlib, uuid, time
+import os
 
 # ANSI escape codes for colors
 COLOR_GREEN = '\033[92m'
@@ -7,6 +8,18 @@ COLOR_YELLOW = '\033[93m'
 COLOR_CYAN = '\033[96m'  # New color for exit message
 COLOR_RESET = '\033[0m'  # Resets the color to default
 
+def clear_console():
+    """Clears the console screen."""
+    if os.name == 'nt':  # For Windows
+        os.system('cls')
+    else:  # For Linux, macOS, and other Unix-like systems
+        os.system('clear')
+
+# Example usage:
+print("This is the first output.")
+input("Press Enter to clear the console...")
+
+clear_console()
 
 def Login(email: str, password: str):
     r = requests.Session()
