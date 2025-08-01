@@ -118,7 +118,8 @@ while True:
     print(f'{COLOR_YELLOW}Clear all data for Facebook Lite or the Facebook app.{COLOR_RESET}')
     print(f'{COLOR_YELLOW}Restart your phone."{COLOR_RESET}')
     print(f'{COLOR_YELLOW}If the issue persists, wait a few minutes before trying again."{COLOR_RESET}')
-
+    print('')
+    print('')
 
     user_input = input(f'{COLOR_GREEN}Paste your email and password: {COLOR_RESET}')
     if user_input.lower() == 'exit':
