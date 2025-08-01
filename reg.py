@@ -579,8 +579,6 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
 
             r = requests.Session()
 
-            r = requests.Session()
-
             COLOR_GREEN = '\033[92m'
             COLOR_RED = '\033[91m'
             COLOR_YELLOW = '\033[93m'
@@ -699,8 +697,8 @@ def NEMAIN():
         create_fbunconfirmed(account_type, usern, gender, session=session)
 
 if __name__ == "__main__":
-    if os.path.exists("settings.json"):
-        os.remove("settings.json")
+    if os.path.exists("/storage/emulated/0/settings.json"):
+        os.remove("/storage/emulated/0/settings.json")
     while True:
         clear_console()
         NEMAIN()
