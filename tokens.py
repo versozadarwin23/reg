@@ -101,6 +101,13 @@ while True:
     print(f'{COLOR_YELLOW}before you start doing tasks"{COLOR_RESET}')
     print(f'{COLOR_YELLOW}If you cant get the token, or if the credentials are wrong"{COLOR_RESET}')
     print(f'{COLOR_YELLOW}just switch to a new account or create a new one."{COLOR_RESET}')
+    print('')
+    print('')
+    print(f'{COLOR_YELLOW}If youre always getting a wrong credentials error, you can try these steps:"{COLOR_RESET}')
+    print(f'{COLOR_YELLOW}Clear all data for Facebook Lite or the Facebook app.{COLOR_RESET}')
+    print(f'{COLOR_YELLOW}Restart your phone."{COLOR_RESET}')
+    print(f'{COLOR_YELLOW}If the issue persists, wait a few minutes before trying again."{COLOR_RESET}')
+
 
     user_input = input(f'{COLOR_GREEN}Paste your email and password: {COLOR_RESET}')
     if user_input.lower() == 'exit':
