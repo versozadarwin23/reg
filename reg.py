@@ -23,8 +23,8 @@ def clear_console():
     else:
         os.system('clear')
 
-COOKIE_DIR = "cookie"
-CONFIG_FILE = "settings.json"
+COOKIE_DIR = "/storage/emulated/0/cookie"
+CONFIG_FILE = "/storage/emulated/0/settings.json"
 
 def random_device_model():
     models = [
@@ -568,8 +568,8 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
 
     uid = session.cookies.get("c_user")
     profile_id = f'https://www.facebook.com/profile.php?id={uid}'
-    filename_xlsx = "Acc_Created.xlsx"
-    filename_txt = "Acc_created.txt"
+    filename_xlsx = "/storage/emulated/0/Acc_Created.xlsx"
+    filename_txt = "/storage/emulated/0/Acc_created.txt"
 
     while True:
         save_confirm = input("Do you want to save this account (y/n): ").lower()
