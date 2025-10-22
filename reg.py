@@ -16,8 +16,8 @@ COLOR_BLUE = '\033[94m'
 COLOR_RESET = '\033[0m'
 
 # --- Global Configurations ---
-COOKIE_DIR = "C:/Users/user/Desktop/reg/cookie"
-CONFIG_FILE = "C:/Users/user/Desktop/reg/settings.json"
+COOKIE_DIR = "/storage/emulated/0/cookie"
+CONFIG_FILE = "/storage/emulated/0/settings.json"
 custom_password_base = None
 
 
@@ -145,17 +145,16 @@ ua = [
 ]
 
 
+# REMOVED atexit.register(delete_config_file) to keep settings.json
+# and allow the loop to reuse the registration choice.
+
 def delete_config_file():
-    """Deletes the settings file on program exit if running standalone."""
-    # Check if the script is being run as the main script (simple guess)
-    if os.path.basename(sys.argv[0]) == 'combined_reg_login.py' and os.path.exists(CONFIG_FILE):
-        try:
-            os.remove(CONFIG_FILE)
-        except Exception as e:
-            print(f"⚠️ Failed to delete settings file: {e}")
+    """Clears the console screen."""
+    # NO LONGER DELETES THE CONFIG FILE ON EXIT
+    pass
 
 
-atexit.register(delete_config_file)
+atexit.register(delete_config_file)  # Register a dummy function to avoid error
 
 
 def save_user_choice(key, value):
@@ -370,8 +369,9 @@ def Login(email: str, password: str, max_retries=3):
             if ('session_key' in str(pos)) and ('access_token' in str(pos)):
                 token = pos['access_token']
                 print(f'{COLOR_GREEN}✅ TOKEN STATUS: SUCCESS{COLOR_RESET}')
-                print(f'{COLOR_YELLOW}TOKEN:{COLOR_RESET} {token}')
-                # MODIFICATION: Return both token and status
+                # MODIFICATION: Ipakita lang ang prefix na "EAAAAUa..." sa console
+                print(f'{COLOR_YELLOW}TOKEN:{COLOR_RESET} EAAAAUa...{COLOR_RESET}')
+                # Ang buong token ay ibabalik pa rin para ma-save
                 return token, 'SUCCESS'
             else:
                 if 'error' in pos and 'message' in pos['error']:
@@ -596,8 +596,8 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     final_token = token if token else 'FAILED_TO_GET_TOKEN'
 
     # Automatic Saving Logic
-    filename_xlsx = "C:/Users/user/Desktop/reg/Acc_Created.xlsx"
-    filename_txt = "C:/Users/user/Desktop/reg/Acc_created.txt"
+    filename_xlsx = "/storage/emulated/0/Acc_Created.xlsx"
+    filename_txt = "/storage/emulated/0/Acc_created.txt"
 
     # MODIFICATION: ADDED final_token TO THE data_to_save LIST
     data_to_save = [full_name, final_username, used_password, profile_id, final_token]
@@ -612,41 +612,56 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     print(f"{COLOR_GREEN}📧 Username:{COLOR_RESET} {final_username}")
     print(f"{COLOR_GREEN}🔑 Password:{COLOR_RESET} {used_password}")
     print(f"{COLOR_GREEN}🔗 Profile ID:{COLOR_RESET} {profile_id}")
-    # MODIFICATION: Added print statement for the Token
+    # MODIFICATION: Ipakita lang ang prefix na "EAAAAUa..." sa console
     print(f"{COLOR_GREEN}🔐 Access Token:{COLOR_RESET} EAAAAUa...")
     print(f"{COLOR_GREEN}💾 SAVE STATUS: Account saved successfully to storage.{COLOR_RESET}")
     print("=" * 50)
 
 
 def NEMAIN():
-    """Main registration sequence. Only runs once due to loop change."""
+    """Main registration sequence, now runs in a loop."""
     clear_console()
-    # max_create is 1 in the original reg.py
+
     account_type = 1
     gender = 1
-    session = requests.Session()
 
     global custom_password_base
     if custom_password_base is None:
         inp = input(f"{COLOR_GREEN}😊 Type your password: {COLOR_RESET}").strip()
         custom_password_base = inp if inp else "Promises"
 
-    # Since max_create is 1, this loop runs once.
-    for _ in range(1):
-        usern = "ali"
-        create_fbunconfirmed(account_type, usern, gender, session=session)
+    # MODIFICATION: Use an infinite loop to keep creating accounts
+    count = 0
+    while True:
+        count += 1
+        session = requests.Session()
+        print("\n" + "=" * 50)
+        print(f"{COLOR_CYAN}STARTING ACCOUNT REGISTRATION NO. {count}{COLOR_RESET}")
+        print("=" * 50)
+
+        # Pass a fresh session for each attempt
+        create_fbunconfirmed(account_type, "ali", gender, session=session)
+
+        print("\n" + "=" * 50)
+        print(f"{COLOR_CYAN}Completed account {count}. Preparing for the next account in 10 seconds...{COLOR_RESET}")
+        print("=" * 50)
+        time.sleep(10)
 
 
-# --- Main Execution (Modified to run NEMAIN once and exit) ---
+# --- Main Execution (Modified to run NEMAIN in a loop) ---
 if __name__ == "__main__":
-    # Clear old settings file on start
+    # Clear old settings file on first run only
+    # Note: We keep the settings file after the first successful choice for the loop
     if os.path.exists(CONFIG_FILE):
         try:
-            os.remove(CONFIG_FILE)
+            # Check if settings.json is from a previous run or if we should keep it
+            # Simple check: only delete if it's empty, otherwise keep user choice.
+            if os.path.getsize(CONFIG_FILE) == 0:
+                os.remove(CONFIG_FILE)
         except:
             pass
 
-    # Run NEMAIN once (creates 1 account)
+    # Run NEMAIN indefinitely
     NEMAIN()
 
-    print(f'\n{COLOR_CYAN}Exiting the program. Goodbye!{COLOR_RESET}')
+    # The program will now loop indefinitely until manually stopped.
