@@ -16,8 +16,8 @@ COLOR_BLUE = '\033[94m'
 COLOR_RESET = '\033[0m'
 
 # --- Global Configurations ---
-COOKIE_DIR = "/storage/emulated/0/cookie"
-CONFIG_FILE = "/storage/emulated/0/settings.json"
+COOKIE_DIR = "C:/Users/user/Desktop/reg/cookie"
+CONFIG_FILE = "C:/Users/user/Desktop/reg/settings.json"
 custom_password_base = None
 
 
@@ -195,7 +195,8 @@ def save_to_txt(filename, data):
 
 def save_to_xlsx(filename, data):
     """Saves account data to an XLSX file, checking for existing entries."""
-    header_columns = ['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK']
+    # MODIFICATION: Added 'ACCESS TOKEN' to the header
+    header_columns = ['NAME', 'USERNAME', 'PASSWORD', 'ACCOUNT LINK', 'ACCESS TOKEN']
 
     while True:
         try:
@@ -370,6 +371,7 @@ def Login(email: str, password: str, max_retries=3):
                 token = pos['access_token']
                 print(f'{COLOR_GREEN}✅ TOKEN STATUS: SUCCESS{COLOR_RESET}')
                 print(f'{COLOR_YELLOW}TOKEN:{COLOR_RESET} {token}')
+                # MODIFICATION: Return both token and status
                 return token, 'SUCCESS'
             else:
                 if 'error' in pos and 'message' in pos['error']:
@@ -397,6 +399,7 @@ def Login(email: str, password: str, max_retries=3):
     print("-" * 30)
     print(f"{COLOR_RED}❗ TOKEN FAILED: Could not retrieve token after {max_retries} attempts.{COLOR_RESET}")
     print("-" * 30)
+    # MODIFICATION: Return None and failure status
     return None, 'MAX_RETRIES_EXCEEDED'
 
 
@@ -586,14 +589,19 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     print(f"{COLOR_BLUE}           Step 3/3: FETCHING TOKEN & SAVING{COLOR_RESET}")
     print("=" * 50)
 
-    # Call Login to get Token
-    Login(email=final_username, password=used_password, max_retries=3)
+    # MODIFICATION: Call Login to get Token and status
+    token, status = Login(email=final_username, password=used_password, max_retries=3)
+
+    # Use the retrieved token, or 'FAILED_TO_GET_TOKEN' if not successful
+    final_token = token if token else 'FAILED_TO_GET_TOKEN'
 
     # Automatic Saving Logic
-    filename_xlsx = "/storage/emulated/0/Acc_Created.xlsx"
-    filename_txt = "/storage/emulated/0/Acc_created.txt"
+    filename_xlsx = "C:/Users/user/Desktop/reg/Acc_Created.xlsx"
+    filename_txt = "C:/Users/user/Desktop/reg/Acc_created.txt"
 
-    data_to_save = [full_name, final_username, used_password, profile_id]
+    # MODIFICATION: ADDED final_token TO THE data_to_save LIST
+    data_to_save = [full_name, final_username, used_password, profile_id, final_token]
+
     save_to_xlsx(filename_xlsx, data_to_save)
     save_to_txt(filename_txt, data_to_save)
 
@@ -604,6 +612,8 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     print(f"{COLOR_GREEN}📧 Username:{COLOR_RESET} {final_username}")
     print(f"{COLOR_GREEN}🔑 Password:{COLOR_RESET} {used_password}")
     print(f"{COLOR_GREEN}🔗 Profile ID:{COLOR_RESET} {profile_id}")
+    # MODIFICATION: Added print statement for the Token
+    print(f"{COLOR_GREEN}🔐 Access Token:{COLOR_RESET} EAAAAUa...")
     print(f"{COLOR_GREEN}💾 SAVE STATUS: Account saved successfully to storage.{COLOR_RESET}")
     print("=" * 50)
 
@@ -618,7 +628,7 @@ def NEMAIN():
 
     global custom_password_base
     if custom_password_base is None:
-        inp = input(f"{COLOR_GREEN}😊 Type your password base (or press Enter for 'Promises'): {COLOR_RESET}").strip()
+        inp = input(f"{COLOR_GREEN}😊 Type your password: {COLOR_RESET}").strip()
         custom_password_base = inp if inp else "Promises"
 
     # Since max_create is 1, this loop runs once.
