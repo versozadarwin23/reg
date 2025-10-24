@@ -1,4 +1,5 @@
 import requests, random, json, hashlib, uuid, time
+import os # Import the os module for file path handling
 
 # ANSI escape codes for colors
 COLOR_GREEN = '\033[92m'
@@ -7,11 +8,36 @@ COLOR_YELLOW = '\033[93m'
 COLOR_CYAN = '\033[96m'  # New color for exit message
 COLOR_RESET = '\033[0m'  # Resets the color to default
 
+# Define the file path for saving the token
+# Note: On a real Android device/emulator, this path might require specific app permissions.
+TOKEN_FILE_PATH = '/sdcard/token.txt'
+
+def save_token(email: str, token: str):
+    """Saves the email and token in the required format to the specified file."""
+    try:
+        # Create the directory if it doesn't exist (e.g., if /sdcard isn't fully set up)
+        # Note: In a standard Python environment on Android (like Termux), this path is usually accessible.
+        directory = os.path.dirname(TOKEN_FILE_PATH)
+        if not os.path.exists(directory) and directory:
+            # We only try to create the directory if it's not the root path
+            try:
+                os.makedirs(directory, exist_ok=True)
+            except OSError as e:
+                print(f"{COLOR_RED}Warning: Could not create directory {directory}. Error: {e}{COLOR_RESET}")
+
+        # The 'a' mode appends to the file, and the newline character ensures
+        # each token is on a new line.
+        with open(TOKEN_FILE_PATH, 'a') as f:
+            f.write(f'{email}|{token}\n')
+        print(f'{COLOR_GREEN}Success Token Saved:{COLOR_RESET} to {TOKEN_FILE_PATH}')
+    except Exception as e:
+        print(f'{COLOR_RED}Error saving token to file: {e}{COLOR_RESET}')
+
 
 def Login(email: str, password: str):
     r = requests.Session()
 
-    # Define headers
+    # Define headers (The original headers are kept here for completeness)
     head = {
         'Host': 'b-graph.facebook.com',
         'X-Fb-Connection-Quality': 'EXCELLENT',
@@ -89,6 +115,9 @@ def Login(email: str, password: str):
     if ('session_key' in str(pos)) and ('access_token' in str(pos)):
         token = pos['access_token']
         print(f'{COLOR_YELLOW}Token  :{COLOR_RESET} {token}')
+        # --- NEW CODE ADDED HERE ---
+        save_token(email=email.strip(), token=token)
+        # ---------------------------
     else:
         if 'error' in pos and 'message' in pos['error']:
             print(f'{COLOR_RED}Error Message:{COLOR_RESET} {pos["error"]["message"]}')
@@ -99,7 +128,7 @@ def Login(email: str, password: str):
 
 # Main loop
 while True:
-    user_input = input(f'{COLOR_GREEN}Paste your email and password: {COLOR_RESET}')
+    user_input = input(f'{COLOR_GREEN}Paste your email and password (or type "exit"): {COLOR_RESET}')
     if user_input.lower() == 'exit':
         print(f'{COLOR_CYAN}Exiting the program. Goodbye!{COLOR_RESET}')
         break  # Exit the while loop
@@ -111,18 +140,18 @@ while True:
         try:
             email, password = user_input.split('\t', 1)  # Split only on the first tab
         except ValueError:
-            pass  # This case should ideally not happen if a tab is present, but good for robustness
+            pass
     # If no tab, try splitting by the first space
     elif ' ' in user_input:
         try:
             email, password = user_input.split(' ', 1)  # Split only on the first space
         except ValueError:
-            pass  # Same as above
-    elif '	' in user_input:
+            pass
+    elif '	' in user_input: # Handling the other type of space/tab you used
         try:
-            email, password = user_input.split(' ', 1)  # Split only on the first space
+            email, password = user_input.split('	', 1)  # Split only on the first character
         except ValueError:
-            pass  # Same as above
+            pass
 
     if email and password:
         Login(email=email.strip(), password=password.strip())  # Use .strip() to remove leading/trailing whitespace
