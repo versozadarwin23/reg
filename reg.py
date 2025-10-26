@@ -581,12 +581,22 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     uid = session.cookies.get("c_user")
     profile_id = f'https://www.facebook.com/profile.php?id={uid}'
 
+    # --- SHOW ACCOUNT DETAILS BEFORE ASKING FOR TOKEN ---
+    print("\n" + "=" * 50)
+    print(f"{COLOR_BLUE}           ACCOUNT REGISTRATION COMPLETE{COLOR_RESET}")
+    print(f"{COLOR_BLUE}      (See details below before fetching token){COLOR_RESET}")
+    print("=" * 50)
+    print(f"{COLOR_GREEN}👤 Full Name:{COLOR_RESET} {full_name}")
+    print(f"{COLOR_GREEN}📧 Username:{COLOR_RESET} {final_username}")
+    print(f"{COLOR_GREEN}🔑 Password:{COLOR_RESET} {used_password}")
+    print(f"{COLOR_GREEN}🔗 Profile ID:{COLOR_RESET} {profile_id}")
+    print("=" * 50)
+    # --- END SHOW ACCOUNT DETAILS ---
+
+
     # --- New Logic: Ask to get Token ---
     final_token = 'USER_SKIPPED_TOKEN_FETCH' # Default value if user skips
 
-    print("\n" + "=" * 50)
-    print(f"{COLOR_BLUE}           ACCOUNT REGISTRATION COMPLETE{COLOR_RESET}")
-    print("=" * 50)
     
     # ASK THE USER
     while True:
@@ -598,7 +608,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     
     if get_token_choice == 'y':
         print("\n" + "=" * 50)
-        print(f"{COLOR_BLUE}           Step 3: FETCHING TOKEN & SAVING{COLOR_RESET}")
+        print(f"{COLOR_BLUE}           Step 3: FETCHING TOKEN...{COLOR_RESET}")
         print("=" * 50)
 
         # Call Login to get Token and status
@@ -645,7 +655,7 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     save_to_txt(filename_txt, data_to_save)
 
     print("\n" + "=" * 50)
-    print(f"{COLOR_BLUE}           FINAL ACCOUNT DETAILS{COLOR_RESET}")
+    print(f"{COLOR_BLUE}           FINAL ACCOUNT DETAILS AND SAVE STATUS{COLOR_RESET}")
     print("=" * 50)
     print(f"{COLOR_GREEN}👤 Full Name:{COLOR_RESET} {full_name}")
     print(f"{COLOR_GREEN}📧 Username:{COLOR_RESET} {final_username}")
