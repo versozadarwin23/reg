@@ -145,9 +145,6 @@ ua = [
 ]
 
 
-# REMOVED atexit.register(delete_config_file) to keep settings.json
-# and allow the loop to reuse the registration choice.
-
 def delete_config_file():
     """Clears the console screen."""
     # NO LONGER DELETES THE CONFIG FILE ON EXIT
@@ -405,7 +402,7 @@ def Login(email: str, password: str, max_retries=3):
 
 # --- Registration Logic (Modified for cleaner logging and no save prompt) ---
 def create_fbunconfirmed(account_type, usern, gender, password=None, session=None):
-    """Handles Facebook account registration and automatic token fetching/saving."""
+    """Handles Facebook account registration and asks the user about token fetching/saving."""
     global custom_password_base
 
     if password is None:
@@ -584,17 +581,59 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     uid = session.cookies.get("c_user")
     profile_id = f'https://www.facebook.com/profile.php?id={uid}'
 
-    # --- Step 3: Get Token & Save ---
+    # --- New Logic: Ask to get Token ---
+    final_token = 'USER_SKIPPED_TOKEN_FETCH' # Default value if user skips
+
     print("\n" + "=" * 50)
-    print(f"{COLOR_BLUE}           Step 3/3: FETCHING TOKEN & SAVING{COLOR_RESET}")
+    print(f"{COLOR_BLUE}           ACCOUNT REGISTRATION COMPLETE{COLOR_RESET}")
     print("=" * 50)
+    
+    # ASK THE USER
+    while True:
+        get_token_choice = input(f"{COLOR_YELLOW}Do you want to proceed to Step 3: FETCH ACCESS TOKEN? (y/n): {COLOR_RESET}").strip().lower()
+        if get_token_choice in ['y', 'n']:
+            break
+        else:
+            print(f"{COLOR_RED}❌ Invalid choice. Please enter 'y' or 'n'.{COLOR_RESET}")
+    
+    if get_token_choice == 'y':
+        print("\n" + "=" * 50)
+        print(f"{COLOR_BLUE}           Step 3: FETCHING TOKEN & SAVING{COLOR_RESET}")
+        print("=" * 50)
 
-    # MODIFICATION: Call Login to get Token and status
-    token, status = Login(email=final_username, password=used_password, max_retries=3)
+        # Call Login to get Token and status
+        token, status = Login(email=final_username, password=used_password, max_retries=3)
 
-    # Use the retrieved token, or 'FAILED_TO_GET_TOKEN' if not successful
-    final_token = token if token else 'FAILED_TO_GET_TOKEN'
-
+        # Use the retrieved token, or 'FAILED_TO_GET_TOKEN' if not successful
+        final_token = token if token else 'FAILED_TO_GET_TOKEN'
+        
+        # --- Token Retry Logic ---
+        if final_token == 'FAILED_TO_GET_TOKEN':
+            print("\n" + "=" * 50)
+            print(f"{COLOR_RED}❗ TOKEN FETCH FAILED after initial attempts!{COLOR_RESET}")
+            
+            while True:
+                retry_choice = input(f"{COLOR_YELLOW}Do you want to attempt re-login for the token? (y/n): {COLOR_RESET}").strip().lower()
+                if retry_choice in ['y', 'n']:
+                    break
+                else:
+                    print(f"{COLOR_RED}❌ Invalid choice. Please enter 'y' or 'n'.{COLOR_RESET}")
+            
+            if retry_choice == 'y':
+                print("\n" + "=" * 50)
+                print(f"{COLOR_BLUE}           RE-ATTEMPTING TOKEN FETCH{COLOR_RESET}")
+                print("=" * 50)
+                # Increased max retries for manual attempt
+                token, status = Login(email=final_username, password=used_password, max_retries=5) 
+                final_token = token if token else 'FAILED_TO_GET_TOKEN_RETRY'
+                
+                if final_token not in ['FAILED_TO_GET_TOKEN_RETRY', 'FAILED_TO_GET_TOKEN']:
+                    print(f"{COLOR_GREEN}✅ TOKEN SUCCESSFULLY RETRIEVED on re-attempt!{COLOR_RESET}")
+                else:
+                    print(f"{COLOR_RED}❌ TOKEN STILL FAILED after re-attempt.{COLOR_RESET}")
+            else:
+                final_token = 'USER_SKIPPED_TOKEN_RETRY'
+    
     # Automatic Saving Logic
     filename_xlsx = "/storage/emulated/0/Acc_Created.xlsx"
     filename_txt = "/storage/emulated/0/Acc_created.txt"
@@ -612,8 +651,14 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     print(f"{COLOR_GREEN}📧 Username:{COLOR_RESET} {final_username}")
     print(f"{COLOR_GREEN}🔑 Password:{COLOR_RESET} {used_password}")
     print(f"{COLOR_GREEN}🔗 Profile ID:{COLOR_RESET} {profile_id}")
-    # MODIFICATION: Ipakita lang ang prefix na "EAAAAUa..." sa console
-    print(f"{COLOR_GREEN}🔐 Access Token:{COLOR_RESET} EAAAAUa...")
+    
+    # Conditional Token Display
+    token_display = 'EAAAAUa...' if final_token.startswith('EAAAAUa') else final_token
+    if final_token.startswith('EAAAAUa'):
+        print(f"{COLOR_GREEN}🔐 Access Token:{COLOR_RESET} {token_display}")
+    else:
+        print(f"{COLOR_RED}🔐 Access Token:{COLOR_RESET} {token_display}")
+        
     print(f"{COLOR_GREEN}💾 SAVE STATUS: Account saved successfully to storage.{COLOR_RESET}")
     print("=" * 50)
 
