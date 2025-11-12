@@ -15,10 +15,79 @@ COLOR_CYAN = '\033[96m'
 COLOR_BLUE = '\033[94m'
 COLOR_RESET = '\033[0m'
 
+# --- App Version and Update URL ---
+__version__ = "V1"  # Updated version number
+UPDATE_URL = "https://raw.githubusercontent.com/versozadarwin23/reg/refs/heads/main/reg.py"
+VERSION_CHECK_URL = "https://raw.githubusercontent.com/versozadarwin23/reg/refs/heads/main/version.txt"
+
 # --- Global Configurations ---
 COOKIE_DIR = "/storage/emulated/0/cookie"
 CONFIG_FILE = "/storage/emulated/0/settings.json"
 custom_password_base = None
+
+
+# --- BAGONG UPDATE FUNCTION ---
+def check_for_updates():
+    """
+    Checks for a new version of the script on GitHub.
+    If a new version is found, it prompts the user to update.
+    """
+    print(f"{COLOR_CYAN}Checking for updates...{COLOR_RESET}")
+    try:
+        # 1. Fetch the latest version string
+        response = requests.get(VERSION_CHECK_URL, timeout=5)
+        response.raise_for_status()  # Check for HTTP errors
+        remote_version = response.text.strip()
+
+        # 2. Compare with local version
+        if remote_version != __version__:
+            print(f"\n{COLOR_YELLOW}UPDATE AVAILABLE!{COLOR_RESET}")
+            print(f"You have version: {COLOR_RED}{__version__}{COLOR_RESET}")
+            print(f"Latest version is: {COLOR_GREEN}{remote_version}{COLOR_RESET}")
+
+            # 3. Ask user to update
+            while True:
+                choice = input(f"{COLOR_YELLOW}Do you want to update? (y/n): {COLOR_RESET}").strip().lower()
+                if choice == 'y':
+                    # 4. Handle "Yes" - Download and overwrite current script
+                    print(f"{COLOR_CYAN}Downloading update...{COLOR_RESET}")
+                    new_script_response = requests.get(UPDATE_URL, timeout=10)
+                    new_script_response.raise_for_status()
+                    new_script_content = new_script_response.text
+
+                    # Get the name of the currently running script
+                    current_script_name = sys.argv[0]
+
+                    print(f"{COLOR_CYAN}Overwriting {current_script_name} with the new version...{COLOR_RESET}")
+                    with open(current_script_name, 'w', encoding='utf-8') as f:
+                        f.write(new_script_content)
+
+                    print(f"{COLOR_GREEN}Update successful!{COLOR_RESET}")
+                    print(f"{COLOR_GREEN}Please restart the script to use the new version.{COLOR_RESET}")
+                    sys.exit()  # Exit after successful update
+
+                elif choice == 'n':
+                    # 5. Handle "No" - Exit the program
+                    print(f"{COLOR_RED}Update declined. Exiting program.{COLOR_RESET}")
+                    sys.exit()  # Exit as requested
+                else:
+                    print(f"{COLOR_RED}Invalid choice. Please type 'y' for yes or 'n' for no.{COLOR_RESET}")
+
+        else:
+            print(f"{COLOR_GREEN}You are running the latest version ({__version__}).{COLOR_RESET}")
+            time.sleep(2)  # Pause briefly to show message
+
+    except requests.exceptions.RequestException as e:
+        print(f"\n{COLOR_RED}❌ Error checking for updates: {e}{COLOR_RESET}")
+        print(f"{COLOR_YELLOW}Continuing with the current version...{COLOR_RESET}")
+        time.sleep(2)
+    except Exception as e:
+        print(f"\n{COLOR_RED}❌ An unexpected error occurred during update check: {e}{COLOR_RESET}")
+        print(f"{COLOR_YELLOW}Continuing with the current version...{COLOR_RESET}")
+        time.sleep(2)
+
+
+# --- END NG UPDATE FUNCTION ---
 
 
 # --- Utility Functions ---
@@ -286,7 +355,7 @@ def Login(email: str, password: str, max_retries=3):
         'Host': 'b-graph.facebook.com',
         'X-Fb-Connection-Quality': 'EXCELLENT',
         'Authorization': 'OAuth 350685531728|62f8ce9f74b12f84c123cc23437a4a32',
-        'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 7.1.2; RMX3740 Build/QP1A.190711.020) [FBAN/FB4A;FBAV/417.0.0.33.65;FBPN/com.facebook.katana;FBLC/in_ID;FBBV/480086274;FBCR/Corporation Tbk;FBMF/realme;FBBD/realme;FBDV/RMX3740;FBSV/7.1.2;FBCA/x86:armeabi-v7a;FBDM/{density=1.0,width=540,height=960};FB_FW/1;FBRV/483172840;]',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 15; V2508 Build/AP3A.240905.015.A2_D1; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/141.0.7390.122 Mobile Safari/537.36[FBAN/EMA;FBLC/en_GB;FBAV/484.0.0.14.106;FBCX/modulariab;]',
         'X-Tigon-Is-Retry': 'false',
         'X-Fb-Friendly-Name': 'authenticate',
         'X-Fb-Connection-Bandwidth': str(random.randrange(70000000, 80000000)),
@@ -295,7 +364,7 @@ def Login(email: str, password: str, max_retries=3):
         'X-Fb-Sim-Hni': str(random.randrange(50000, 60000)),
         'X-Fb-Request-Analytics-Tags': '{"network_tags":{"product":"350685531728","retry_attempt":"0"},"application_tags":"unknown"}',
         'Content-Type': 'application/x-www-form-urlencoded',
-        'X-Fb-Connection-Type': 'WIFI',
+        'X-Fb-Connection-Type': 'mobile.LTE',
         'X-Fb-Device-Group': str(random.randrange(4700, 5000)),
         'Priority': 'u=3,i',
         'Accept-Encoding': 'gzip, deflate',
@@ -431,11 +500,10 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
         "X-FB-Net-HNI": "51502",
         "X-FB-SIM-HNI": "51502",
         "X-FB-HTTP-Engine": "Liger",
-        'x-fb-connection-type': 'Unknown',
         'accept-encoding': 'gzip, deflate',
         'content-type': 'application/x-www-form-urlencoded',
         'x-fb-http-engine': 'Liger',
-        'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 14; T614SP Build/UP1A.231005.007) [FBAN/Orca-Android;FBAV/513.1.0.46.107;FBPN/com.facebook.orca;FBLC/en_US;FBBV/753632239;FBCR/HOME;FBMF/TCL;FBBD/TCL;FBDV/T614SP;FBSV/14;FBCA/arm64-v8a:null;FBDM/{density=2.0,width=720,height=1489};FB_FW/1;]',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 15; V2508 Build/AP3A.240905.015.A2_D1; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/141.0.7390.122 Mobile Safari/537.36[FBAN/EMA;FBLC/en_GB;FBAV/484.0.0.14.106;FBCX/modulariab;]',
     }
 
     if session is None:
@@ -593,19 +661,18 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     print("=" * 50)
     # --- END SHOW ACCOUNT DETAILS ---
 
-
     # --- New Logic: Ask to get Token ---
-    final_token = 'USER_SKIPPED_TOKEN_FETCH' # Default value if user skips
+    final_token = 'USER_SKIPPED_TOKEN_FETCH'  # Default value if user skips
 
-    
     # ASK THE USER
     while True:
-        get_token_choice = input(f"{COLOR_YELLOW}Do you want to proceed to Step 3: FETCH ACCESS TOKEN? (y/n): {COLOR_RESET}").strip().lower()
+        get_token_choice = input(
+            f"{COLOR_YELLOW}Do you want to proceed to Step 3: FETCH ACCESS TOKEN? (y/n): {COLOR_RESET}").strip().lower()
         if get_token_choice in ['y', 'n']:
             break
         else:
             print(f"{COLOR_RED}❌ Invalid choice. Please enter 'y' or 'n'.{COLOR_RESET}")
-    
+
     if get_token_choice == 'y':
         print("\n" + "=" * 50)
         print(f"{COLOR_BLUE}           Step 3: FETCHING TOKEN...{COLOR_RESET}")
@@ -616,34 +683,35 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
 
         # Use the retrieved token, or 'FAILED_TO_GET_TOKEN' if not successful
         final_token = token if token else 'FAILED_TO_GET_TOKEN'
-        
+
         # --- Token Retry Logic ---
         if final_token == 'FAILED_TO_GET_TOKEN':
             print("\n" + "=" * 50)
             print(f"{COLOR_RED}❗ TOKEN FETCH FAILED after initial attempts!{COLOR_RESET}")
-            
+
             while True:
-                retry_choice = input(f"{COLOR_YELLOW}Do you want to attempt re-login for the token? (y/n): {COLOR_RESET}").strip().lower()
+                retry_choice = input(
+                    f"{COLOR_YELLOW}Do you want to attempt re-login for the token? (y/n): {COLOR_RESET}").strip().lower()
                 if retry_choice in ['y', 'n']:
                     break
                 else:
                     print(f"{COLOR_RED}❌ Invalid choice. Please enter 'y' or 'n'.{COLOR_RESET}")
-            
+
             if retry_choice == 'y':
                 print("\n" + "=" * 50)
                 print(f"{COLOR_BLUE}           RE-ATTEMPTING TOKEN FETCH{COLOR_RESET}")
                 print("=" * 50)
                 # Increased max retries for manual attempt
-                token, status = Login(email=final_username, password=used_password, max_retries=5) 
+                token, status = Login(email=final_username, password=used_password, max_retries=5)
                 final_token = token if token else 'FAILED_TO_GET_TOKEN_RETRY'
-                
+
                 if final_token not in ['FAILED_TO_GET_TOKEN_RETRY', 'FAILED_TO_GET_TOKEN']:
                     print(f"{COLOR_GREEN}✅ TOKEN SUCCESSFULLY RETRIEVED on re-attempt!{COLOR_RESET}")
                 else:
                     print(f"{COLOR_RED}❌ TOKEN STILL FAILED after re-attempt.{COLOR_RESET}")
             else:
                 final_token = 'USER_SKIPPED_TOKEN_RETRY'
-    
+
     # Automatic Saving Logic
     filename_xlsx = "/storage/emulated/0/Acc_Created.xlsx"
     filename_txt = "/storage/emulated/0/Acc_created.txt"
@@ -661,14 +729,14 @@ def create_fbunconfirmed(account_type, usern, gender, password=None, session=Non
     print(f"{COLOR_GREEN}📧 Username:{COLOR_RESET} {final_username}")
     print(f"{COLOR_GREEN}🔑 Password:{COLOR_RESET} {used_password}")
     print(f"{COLOR_GREEN}🔗 Profile ID:{COLOR_RESET} {profile_id}")
-    
+
     # Conditional Token Display
     token_display = 'EAAAAUa...' if final_token.startswith('EAAAAUa') else final_token
     if final_token.startswith('EAAAAUa'):
         print(f"{COLOR_GREEN}🔐 Access Token:{COLOR_RESET} {token_display}")
     else:
         print(f"{COLOR_RED}🔐 Access Token:{COLOR_RESET} {token_display}")
-        
+
     print(f"{COLOR_GREEN}💾 SAVE STATUS: Account saved successfully to storage.{COLOR_RESET}")
     print("=" * 50)
 
@@ -705,6 +773,11 @@ def NEMAIN():
 
 # --- Main Execution (Modified to run NEMAIN in a loop) ---
 if __name__ == "__main__":
+
+    # --- TATAWAGIN ANG UPDATE CHECKER DITO ---
+    check_for_updates()
+    # --- END NG UPDATE CHECK ---
+
     # Clear old settings file on first run only
     # Note: We keep the settings file after the first successful choice for the loop
     if os.path.exists(CONFIG_FILE):
